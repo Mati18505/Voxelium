@@ -2,10 +2,33 @@ use crate::types::CHUNK_SIZE;
 use crate::types::{BlockID, BlockPos};
 use cgmath::Vector3;
 use crate::shared;
+use std::fmt;
 
-#[derive(Debug)]
+#[derive(PartialEq)]
 pub struct BlockStorage {
     block_types: Vec<BlockID>,
+}
+
+impl fmt::Debug for BlockStorage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        const cols: i32 = 25;
+        let mut out: String = "".to_string();
+        let mut counter = 0;
+
+        for i in self.block_types.iter() {
+            if counter == 0 {
+                out += "\r\n";
+            }
+
+            out += &i.to_string();
+
+            counter += 1;
+            counter = counter % cols;
+        } 
+
+        write!(f, "{}", out).unwrap();
+        Ok(())
+    }
 }
 
 impl BlockStorage {
