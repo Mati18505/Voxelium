@@ -9,5 +9,5 @@ pub fn load_chunk(pos: &ChunkPos) -> Chunk {
 
 fn generate_chunk(pos: &ChunkPos) -> Chunk {
     let blocks = terrain_generator::generate(pos);
-    Chunk::new(BlockStorage::new(blocks))
+    Chunk::new(blocks)
 }

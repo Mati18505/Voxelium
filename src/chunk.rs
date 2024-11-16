@@ -1,7 +1,7 @@
 use crate::types::CHUNK_SIZE;
 use crate::block_storage::BlockStorage;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Chunk {
     block_storage: BlockStorage,
 }
@@ -26,4 +26,5 @@ impl Clone for Chunk {
             block_storage: self.block_storage.clone()
         }
     }
-}
+} 
+
