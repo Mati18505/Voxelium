@@ -1,0 +1,75 @@
+{
+	"blocks": [
+		{
+			"name": "air",
+			"isTransparent": true,
+			"isEverySideSame": true,
+			"textures": { "side": "" }
+		},
+		{
+			"name": "dirt",
+			"isTransparent": false,
+			"isEverySideSame": true,
+			"textures": { "side": "dirt" }
+		},
+		{
+			"name": "stone",
+			"isTransparent": false,
+			"isEverySideSame": true,
+			"textures": { "side": "stone" }
+		},
+		{
+			"name": "wood",
+			"isTransparent": false,
+			"isEverySideSame": false,
+			"textures": {
+				"side": "wood_side",
+				"top": "wood_top",
+				"bottom": "wood_top"
+			}
+		},
+		{
+			"name": "leaves",
+			"isTransparent": false,
+			"isEverySideSame": true,
+			"textures": { "side": "oak_leaves" },
+			"material": "biomeColoredTranslucent",
+			"translucent": true
+		},
+		{
+			"name": "grass",
+			"isTransparent": false,
+			"isEverySideSame": false,
+			"textures": {
+				"side": "grass_side",
+				"top": "grass",
+				"bottom": "dirt"
+			}
+		},
+		
+		{
+			"name": "sand",
+			"isTransparent": false,
+			"isEverySideSame": true,
+			"textures": { "side": "sand" }
+		},
+		{
+			"name": "sandstone",
+			"isTransparent": false,
+			"isEverySideSame": false,
+			"textures": {
+				"side": "sandstone",
+				"top": "sandstone_top",
+				"bottom": "sandstone_bottom"
+			}
+		},
+		{
+			"name": "glass",
+			"isTransparent": false,
+			"isEverySideSame": true,
+			"textures": { "side": "glass" },
+			"material": "translucent",
+			"translucent": true
+		}
+	]
+}
