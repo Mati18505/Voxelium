@@ -1,8 +1,8 @@
 use cgmath::Vector3;
-use project_craft::chunk::Chunk;
-use project_craft::{terrain_generator, world};
-use project_craft::types::ChunkPos;
-use project_craft::chunk_loader;
+use voxelium::chunk::Chunk;
+use voxelium::{terrain_generator, world};
+use voxelium::types::ChunkPos;
+use voxelium::chunk_loader;
 
 fn main() {
     let mut world = world::World::new();
