@@ -1,7 +1,11 @@
 [package]
-name = "voxelium_server"
+name = "voxelium"
 version = "0.1.0"
 edition = "2021"
+
+[[bin]]
+name = "server"
+path = "src/server/main.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

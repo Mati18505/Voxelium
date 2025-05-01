@@ -1,5 +1,4 @@
-use crate::types::CHUNK_SIZE;
-use crate::block_storage::BlockStorage;
+use super::block_storage::BlockStorage;
 
 #[derive(Debug, PartialEq)]
 pub struct Chunk {
@@ -9,7 +8,7 @@ pub struct Chunk {
 impl Chunk {
     pub fn new(block_storage: BlockStorage) -> Self {
         Chunk {
-            block_storage: block_storage
+            block_storage
         }
     }
     pub fn get_block_storage_mut(&mut self) -> &mut BlockStorage {

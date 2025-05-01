@@ -1,8 +1,5 @@
 use cgmath::Vector3;
-use voxelium::chunk::Chunk;
-use voxelium::{terrain_generator, world};
-use voxelium::types::ChunkPos;
-use voxelium::chunk_loader;
+use voxelium::{chunk_loader, entities::{world, Chunk, ChunkPos}, terrain_generator};
 
 fn main() {
     let mut world = world::World::new();
@@ -21,6 +18,6 @@ fn test_adding_chunks() {
 
     world.add_chunk(ChunkPos(pos.clone()), chunk.clone());
 
-    let chunk2 = world.get_chunk_cloned(&pos).expect("cannot get chunk from world");
-    assert_eq!(chunk, chunk2);
+    let chunk2 = world.get_chunk(&pos).expect("cannot get chunk from world");
+    assert_eq!(&chunk, chunk2);
 }

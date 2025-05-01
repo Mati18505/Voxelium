@@ -1,6 +1,4 @@
-use crate::block_storage::BlockStorage;
-use crate::types::{ChunkPos, BlockID};
-use crate::types::CHUNK_SIZE;
+use crate::entities::{BlockID, BlockStorage, ChunkPos, CHUNK_SIZE};
 use crate::shared;
 
 use rand::Rng;
