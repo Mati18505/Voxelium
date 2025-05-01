@@ -66,6 +66,13 @@ impl BlockInChunkPos {
         assert!(same_sign!(world_pos.z, chunk_pos.z));
 
         let in_chunk_pos = world_pos.0 - chunk_pos.0;
-        BlockInChunkPos(in_chunk_pos.cast().unwrap())
+        let in_chunk_pos: Vector3<usize> = in_chunk_pos.cast().unwrap();
+        
+        // Block must be in chunk.
+        assert!(in_chunk_pos.x < CHUNK_SIZE);
+        assert!(in_chunk_pos.y < CHUNK_SIZE);
+        assert!(in_chunk_pos.z < CHUNK_SIZE);
+
+        BlockInChunkPos(in_chunk_pos)
     }
 }
