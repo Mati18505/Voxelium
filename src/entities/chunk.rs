@@ -11,9 +11,7 @@ impl Chunk {
             block_storage
         }
     }
-    pub fn get_block_storage_mut(&mut self) -> &mut BlockStorage {
-        return &mut self.block_storage;
-    }
+
     pub fn get_block_storage(&self) -> &BlockStorage {
         return &self.block_storage;
     }
