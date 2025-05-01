@@ -1,6 +1,6 @@
 use super::block_storage::BlockStorage;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Chunk {
     block_storage: BlockStorage,
 }
@@ -16,12 +16,3 @@ impl Chunk {
         return &self.block_storage;
     }
 }
-
-impl Clone for Chunk {
-    fn clone(&self) -> Self {
-        Chunk {
-            block_storage: self.block_storage.clone()
-        }
-    }
-} 
-
