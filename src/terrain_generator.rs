@@ -1,5 +1,4 @@
-use crate::entities::{BlockID, BlockStorage, ChunkPos, CHUNK_SIZE};
-use crate::shared;
+use crate::entities::{BlockID, BlockInChunkPos, BlockStorage, ChunkPos, CHUNK_SIZE};
 
 use rand::Rng;
 use cgmath::Vector3;
@@ -20,8 +19,9 @@ pub fn generate(chunk_pos: &ChunkPos) -> BlockStorage {
             {
                 let world_z: isize = z as isize + chunk_pos.z;
                 let block_id = generate_voxel(world_z, generated_height);
+                let pos = BlockInChunkPos(Vector3::new(x, y, z));
 
-                chunk_blocks[shared::index(Vector3::new(x, y, z), CHUNK_SIZE)] = block_id;
+                chunk_blocks[pos.index()] = block_id;
             }
 
         }

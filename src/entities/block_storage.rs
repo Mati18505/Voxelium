@@ -1,8 +1,7 @@
 use cgmath::Vector3;
-use crate::shared;
 use std::fmt;
 
-use super::{types::{BlockID, CHUNK_SIZE}, BlockInChunkPos};
+use super::{types::BlockID, BlockInChunkPos};
 
 #[derive(Clone, PartialEq)]
 pub struct BlockStorage {
@@ -39,7 +38,6 @@ impl BlockStorage {
     }
 
     pub fn get_block(&self, pos: BlockInChunkPos) -> BlockID {
-        let idx = shared::index(*pos, CHUNK_SIZE);
-        self.block_types[idx]
+        self.block_types[pos.index()]
     }
 }

@@ -75,4 +75,8 @@ impl BlockInChunkPos {
 
         BlockInChunkPos(in_chunk_pos)
     }
+
+    pub fn index(&self) -> usize {
+        self.y * CHUNK_SIZE * CHUNK_SIZE + self.z * CHUNK_SIZE + self.x
+    }
 }
