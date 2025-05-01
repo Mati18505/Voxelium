@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::{chunk::Chunk, types::{BlockID, BlockPos, ChunkPos}};
+use super::{chunk::Chunk, types::{BlockID, BlockPos, ChunkPos}, BlockInChunkPos};
 
 pub struct World {
     chunks: HashMap<ChunkPos, Chunk>,
@@ -19,9 +19,12 @@ impl World {
         self.chunks.get(&pos)
     }
     pub fn get_block(&self, world_pos: &BlockPos) -> Result<BlockID, &str> {
+        if world_pos.0.z < 0 {
+            return Err("Block outside of the world.");
+        }
+
         let chunk_pos = ChunkPos::from(world_pos);
-        let in_chunk_pos: BlockPos = BlockPos(world_pos.0 - chunk_pos.0);
-        let in_chunk_pos = in_chunk_pos.0.cast().unwrap();
+        let in_chunk_pos = BlockInChunkPos::new(world_pos, &chunk_pos);
 
         Ok(self.get_chunk(&chunk_pos).ok_or("Block outside of the world")?.get_block_storage().get_block(in_chunk_pos))
     }

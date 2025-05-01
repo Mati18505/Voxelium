@@ -7,6 +7,7 @@ use std::ops::Deref;
 #[derive(Hash, Eq, PartialEq)]
 pub struct ChunkPos(pub Vector3<isize>);
 pub struct BlockPos(pub Vector3<isize>);
+pub struct BlockInChunkPos(pub Vector3<usize>);
 
 impl Deref for ChunkPos {
     type Target = Vector3<isize>;
@@ -24,6 +25,14 @@ impl Deref for BlockPos {
     }
 }
 
+impl Deref for BlockInChunkPos {
+    type Target = Vector3<usize>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 impl From<&BlockPos> for ChunkPos {
     fn from(block_pos: &BlockPos) -> Self {
         let pos = Vector3 {
@@ -34,5 +43,24 @@ impl From<&BlockPos> for ChunkPos {
         ChunkPos {
             0: pos
         }
+    }
+}
+
+macro_rules! same_sign {
+    ($first:expr, $sec:expr) => {
+        ($first < 0 && $sec < 0)
+        || ($first >= 0 && $sec >= 0)
+    }
+}
+
+impl BlockInChunkPos {
+    pub fn new(world_pos: &BlockPos, chunk_pos: &ChunkPos) -> Self {
+        // Block and chunk have the same sign.
+        assert!(same_sign!(world_pos.0.x, chunk_pos.0.x));
+        assert!(same_sign!(world_pos.0.y, chunk_pos.0.y));
+        assert!(same_sign!(world_pos.0.z, chunk_pos.0.z));
+
+        let in_chunk_pos = world_pos.0 - chunk_pos.0;
+        BlockInChunkPos(in_chunk_pos.cast().unwrap())
     }
 }

@@ -1,5 +1,5 @@
 use cgmath::Vector3;
-use voxelium::{chunk_loader, entities::{world, Chunk, ChunkPos}, terrain_generator};
+use voxelium::{chunk_loader, entities::{world, BlockPos, Chunk, ChunkPos}, terrain_generator};
 
 fn main() {
     let mut world = world::World::new();
