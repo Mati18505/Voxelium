@@ -39,7 +39,7 @@ impl BlockStorage {
     }
 
     pub fn get_block(&self, pos: BlockInChunkPos) -> BlockID {
-        let idx = shared::index(pos.0, CHUNK_SIZE);
+        let idx = shared::index(*pos, CHUNK_SIZE);
         self.block_types[idx]
     }
 }

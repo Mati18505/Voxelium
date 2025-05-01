@@ -4,9 +4,13 @@ pub const CHUNK_SIZE: usize = 16;
 use cgmath::Vector3;
 use std::ops::Deref;
 
-#[derive(Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
 pub struct ChunkPos(pub Vector3<isize>);
+
+#[derive(Debug, Clone, Copy)] 
 pub struct BlockPos(pub Vector3<isize>);
+
+#[derive(Debug, Clone, Copy)] 
 pub struct BlockInChunkPos(pub Vector3<usize>);
 
 impl Deref for ChunkPos {
@@ -33,6 +37,7 @@ impl Deref for BlockInChunkPos {
     }
 }
 
+
 impl From<&BlockPos> for ChunkPos {
     fn from(block_pos: &BlockPos) -> Self {
         let pos = Vector3 {
@@ -56,9 +61,9 @@ macro_rules! same_sign {
 impl BlockInChunkPos {
     pub fn new(world_pos: &BlockPos, chunk_pos: &ChunkPos) -> Self {
         // Block and chunk have the same sign.
-        assert!(same_sign!(world_pos.0.x, chunk_pos.0.x));
-        assert!(same_sign!(world_pos.0.y, chunk_pos.0.y));
-        assert!(same_sign!(world_pos.0.z, chunk_pos.0.z));
+        assert!(same_sign!(world_pos.x, chunk_pos.x));
+        assert!(same_sign!(world_pos.y, chunk_pos.y));
+        assert!(same_sign!(world_pos.z, chunk_pos.z));
 
         let in_chunk_pos = world_pos.0 - chunk_pos.0;
         BlockInChunkPos(in_chunk_pos.cast().unwrap())

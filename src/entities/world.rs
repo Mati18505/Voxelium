@@ -19,7 +19,7 @@ impl World {
         self.chunks.get(&pos)
     }
     pub fn get_block(&self, world_pos: &BlockPos) -> Result<BlockID, &str> {
-        if world_pos.0.z < 0 {
+        if world_pos.z < 0 {
             return Err("Block outside of the world.");
         }
 
