@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use super::{chunk::Chunk, types::{BlockID, BlockPos, ChunkPos}, BlockInChunkPos};
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct World {
     chunks: HashMap<ChunkPos, Chunk>,
 }

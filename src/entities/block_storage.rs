@@ -4,7 +4,7 @@ use std::fmt;
 
 use super::{types::{BlockID, CHUNK_SIZE}, BlockInChunkPos};
 
-#[derive(PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct BlockStorage {
     block_types: Vec<BlockID>,
 }
@@ -43,11 +43,3 @@ impl BlockStorage {
         self.block_types[idx]
     }
 }
-
-impl Clone for BlockStorage {
-    fn clone(&self) -> Self {
-        BlockStorage {
-            block_types: self.block_types.clone()
-        }
-    }
-} 
