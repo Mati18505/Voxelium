@@ -4,11 +4,10 @@ pub const CHUNK_SIZE: usize = 16;
 use cgmath::Vector3;
 use std::ops::Deref;
 
+pub type BlockPos = Vector3<isize>;
+
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
 pub struct ChunkPos(Vector3<isize>);
-
-#[derive(Debug, Clone, Copy, PartialEq)] 
-pub struct BlockPos(Vector3<isize>);
 
 #[derive(Debug, Clone, Copy, PartialEq)] 
 pub struct BlockInChunkPos(Vector3<usize>);
@@ -24,21 +23,7 @@ impl ChunkPos {
     }
 }
 
-impl BlockPos {
-    pub fn new(x: isize, y: isize, z: isize) -> Self {
-        BlockPos(Vector3::new(x, y, z))
-    }
-}
-
 impl Deref for ChunkPos {
-    type Target = Vector3<isize>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl Deref for BlockPos {
     type Target = Vector3<isize>;
 
     fn deref(&self) -> &Self::Target {
@@ -88,7 +73,7 @@ impl BlockInChunkPos {
         assert!(same_sign!(world_pos.y, chunk_pos.y));
         assert!(same_sign!(world_pos.z, chunk_pos.z));
 
-        let in_chunk_pos = world_pos.0 - chunk_pos.0;
+        let in_chunk_pos = world_pos - chunk_pos.0;
         let in_chunk_pos: Vector3<usize> = in_chunk_pos.cast().expect("Block is outside this chunk.");
         
         Self::new(in_chunk_pos.x, in_chunk_pos.y, in_chunk_pos.z)
