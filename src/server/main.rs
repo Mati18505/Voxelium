@@ -1,6 +1,8 @@
 use std::fmt;
 
-use voxelium::{chunk_loader, entities::{world, Chunk, ChunkPos}};
+use voxelium::{entities::{world, Chunk, ChunkPos}};
+
+mod chunk_loader;
 
 struct DebugChunk {
     chunk: Chunk
@@ -49,7 +51,8 @@ fn main() {
 
 #[cfg(test)]
 mod test {
-    use voxelium::{entities::BlockPos, terrain_generator};
+    use voxelium::entities::BlockPos;
+    use super::chunk_loader::Generator;
 
     use super::*;
 
@@ -57,7 +60,7 @@ mod test {
     fn test_adding_chunks() {
         let mut world = world::World::new();
         let pos = ChunkPos::new(0, 0, 0);
-        let blocks = terrain_generator::generate(pos);
+        let blocks = Generator::new(pos).generate_terrain().get();
         let chunk = Chunk::new(blocks);
 
         world.add_chunk(pos, chunk.clone());
