@@ -74,6 +74,23 @@ impl From<BlockPos> for BlockInChunkPos {
     }
 }
 
+#[derive(Clone, Copy, PartialEq)]
+pub enum BlockSide { FRONT, BACK, LEFT, RIGHT, TOP, BOTTOM }
+
+// Z=UP, right handed
+impl From<BlockSide> for Vector3<isize> {
+    fn from(side: BlockSide) -> Self {
+        match side {
+            BlockSide::FRONT => Vector3::new(0, 1, 0),
+            BlockSide::BACK => Vector3::new(0,  -1, 0),
+            BlockSide::RIGHT => Vector3::new(1, 0, 0),
+            BlockSide::LEFT => Vector3::new(-1, 0, 0),
+            BlockSide::TOP => Vector3::new(0, 0, 1),
+            BlockSide::BOTTOM => Vector3::new(0, 0, -1),
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
