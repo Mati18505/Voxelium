@@ -61,6 +61,15 @@ impl BlockInChunkPos {
     pub fn index(&self) -> usize {
         self.y * CHUNK_SIZE * CHUNK_SIZE + self.z * CHUNK_SIZE + self.x
     }
+
+    pub fn from_index(index: usize) -> Self {
+        let y = index / (CHUNK_SIZE * CHUNK_SIZE);
+        let rem = index % (CHUNK_SIZE * CHUNK_SIZE);
+        let z = rem / CHUNK_SIZE;
+        let x = rem % CHUNK_SIZE;
+
+        BlockInChunkPos::new(x, y, z)
+    }
 }
 
 impl From<BlockPos> for BlockInChunkPos {
@@ -132,6 +141,25 @@ mod test {
 
         let pos = BlockInChunkPos::new(0, 15, 0);
         assert_eq!(pos.index(), 15 * CHUNK_SIZE * CHUNK_SIZE);
+    }
+
+    #[test]
+    fn test_block_in_chunk_pos_from_index() {
+        let idx = 0;
+        let expected = BlockInChunkPos::new(0, 0, 0);
+        assert_eq!(BlockInChunkPos::from_index(idx), expected);
+
+        let idx = 15;
+        let expected = BlockInChunkPos::new(15, 0, 0);
+        assert_eq!(BlockInChunkPos::from_index(idx), expected);
+
+        let idx = 15 * CHUNK_SIZE;
+        let expected = BlockInChunkPos::new(0, 0, 15);
+        assert_eq!(BlockInChunkPos::from_index(idx), expected);
+
+        let idx = 15 * CHUNK_SIZE * CHUNK_SIZE;
+        let expected = BlockInChunkPos::new(0, 15, 0);
+        assert_eq!(BlockInChunkPos::from_index(idx), expected);
     }
 
     #[test]
