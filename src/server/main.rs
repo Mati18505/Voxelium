@@ -37,7 +37,7 @@ impl fmt::Display for DebugChunk {
 
 fn main() {
     let mut world = world::World::new();
-    let pos = ChunkPos::new(Vector3::new(0, 0, 0));
+    let pos = ChunkPos::new(0, 0, 0);
     world.add_chunk(pos, chunk_loader::load_chunk(pos));
     let result = world.get_chunk(pos);
     
@@ -51,12 +51,12 @@ fn main() {
 #[test]
 fn test_adding_chunks() {
     let mut world = world::World::new();
-    let pos = ChunkPos::new(Vector3::new(0, 0, 0));
+    let pos = ChunkPos::new(0, 0, 0);
     let blocks = terrain_generator::generate(pos);
     let chunk = Chunk::new(blocks);
 
     world.add_chunk(pos, chunk.clone());
-    let world_pos = BlockPos::new(Vector3::new(0,0,15));
+    let world_pos = BlockPos::new(0, 0, 15);
     world.get_block(world_pos).unwrap();
 
     let chunk2 = world.get_chunk(pos).expect("cannot get chunk from world");

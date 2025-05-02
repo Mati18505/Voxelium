@@ -14,19 +14,19 @@ pub struct BlockPos(Vector3<isize>);
 pub struct BlockInChunkPos(Vector3<usize>);
 
 impl ChunkPos {
-    pub fn new(pos: Vector3<isize>) -> Self {
+    pub fn new(x: isize, y: isize, z: isize) -> Self {
         // ChunkPos must be multiple of CHUNK_SIZE.
-        assert!(pos.x % CHUNK_SIZE as isize == 0);
-        assert!(pos.y % CHUNK_SIZE as isize == 0);
-        assert!(pos.z % CHUNK_SIZE as isize == 0);
+        assert!(x % CHUNK_SIZE as isize == 0);
+        assert!(y % CHUNK_SIZE as isize == 0);
+        assert!(z % CHUNK_SIZE as isize == 0);
 
-        ChunkPos(pos)
+        ChunkPos(Vector3::new(x, y, z))
     }
 }
 
 impl BlockPos {
-    pub fn new(pos: Vector3<isize>) -> Self {
-        BlockPos(pos)
+    pub fn new(x: isize, y: isize, z: isize) -> Self {
+        BlockPos(Vector3::new(x, y, z))
     }
 }
 
@@ -76,13 +76,13 @@ macro_rules! same_sign {
 }
 
 impl BlockInChunkPos {
-    pub fn new(in_chunk_pos: Vector3<usize>) -> Self {
+    pub fn new(x: usize, y: usize, z: usize) -> Self {
         // Block must be in chunk.
-        assert!(in_chunk_pos.x < CHUNK_SIZE);
-        assert!(in_chunk_pos.y < CHUNK_SIZE);
-        assert!(in_chunk_pos.z < CHUNK_SIZE);
+        assert!(x < CHUNK_SIZE);
+        assert!(y < CHUNK_SIZE);
+        assert!(z < CHUNK_SIZE);
         
-        BlockInChunkPos(in_chunk_pos)
+        BlockInChunkPos(Vector3::new(x, y, z))
     }
 
     pub fn from_world_and_chunk(world_pos: BlockPos, chunk_pos: ChunkPos) -> Self {
@@ -94,7 +94,7 @@ impl BlockInChunkPos {
         let in_chunk_pos = world_pos.0 - chunk_pos.0;
         let in_chunk_pos: Vector3<usize> = in_chunk_pos.cast().unwrap();
         
-        Self::new(in_chunk_pos)
+        Self::new(in_chunk_pos.x, in_chunk_pos.y, in_chunk_pos.z)
     }
 
     pub fn index(&self) -> usize {
