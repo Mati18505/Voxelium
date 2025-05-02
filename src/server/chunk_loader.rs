@@ -3,5 +3,5 @@ pub mod generator;
 pub mod random_noise;
 
 pub use chunk_loader::*;
-pub use generator::*;
-pub use random_noise::*;
+use generator::*;
+use random_noise::*;

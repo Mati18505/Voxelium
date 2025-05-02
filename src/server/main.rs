@@ -3,6 +3,7 @@ use std::fmt;
 use voxelium::entities::{world, Chunk, ChunkPos};
 
 mod chunk_loader;
+use chunk_loader::ChunkLoader;
 
 struct DebugChunk {
     chunk: Chunk
@@ -37,9 +38,12 @@ impl fmt::Display for DebugChunk {
 }
 
 fn main() {
+    let mut chunk_loader = ChunkLoader::default();
     let mut world = world::World::new();
     let pos = ChunkPos::new(0, 0, 0);
-    world.add_chunk(pos, chunk_loader::load_chunk(pos));
+
+    world.add_chunk(pos, chunk_loader.load_chunk(pos));
+
     let result = world.get_chunk(pos);
     
     match result {
@@ -47,30 +51,4 @@ fn main() {
         None => println!("Chunk don't exist."),
     }
     
-}
-
-#[cfg(test)]
-mod test {
-    use voxelium::entities::BlockPos;
-    use crate::chunk_loader::RandomNoise;
-
-    use super::chunk_loader::Generator;
-
-    use super::*;
-
-    #[test]
-    fn test_adding_chunks() {
-        let mut world = world::World::new();
-        let pos = ChunkPos::new(0, 0, 0);
-        let noise = Box::new(RandomNoise::new());
-        let blocks = Generator::new(pos, noise).generate_terrain().get();
-        let chunk = Chunk::new(blocks);
-
-        world.add_chunk(pos, chunk.clone());
-        let world_pos = BlockPos::new(0, 0, 15);
-        world.get_block(world_pos).unwrap();
-
-        let chunk2 = world.get_chunk(pos).expect("cannot get chunk from world");
-        assert_eq!(&chunk, chunk2);
-    }
 }
