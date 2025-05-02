@@ -49,13 +49,6 @@ impl From<BlockPos> for ChunkPos {
     }
 }
 
-macro_rules! same_sign {
-    ($first:expr, $sec:expr) => {
-        ($first < 0 && $sec < 0)
-        || ($first >= 0 && $sec >= 0)
-    }
-}
-
 impl BlockInChunkPos {
     pub fn new(x: usize, y: usize, z: usize) -> Self {
         assert!(x < CHUNK_SIZE, "Block must be in chunk. x = {}", x);
@@ -65,19 +58,19 @@ impl BlockInChunkPos {
         BlockInChunkPos(Vector3::new(x, y, z))
     }
 
-    pub fn from_world_and_chunk(world_pos: BlockPos, chunk_pos: ChunkPos) -> Self {
-        assert!(same_sign!(world_pos.x, chunk_pos.x), "Block and chunk must have the same sign. world_x = {}, chunk_x = {}", world_pos.x, chunk_pos.x);
-        assert!(same_sign!(world_pos.y, chunk_pos.y), "Block and chunk must have the same sign. world_y = {}, chunk_y = {}", world_pos.y, chunk_pos.y);
-        assert!(same_sign!(world_pos.z, chunk_pos.z), "Block and chunk must have the same sign. world_z = {}, chunk_z = {}", world_pos.z, chunk_pos.z);
+    pub fn index(&self) -> usize {
+        self.y * CHUNK_SIZE * CHUNK_SIZE + self.z * CHUNK_SIZE + self.x
+    }
+}
+
+impl From<BlockPos> for BlockInChunkPos {
+    fn from(world_pos: BlockPos) -> Self {
+        let chunk_pos = ChunkPos::from(world_pos);
 
         let in_chunk_pos = world_pos - chunk_pos.0;
         let in_chunk_pos: Vector3<usize> = in_chunk_pos.cast().expect("Block is outside this chunk.");
         
         Self::new(in_chunk_pos.x, in_chunk_pos.y, in_chunk_pos.z)
-    }
-
-    pub fn index(&self) -> usize {
-        self.y * CHUNK_SIZE * CHUNK_SIZE + self.z * CHUNK_SIZE + self.x
     }
 }
 
@@ -126,29 +119,24 @@ mod test {
 
     #[test]
     fn test_block_in_chunk_pos_from_world_pos() {
-        let chunk_pos = ChunkPos::new(0, 0, 0);
         let world_pos = BlockPos::new(5, 0, 0);
-        let block_in_chunk = BlockInChunkPos::from_world_and_chunk(world_pos, chunk_pos);
+        let block_in_chunk = BlockInChunkPos::from(world_pos);
         assert_eq!(block_in_chunk, BlockInChunkPos::new(5, 0, 0));
 
-        let chunk_pos = ChunkPos::new(16, 16, 16);
         let world_pos = BlockPos::new(20, 16, 16);
-        let block_in_chunk = BlockInChunkPos::from_world_and_chunk(world_pos, chunk_pos);
+        let block_in_chunk = BlockInChunkPos::from(world_pos);
         assert_eq!(block_in_chunk, BlockInChunkPos::new(4, 0, 0));
 
-        let chunk_pos = ChunkPos::new(-16, -16, -16);
         let world_pos = BlockPos::new(-1, -1, -1);
-        let block_in_chunk = BlockInChunkPos::from_world_and_chunk(world_pos, chunk_pos);
+        let block_in_chunk = BlockInChunkPos::from(world_pos);
         assert_eq!(block_in_chunk, BlockInChunkPos::new(15, 15, 15));
 
-        let chunk_pos = ChunkPos::new(-16, -16, -16);
         let world_pos = BlockPos::new(-5, -5, -5);
-        let block_in_chunk = BlockInChunkPos::from_world_and_chunk(world_pos, chunk_pos);
+        let block_in_chunk = BlockInChunkPos::from(world_pos);
         assert_eq!(block_in_chunk, BlockInChunkPos::new(11, 11, 11));
 
-        let chunk_pos = ChunkPos::new(-32, -16, -16);
         let world_pos = BlockPos::new(-17, -5, -5);
-        let block_in_chunk = BlockInChunkPos::from_world_and_chunk(world_pos, chunk_pos);
+        let block_in_chunk = BlockInChunkPos::from(world_pos);
         assert_eq!(block_in_chunk, BlockInChunkPos::new(15, 11, 11));
     }
 }
