@@ -1,6 +1,6 @@
 use super::block_storage::BlockStorage;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Chunk {
     block_storage: BlockStorage,
 }

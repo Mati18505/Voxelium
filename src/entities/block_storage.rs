@@ -1,3 +1,5 @@
+use crate::entities::CHUNK_SIZE;
+
 use super::{types::BlockID, BlockInChunkPos};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -18,5 +20,11 @@ impl BlockStorage {
 
     pub fn iter(&self) -> std::slice::Iter<BlockID> {
         self.block_types.iter()
+    }
+}
+
+impl Default for BlockStorage {
+    fn default() -> Self {
+        Self::new(vec![0; CHUNK_SIZE.pow(3)])
     }
 }
