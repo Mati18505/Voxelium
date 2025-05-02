@@ -57,14 +57,11 @@ impl Deref for BlockInChunkPos {
 
 impl From<BlockPos> for ChunkPos {
     fn from(block_pos: BlockPos) -> Self {
-        let pos = Vector3 {
-            x: (block_pos.x as f32 / CHUNK_SIZE as f32).floor() as isize * CHUNK_SIZE as isize,
-            y: (block_pos.y as f32 / CHUNK_SIZE as f32).floor() as isize * CHUNK_SIZE as isize,
-            z: (block_pos.z as f32 / CHUNK_SIZE as f32).floor() as isize * CHUNK_SIZE as isize,
-        };
-        ChunkPos {
-            0: pos
-        }
+        let x = (block_pos.x as f32 / CHUNK_SIZE as f32).floor() as isize * CHUNK_SIZE as isize;
+        let y = (block_pos.y as f32 / CHUNK_SIZE as f32).floor() as isize * CHUNK_SIZE as isize;
+        let z = (block_pos.z as f32 / CHUNK_SIZE as f32).floor() as isize * CHUNK_SIZE as isize;
+        
+        ChunkPos::new(x, y, z)
     }
 }
 
