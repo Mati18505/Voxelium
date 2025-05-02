@@ -10,7 +10,7 @@ pub type Direction = Vector3<isize>;
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
 pub struct ChunkPos(Vector3<isize>);
 
-#[derive(Debug, Clone, Copy, PartialEq)] 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct BlockInChunkPos(Vector3<usize>);
 
 impl ChunkPos {
@@ -39,13 +39,12 @@ impl Deref for BlockInChunkPos {
     }
 }
 
-
 impl From<BlockPos> for ChunkPos {
     fn from(block_pos: BlockPos) -> Self {
         let x = (block_pos.x as f32 / CHUNK_SIZE as f32).floor() as isize * CHUNK_SIZE as isize;
         let y = (block_pos.y as f32 / CHUNK_SIZE as f32).floor() as isize * CHUNK_SIZE as isize;
         let z = (block_pos.z as f32 / CHUNK_SIZE as f32).floor() as isize * CHUNK_SIZE as isize;
-        
+
         ChunkPos::new(x, y, z)
     }
 }
@@ -55,7 +54,7 @@ impl BlockInChunkPos {
         assert!(x < CHUNK_SIZE, "Block must be in chunk. x = {}", x);
         assert!(y < CHUNK_SIZE, "Block must be in chunk. y = {}", y);
         assert!(z < CHUNK_SIZE, "Block must be in chunk. z = {}", z);
-        
+
         BlockInChunkPos(Vector3::new(x, y, z))
     }
 
@@ -77,8 +76,7 @@ impl BlockInChunkPos {
         let y = self.y.checked_add_signed(dir.y);
         let z = self.z.checked_add_signed(dir.z);
 
-        if let (Some(x), Some(y), Some(z)) = (x, y, z)
-        {
+        if let (Some(x), Some(y), Some(z)) = (x, y, z) {
             if x < CHUNK_SIZE && y < CHUNK_SIZE && z < CHUNK_SIZE {
                 return Some(BlockInChunkPos::new(x, y, z));
             }
@@ -93,21 +91,29 @@ impl From<BlockPos> for BlockInChunkPos {
         let chunk_pos = ChunkPos::from(world_pos);
 
         let in_chunk_pos = world_pos - chunk_pos.0;
-        let in_chunk_pos: Vector3<usize> = in_chunk_pos.cast().expect("Block is outside this chunk.");
-        
+        let in_chunk_pos: Vector3<usize> =
+            in_chunk_pos.cast().expect("Block is outside this chunk.");
+
         Self::new(in_chunk_pos.x, in_chunk_pos.y, in_chunk_pos.z)
     }
 }
 
 #[derive(Clone, Copy, PartialEq)]
-pub enum BlockSide { Front, Back, Left, Right, Top, Bottom }
+pub enum BlockSide {
+    Front,
+    Back,
+    Left,
+    Right,
+    Top,
+    Bottom,
+}
 
 // Z=UP, right handed
 impl From<BlockSide> for Direction {
     fn from(side: BlockSide) -> Self {
         match side {
             BlockSide::Front => Direction::new(0, 1, 0),
-            BlockSide::Back => Direction::new(0,  -1, 0),
+            BlockSide::Back => Direction::new(0, -1, 0),
             BlockSide::Right => Direction::new(1, 0, 0),
             BlockSide::Left => Direction::new(-1, 0, 0),
             BlockSide::Top => Direction::new(0, 0, 1),
@@ -123,25 +129,25 @@ mod test {
     #[test]
     fn test_chunk_pos_from_block_pos() {
         let block_pos = BlockPos::new(0, 0, 0);
-        assert_eq!(ChunkPos::from(block_pos), ChunkPos::new(0, 0 ,0));
+        assert_eq!(ChunkPos::from(block_pos), ChunkPos::new(0, 0, 0));
 
         let block_pos = BlockPos::new(15, 15, 15);
-        assert_eq!(ChunkPos::from(block_pos), ChunkPos::new(0, 0 ,0));
+        assert_eq!(ChunkPos::from(block_pos), ChunkPos::new(0, 0, 0));
 
         let block_pos = BlockPos::new(16, 16, 16);
-        assert_eq!(ChunkPos::from(block_pos), ChunkPos::new(16, 16 ,16));
+        assert_eq!(ChunkPos::from(block_pos), ChunkPos::new(16, 16, 16));
     }
 
     #[test]
-    fn test_chunk_pos_from_block_pos_negative() { 
+    fn test_chunk_pos_from_block_pos_negative() {
         let block_pos = BlockPos::new(-1, -1, -1);
-        assert_eq!(ChunkPos::from(block_pos), ChunkPos::new(-16, -16 ,-16));
+        assert_eq!(ChunkPos::from(block_pos), ChunkPos::new(-16, -16, -16));
 
         let block_pos = BlockPos::new(-16, -16, -16);
-        assert_eq!(ChunkPos::from(block_pos), ChunkPos::new(-16, -16 ,-16));
+        assert_eq!(ChunkPos::from(block_pos), ChunkPos::new(-16, -16, -16));
 
         let block_pos = BlockPos::new(-17, -17, -17);
-        assert_eq!(ChunkPos::from(block_pos), ChunkPos::new(-32, -32 ,-32));
+        assert_eq!(ChunkPos::from(block_pos), ChunkPos::new(-32, -32, -32));
     }
 
     #[test]

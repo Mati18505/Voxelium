@@ -7,9 +7,7 @@ pub struct Chunk {
 
 impl Chunk {
     pub fn new(block_storage: BlockStorage) -> Self {
-        Chunk {
-            block_storage
-        }
+        Chunk { block_storage }
     }
 
     pub fn get_block_storage(&self) -> &BlockStorage {

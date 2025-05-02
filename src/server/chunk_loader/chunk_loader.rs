@@ -1,5 +1,5 @@
-use voxelium::entities::{Chunk, ChunkPos};
 use super::{generator::Noise, Generator, RandomNoise};
+use voxelium::entities::{Chunk, ChunkPos};
 
 pub struct ChunkLoader {
     noise_factory: Box<dyn NoiseFactory>,
@@ -7,9 +7,7 @@ pub struct ChunkLoader {
 
 impl ChunkLoader {
     pub fn new(noise_factory: Box<dyn NoiseFactory>) -> Self {
-        ChunkLoader { 
-            noise_factory
-        }
+        ChunkLoader { noise_factory }
     }
 
     pub fn load_chunk(&mut self, pos: ChunkPos) -> Chunk {
@@ -41,11 +39,10 @@ impl NoiseFactory for RandomNoiseFactory {
     }
 }
 
-
 #[cfg(test)]
 mod test {
-    use voxelium::entities::*;
     use super::*;
+    use voxelium::entities::*;
 
     struct TestNoise;
     impl Noise<isize> for TestNoise {

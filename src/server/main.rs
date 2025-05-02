@@ -6,7 +6,7 @@ mod chunk_loader;
 use chunk_loader::ChunkLoader;
 
 struct DebugChunk {
-    chunk: Chunk
+    chunk: Chunk,
 }
 
 impl DebugChunk {
@@ -30,7 +30,7 @@ impl fmt::Display for DebugChunk {
 
             counter += 1;
             counter %= COLS;
-        } 
+        }
 
         write!(f, "{}", out).unwrap();
         Ok(())
@@ -45,10 +45,9 @@ fn main() {
     world.add_chunk(pos, chunk_loader.load_chunk(pos));
 
     let result = world.get_chunk(pos);
-    
+
     match result {
         Some(chunk) => println!("{}", DebugChunk::new(chunk.clone())),
         None => println!("Chunk don't exist."),
     }
-    
 }

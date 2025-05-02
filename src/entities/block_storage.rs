@@ -12,7 +12,7 @@ impl BlockStorage {
         assert!(blocks.len() == CHUNK_SIZE.pow(3));
 
         BlockStorage {
-            block_types: blocks
+            block_types: blocks,
         }
     }
 

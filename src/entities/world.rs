@@ -1,6 +1,10 @@
 use std::{collections::HashMap, error::Error, fmt};
 
-use super::{chunk::Chunk, types::{BlockID, BlockPos, ChunkPos}, BlockInChunkPos};
+use super::{
+    chunk::Chunk,
+    types::{BlockID, BlockPos, ChunkPos},
+    BlockInChunkPos,
+};
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct World {
@@ -9,8 +13,8 @@ pub struct World {
 
 impl World {
     pub fn new() -> World {
-        World{
-            chunks: HashMap::new()
+        World {
+            chunks: HashMap::new(),
         }
     }
     pub fn add_chunk(&mut self, pos: ChunkPos, chunk: Chunk) {
@@ -27,13 +31,17 @@ impl World {
         let chunk_pos = ChunkPos::from(world_pos);
         let in_chunk_pos = BlockInChunkPos::from(world_pos);
 
-        Ok(self.get_chunk(chunk_pos).ok_or(GetBlockErr::OutsideOfWorld)?.get_block_storage().get_block(in_chunk_pos))
+        Ok(self
+            .get_chunk(chunk_pos)
+            .ok_or(GetBlockErr::OutsideOfWorld)?
+            .get_block_storage()
+            .get_block(in_chunk_pos))
     }
 }
 
 #[derive(Debug, PartialEq)]
 pub enum GetBlockErr {
-    OutsideOfWorld
+    OutsideOfWorld,
 }
 
 impl Error for GetBlockErr {}
@@ -48,7 +56,6 @@ impl fmt::Display for GetBlockErr {
     }
 }
 
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -56,8 +63,8 @@ mod test {
     #[test]
     fn test_get_block_outside_of_world() {
         let world = World::new();
-        
-        let pos = BlockPos::new(0,0,0);
+
+        let pos = BlockPos::new(0, 0, 0);
         assert_eq!(world.get_block(pos), Err(GetBlockErr::OutsideOfWorld));
     }
 
@@ -65,9 +72,9 @@ mod test {
     fn test_add_chunk_and_get_block() {
         let mut world = World::new();
 
-        world.add_chunk(ChunkPos::new(0,0,0), Chunk::default());
+        world.add_chunk(ChunkPos::new(0, 0, 0), Chunk::default());
 
-        let pos = BlockPos::new(0,0,0);
+        let pos = BlockPos::new(0, 0, 0);
         assert_eq!(world.get_block(pos), Ok(0));
     }
 }
