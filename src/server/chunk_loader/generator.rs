@@ -1,17 +1,19 @@
-use rand::Rng;
+use std::ops::Range;
+
 use voxelium::entities::{BlockID, BlockInChunkPos, BlockStorage, ChunkPos, CHUNK_SIZE};
 
-#[derive(Debug, Clone, PartialEq)]
 pub struct Generator {
     chunk_pos: ChunkPos,
     block_storage: BlockStorage,
+    noise: Box<dyn Noise<isize>>
 }
 
 impl Generator {
-    pub fn new(chunk_pos: ChunkPos) -> Self {
+    pub fn new(chunk_pos: ChunkPos, noise: Box<dyn Noise<isize>>) -> Self {
         Generator {
             chunk_pos,
             block_storage: BlockStorage::default(),
+            noise
         }
     }
 
@@ -25,12 +27,12 @@ impl Generator {
                 let world_x: isize = x as isize + self.chunk_pos.x;
                 let world_y: isize = y as isize + self.chunk_pos.y;
 
-                let generated_height = Self::generate_height(world_x, world_y);
+                let generated_height = self.generate_height(world_x, world_y);
 
                 for z in 0..CHUNK_SIZE
                 {
                     let world_z: isize = z as isize + self.chunk_pos.z;
-                    let block_id = Self::generate_voxel(world_z, generated_height);
+                    let block_id = self.generate_voxel(world_z, generated_height);
                     let pos = BlockInChunkPos::new(x, y, z);
 
                     blocks[pos.index()] = block_id;
@@ -47,12 +49,11 @@ impl Generator {
         self.block_storage
     }
 
-    fn generate_height(_world_x: isize, _world_y: isize) -> isize {
-        rand::thread_rng().gen_range(5..16);
-        0
+    fn generate_height(&mut self, _world_x: isize, _world_y: isize) -> isize {
+        self.noise.gen_range(5..16)
     }
 
-    fn generate_voxel(world_z: isize, generated_height: isize) -> BlockID
+    fn generate_voxel(&mut self, world_z: isize, generated_height: isize) -> BlockID
     {
     /*
         match world_z {
@@ -64,9 +65,13 @@ impl Generator {
         }
     */
         if world_z < generated_height {
-            rand::thread_rng().gen_range(1..=8)
+            self.noise.gen_range(1..9) as BlockID
         } else {
             0
         }
     }
+}
+
+pub trait Noise<T: Copy> {
+    fn gen_range(&mut self, range: Range<T>) -> T;
 }

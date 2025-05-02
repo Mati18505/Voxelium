@@ -52,6 +52,8 @@ fn main() {
 #[cfg(test)]
 mod test {
     use voxelium::entities::BlockPos;
+    use crate::chunk_loader::RandomNoise;
+
     use super::chunk_loader::Generator;
 
     use super::*;
@@ -60,7 +62,8 @@ mod test {
     fn test_adding_chunks() {
         let mut world = world::World::new();
         let pos = ChunkPos::new(0, 0, 0);
-        let blocks = Generator::new(pos).generate_terrain().get();
+        let noise = Box::new(RandomNoise::new());
+        let blocks = Generator::new(pos, noise).generate_terrain().get();
         let chunk = Chunk::new(blocks);
 
         world.add_chunk(pos, chunk.clone());
