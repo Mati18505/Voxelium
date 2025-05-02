@@ -20,6 +20,10 @@ impl BlockStorage {
         self.block_types[pos.index()]
     }
 
+    pub fn get_blocks(&self) -> &[BlockID] {
+        &self.block_types
+    }
+
     pub fn iter(&self) -> std::slice::Iter<BlockID> {
         self.block_types.iter()
     }
