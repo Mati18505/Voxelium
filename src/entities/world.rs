@@ -47,3 +47,27 @@ impl fmt::Display for GetBlockErr {
         write!(f, "{}", s)
     }
 }
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_get_block_outside_of_world() {
+        let world = World::new();
+        
+        let pos = BlockPos::new(0,0,0);
+        assert_eq!(world.get_block(pos), Err(GetBlockErr::OutsideOfWorld));
+    }
+
+    #[test]
+    fn test_add_chunk_and_get_block() {
+        let mut world = World::new();
+
+        world.add_chunk(ChunkPos::new(0,0,0), Chunk::default());
+
+        let pos = BlockPos::new(0,0,0);
+        assert_eq!(world.get_block(pos), Ok(0));
+    }
+}
