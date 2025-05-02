@@ -5,6 +5,7 @@ use cgmath::Vector3;
 use std::ops::Deref;
 
 pub type BlockPos = Vector3<isize>;
+pub type Direction = Vector3<isize>;
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
 pub struct ChunkPos(Vector3<isize>);
@@ -70,6 +71,21 @@ impl BlockInChunkPos {
 
         BlockInChunkPos::new(x, y, z)
     }
+
+    pub fn checked_add(&self, dir: Vector3<isize>) -> Option<Self> {
+        let x = self.x.checked_add_signed(dir.x);
+        let y = self.y.checked_add_signed(dir.y);
+        let z = self.z.checked_add_signed(dir.z);
+
+        if let (Some(x), Some(y), Some(z)) = (x, y, z)
+        {
+            if x < CHUNK_SIZE && y < CHUNK_SIZE && z < CHUNK_SIZE {
+                return Some(BlockInChunkPos::new(x, y, z));
+            }
+        }
+
+        None
+    }
 }
 
 impl From<BlockPos> for BlockInChunkPos {
@@ -87,15 +103,15 @@ impl From<BlockPos> for BlockInChunkPos {
 pub enum BlockSide { Front, Back, Left, Right, Top, Bottom }
 
 // Z=UP, right handed
-impl From<BlockSide> for Vector3<isize> {
+impl From<BlockSide> for Direction {
     fn from(side: BlockSide) -> Self {
         match side {
-            BlockSide::Front => Vector3::new(0, 1, 0),
-            BlockSide::Back => Vector3::new(0,  -1, 0),
-            BlockSide::Right => Vector3::new(1, 0, 0),
-            BlockSide::Left => Vector3::new(-1, 0, 0),
-            BlockSide::Top => Vector3::new(0, 0, 1),
-            BlockSide::Bottom => Vector3::new(0, 0, -1),
+            BlockSide::Front => Direction::new(0, 1, 0),
+            BlockSide::Back => Direction::new(0,  -1, 0),
+            BlockSide::Right => Direction::new(1, 0, 0),
+            BlockSide::Left => Direction::new(-1, 0, 0),
+            BlockSide::Top => Direction::new(0, 0, 1),
+            BlockSide::Bottom => Direction::new(0, 0, -1),
         }
     }
 }
@@ -183,5 +199,20 @@ mod test {
         let world_pos = BlockPos::new(-17, -5, -5);
         let block_in_chunk = BlockInChunkPos::from(world_pos);
         assert_eq!(block_in_chunk, BlockInChunkPos::new(15, 11, 11));
+    }
+
+    #[test]
+    fn test_checked_add() {
+        let pos = BlockInChunkPos::new(0, 0, 0);
+        let add = Vector3::new(-1, -1, -1);
+        assert_eq!(pos.checked_add(add), None);
+
+        let pos = BlockInChunkPos::new(15, 15, 15);
+        let add = Vector3::new(-1, -1, -1);
+        assert_eq!(pos.checked_add(add), Some(BlockInChunkPos::new(14, 14, 14)));
+
+        let pos = BlockInChunkPos::new(15, 15, 15);
+        let add = Vector3::new(1, 1, 1);
+        assert_eq!(pos.checked_add(add), None);
     }
 }
