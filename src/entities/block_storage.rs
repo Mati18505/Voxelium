@@ -3,31 +3,9 @@ use std::fmt;
 
 use super::{types::BlockID, BlockInChunkPos};
 
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BlockStorage {
     block_types: Vec<BlockID>,
-}
-
-impl fmt::Debug for BlockStorage {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        const COLS: i32 = 25;
-        let mut out: String = "".to_string();
-        let mut counter = 0;
-
-        for i in self.block_types.iter() {
-            if counter == 0 {
-                out += "\r\n";
-            }
-
-            out += &i.to_string();
-
-            counter += 1;
-            counter = counter % COLS;
-        } 
-
-        write!(f, "{}", out).unwrap();
-        Ok(())
-    }
 }
 
 impl BlockStorage {
@@ -39,5 +17,9 @@ impl BlockStorage {
 
     pub fn get_block(&self, pos: BlockInChunkPos) -> BlockID {
         self.block_types[pos.index()]
+    }
+
+    pub fn iter(&self) -> std::slice::Iter<BlockID> {
+        self.block_types.iter()
     }
 }
