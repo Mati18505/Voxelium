@@ -1,6 +1,6 @@
 use std::fmt;
 
-use voxelium::{entities::{world, Chunk, ChunkPos}};
+use voxelium::entities::{world, Chunk, ChunkPos};
 
 mod chunk_loader;
 

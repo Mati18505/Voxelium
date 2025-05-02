@@ -1,5 +1,5 @@
 use voxelium::entities::{Chunk, ChunkPos};
-use super::{Generator};
+use super::Generator;
 
 pub fn load_chunk(pos: ChunkPos) -> Chunk {
     generate_chunk(pos)
