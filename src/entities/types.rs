@@ -14,10 +14,9 @@ pub struct BlockInChunkPos(Vector3<usize>);
 
 impl ChunkPos {
     pub fn new(x: isize, y: isize, z: isize) -> Self {
-        // ChunkPos must be multiple of CHUNK_SIZE.
-        assert!(x % CHUNK_SIZE as isize == 0);
-        assert!(y % CHUNK_SIZE as isize == 0);
-        assert!(z % CHUNK_SIZE as isize == 0);
+        assert!(x % CHUNK_SIZE as isize == 0, "ChunkPos must be multiple of CHUNK_SIZE. x = {}", x);
+        assert!(y % CHUNK_SIZE as isize == 0, "ChunkPos must be multiple of CHUNK_SIZE. y = {}", y);
+        assert!(z % CHUNK_SIZE as isize == 0, "ChunkPos must be multiple of CHUNK_SIZE. z = {}", z);
 
         ChunkPos(Vector3::new(x, y, z))
     }
@@ -59,19 +58,17 @@ macro_rules! same_sign {
 
 impl BlockInChunkPos {
     pub fn new(x: usize, y: usize, z: usize) -> Self {
-        // Block must be in chunk.
-        assert!(x < CHUNK_SIZE);
-        assert!(y < CHUNK_SIZE);
-        assert!(z < CHUNK_SIZE);
+        assert!(x < CHUNK_SIZE, "Block must be in chunk. x = {}", x);
+        assert!(y < CHUNK_SIZE, "Block must be in chunk. y = {}", y);
+        assert!(z < CHUNK_SIZE, "Block must be in chunk. z = {}", z);
         
         BlockInChunkPos(Vector3::new(x, y, z))
     }
 
     pub fn from_world_and_chunk(world_pos: BlockPos, chunk_pos: ChunkPos) -> Self {
-        // Block and chunk have the same sign.
-        assert!(same_sign!(world_pos.x, chunk_pos.x));
-        assert!(same_sign!(world_pos.y, chunk_pos.y));
-        assert!(same_sign!(world_pos.z, chunk_pos.z));
+        assert!(same_sign!(world_pos.x, chunk_pos.x), "Block and chunk must have the same sign. world_x = {}, chunk_x = {}", world_pos.x, chunk_pos.x);
+        assert!(same_sign!(world_pos.y, chunk_pos.y), "Block and chunk must have the same sign. world_y = {}, chunk_y = {}", world_pos.y, chunk_pos.y);
+        assert!(same_sign!(world_pos.z, chunk_pos.z), "Block and chunk must have the same sign. world_z = {}, chunk_z = {}", world_pos.z, chunk_pos.z);
 
         let in_chunk_pos = world_pos - chunk_pos.0;
         let in_chunk_pos: Vector3<usize> = in_chunk_pos.cast().expect("Block is outside this chunk.");
