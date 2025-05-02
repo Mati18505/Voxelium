@@ -1,7 +1,6 @@
 use crate::entities::{BlockID, BlockInChunkPos, BlockStorage, ChunkPos, CHUNK_SIZE};
 
 use rand::Rng;
-use cgmath::Vector3;
 
 pub fn generate(chunk_pos: ChunkPos) -> BlockStorage {
     let mut chunk_blocks = vec![0; CHUNK_SIZE.pow(3)];
@@ -29,7 +28,7 @@ pub fn generate(chunk_pos: ChunkPos) -> BlockStorage {
     BlockStorage::new(chunk_blocks)
 }
 
-fn generate_height(world_x: isize, world_y: isize) -> isize {
+fn generate_height(_world_x: isize, _world_y: isize) -> isize {
     let mut rng = rand::thread_rng();
     return rng.gen_range(5..16);
 }

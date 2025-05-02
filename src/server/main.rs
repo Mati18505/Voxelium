@@ -1,7 +1,6 @@
 use std::fmt;
 
-use cgmath::Vector3;
-use voxelium::{chunk_loader, entities::{world, BlockPos, Chunk, ChunkPos}, terrain_generator};
+use voxelium::{chunk_loader, entities::{world, Chunk, ChunkPos}};
 
 struct DebugChunk {
     chunk: Chunk
@@ -27,7 +26,7 @@ impl fmt::Display for DebugChunk {
             out += &i.to_string();
 
             counter += 1;
-            counter = counter % COLS;
+            counter %= COLS;
         } 
 
         write!(f, "{}", out).unwrap();
@@ -48,17 +47,24 @@ fn main() {
     
 }
 
-#[test]
-fn test_adding_chunks() {
-    let mut world = world::World::new();
-    let pos = ChunkPos::new(0, 0, 0);
-    let blocks = terrain_generator::generate(pos);
-    let chunk = Chunk::new(blocks);
+#[cfg(test)]
+mod test {
+    use voxelium::{entities::BlockPos, terrain_generator};
 
-    world.add_chunk(pos, chunk.clone());
-    let world_pos = BlockPos::new(0, 0, 15);
-    world.get_block(world_pos).unwrap();
+    use super::*;
 
-    let chunk2 = world.get_chunk(pos).expect("cannot get chunk from world");
-    assert_eq!(&chunk, chunk2);
+    #[test]
+    fn test_adding_chunks() {
+        let mut world = world::World::new();
+        let pos = ChunkPos::new(0, 0, 0);
+        let blocks = terrain_generator::generate(pos);
+        let chunk = Chunk::new(blocks);
+
+        world.add_chunk(pos, chunk.clone());
+        let world_pos = BlockPos::new(0, 0, 15);
+        world.get_block(world_pos).unwrap();
+
+        let chunk2 = world.get_chunk(pos).expect("cannot get chunk from world");
+        assert_eq!(&chunk, chunk2);
+    }
 }

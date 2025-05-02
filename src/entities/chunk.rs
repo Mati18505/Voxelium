@@ -13,6 +13,6 @@ impl Chunk {
     }
 
     pub fn get_block_storage(&self) -> &BlockStorage {
-        return &self.block_storage;
+        &self.block_storage
     }
 }
