@@ -5,13 +5,30 @@ use cgmath::Vector3;
 use std::ops::Deref;
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
-pub struct ChunkPos(pub Vector3<isize>);
+pub struct ChunkPos(Vector3<isize>);
 
 #[derive(Debug, Clone, Copy)] 
-pub struct BlockPos(pub Vector3<isize>);
+pub struct BlockPos(Vector3<isize>);
 
 #[derive(Debug, Clone, Copy)] 
-pub struct BlockInChunkPos(pub Vector3<usize>);
+pub struct BlockInChunkPos(Vector3<usize>);
+
+impl ChunkPos {
+    pub fn new(pos: Vector3<isize>) -> Self {
+        // ChunkPos must be multiple of CHUNK_SIZE.
+        assert!(pos.x % CHUNK_SIZE as isize == 0);
+        assert!(pos.y % CHUNK_SIZE as isize == 0);
+        assert!(pos.z % CHUNK_SIZE as isize == 0);
+
+        ChunkPos(pos)
+    }
+}
+
+impl BlockPos {
+    pub fn new(pos: Vector3<isize>) -> Self {
+        BlockPos(pos)
+    }
+}
 
 impl Deref for ChunkPos {
     type Target = Vector3<isize>;
@@ -59,7 +76,16 @@ macro_rules! same_sign {
 }
 
 impl BlockInChunkPos {
-    pub fn new(world_pos: BlockPos, chunk_pos: ChunkPos) -> Self {
+    pub fn new(in_chunk_pos: Vector3<usize>) -> Self {
+        // Block must be in chunk.
+        assert!(in_chunk_pos.x < CHUNK_SIZE);
+        assert!(in_chunk_pos.y < CHUNK_SIZE);
+        assert!(in_chunk_pos.z < CHUNK_SIZE);
+        
+        BlockInChunkPos(in_chunk_pos)
+    }
+
+    pub fn from_world_and_chunk(world_pos: BlockPos, chunk_pos: ChunkPos) -> Self {
         // Block and chunk have the same sign.
         assert!(same_sign!(world_pos.x, chunk_pos.x));
         assert!(same_sign!(world_pos.y, chunk_pos.y));
@@ -68,12 +94,7 @@ impl BlockInChunkPos {
         let in_chunk_pos = world_pos.0 - chunk_pos.0;
         let in_chunk_pos: Vector3<usize> = in_chunk_pos.cast().unwrap();
         
-        // Block must be in chunk.
-        assert!(in_chunk_pos.x < CHUNK_SIZE);
-        assert!(in_chunk_pos.y < CHUNK_SIZE);
-        assert!(in_chunk_pos.z < CHUNK_SIZE);
-
-        BlockInChunkPos(in_chunk_pos)
+        Self::new(in_chunk_pos)
     }
 
     pub fn index(&self) -> usize {

@@ -25,7 +25,7 @@ impl World {
         }
 
         let chunk_pos = ChunkPos::from(world_pos);
-        let in_chunk_pos = BlockInChunkPos::new(world_pos, chunk_pos);
+        let in_chunk_pos = BlockInChunkPos::from_world_and_chunk(world_pos, chunk_pos);
 
         Ok(self.get_chunk(chunk_pos).ok_or("Block outside of the world")?.get_block_storage().get_block(in_chunk_pos))
     }
