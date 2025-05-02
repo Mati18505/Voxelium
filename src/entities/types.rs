@@ -38,8 +38,8 @@ impl Deref for BlockInChunkPos {
 }
 
 
-impl From<&BlockPos> for ChunkPos {
-    fn from(block_pos: &BlockPos) -> Self {
+impl From<BlockPos> for ChunkPos {
+    fn from(block_pos: BlockPos) -> Self {
         let pos = Vector3 {
             x: (block_pos.x as f32 / CHUNK_SIZE as f32).floor() as isize * CHUNK_SIZE as isize,
             y: (block_pos.y as f32 / CHUNK_SIZE as f32).floor() as isize * CHUNK_SIZE as isize,
@@ -59,7 +59,7 @@ macro_rules! same_sign {
 }
 
 impl BlockInChunkPos {
-    pub fn new(world_pos: &BlockPos, chunk_pos: &ChunkPos) -> Self {
+    pub fn new(world_pos: BlockPos, chunk_pos: ChunkPos) -> Self {
         // Block and chunk have the same sign.
         assert!(same_sign!(world_pos.x, chunk_pos.x));
         assert!(same_sign!(world_pos.y, chunk_pos.y));

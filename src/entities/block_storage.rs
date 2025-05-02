@@ -1,6 +1,3 @@
-use cgmath::Vector3;
-use std::fmt;
-
 use super::{types::BlockID, BlockInChunkPos};
 
 #[derive(Debug, Clone, PartialEq)]

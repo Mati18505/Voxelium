@@ -3,7 +3,7 @@ use crate::entities::{BlockID, BlockInChunkPos, BlockStorage, ChunkPos, CHUNK_SI
 use rand::Rng;
 use cgmath::Vector3;
 
-pub fn generate(chunk_pos: &ChunkPos) -> BlockStorage {
+pub fn generate(chunk_pos: ChunkPos) -> BlockStorage {
     let mut chunk_blocks = vec![0; CHUNK_SIZE.pow(3)];
 
     for y in 0..CHUNK_SIZE
