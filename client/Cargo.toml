@@ -7,3 +7,8 @@ cgmath = "0.18.0"
 bevy = "0.16.0"
 bevy_flycam = { git = 'https://github.com/kristoff3r/bevy_flycam/' }
 shared = { path = "../shared" }
+
+[profile.dev]
+opt-level = 0
+incremental = true
+debug = true
