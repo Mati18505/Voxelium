@@ -9,6 +9,12 @@ pub struct TextureDictionary {
 }
 
 impl TextureDictionary {
+    pub fn new() -> TextureDictionary { TextureDictionary { texture_index_dictionary: HashMap::default() }}
+
+    pub fn set_texture_index(&mut self, name: TextureName, index: TextureIndex) {
+        self.texture_index_dictionary.insert(name, index);
+    }
+    
     pub fn get_texture_index_from_name(&self, name: &str) -> TextureIndex {
         *self
             .texture_index_dictionary
