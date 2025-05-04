@@ -2,7 +2,7 @@ use std::{alloc::LayoutError, collections::HashMap, rc::Rc};
 
 use bevy::render::view::Layer;
 use cgmath::{ElementWise, Vector3};
-use voxelium::entities::{
+use shared::entities::{
     BlockID, BlockInChunkPos, BlockSide, BlockStorage, Chunk, Direction, CHUNK_SIZE,
 };
 

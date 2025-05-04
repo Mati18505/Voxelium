@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use super::MeshBlockType;
-use voxelium::entities::BlockID;
+use shared::entities::BlockID;
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct BlockTypeStorage {

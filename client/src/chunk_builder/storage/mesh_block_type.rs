@@ -1,4 +1,4 @@
-use voxelium::entities::{BlockSide, BlockType};
+use shared::entities::{BlockSide, BlockType};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct MeshBlockType {
