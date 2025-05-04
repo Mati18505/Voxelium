@@ -15,10 +15,7 @@ impl TextureDictionary {
         self.texture_index_dictionary.insert(name, index);
     }
     
-    pub fn get_texture_index_from_name(&self, name: &str) -> TextureIndex {
-        *self
-            .texture_index_dictionary
-            .get(name)
-            .expect(&format!("No texture with name {}", name))
+    pub fn get_texture_index_from_name(&self, name: &str) -> Option<TextureIndex> {
+        self.texture_index_dictionary.get(name).map(|e| e.clone())
     }
 }

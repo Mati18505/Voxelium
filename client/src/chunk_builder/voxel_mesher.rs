@@ -229,9 +229,20 @@ impl VoxelMesher {
 
         for _ in 0..4 {
             let texture_name = block_type.get_block_side_texture(side);
-            let texture_index = self
+            let result = self
                 .texture_dictionary
                 .get_texture_index_from_name(texture_name);
+
+            let texture_index: u32 = match result {
+                Some(index) => index,
+                None => {
+                    eprintln!(
+                        "Voxel mesher encountered unknown texture name. texture_name = {}",
+                        texture_name
+                    );
+                    0
+                }
+            };
 
             mesh.texture_indexes.push(texture_index);
         }
