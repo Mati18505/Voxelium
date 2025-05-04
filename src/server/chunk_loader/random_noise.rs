@@ -11,13 +11,13 @@ pub struct RandomNoise {
 impl RandomNoise {
     pub fn new() -> Self {
         RandomNoise {
-            engine: rand::thread_rng(),
+            engine: rand::rng(),
         }
     }
 }
 
-impl Noise<isize> for RandomNoise {
-    fn gen_range(&mut self, range: Range<isize>) -> isize {
-        self.engine.gen_range(range)
+impl Noise<i64> for RandomNoise {
+    fn gen_range(&mut self, range: Range<i64>) -> i64 {
+        self.engine.random_range(range)
     }
 }

@@ -29,12 +29,12 @@ impl Default for ChunkLoader {
 }
 
 pub trait NoiseFactory {
-    fn create_noise(&self) -> Box<dyn Noise<isize>>;
+    fn create_noise(&self) -> Box<dyn Noise<i64>>;
 }
 
 pub struct RandomNoiseFactory;
 impl NoiseFactory for RandomNoiseFactory {
-    fn create_noise(&self) -> Box<dyn Noise<isize>> {
+    fn create_noise(&self) -> Box<dyn Noise<i64>> {
         Box::new(RandomNoise::new())
     }
 }
@@ -45,15 +45,15 @@ mod test {
     use voxelium::entities::*;
 
     struct TestNoise;
-    impl Noise<isize> for TestNoise {
-        fn gen_range(&mut self, _range: std::ops::Range<isize>) -> isize {
+    impl Noise<i64> for TestNoise {
+        fn gen_range(&mut self, _range: std::ops::Range<i64>) -> i64 {
             16
         }
     }
 
     struct TestNoiseFactory;
     impl NoiseFactory for TestNoiseFactory {
-        fn create_noise(&self) -> Box<dyn Noise<isize>> {
+        fn create_noise(&self) -> Box<dyn Noise<i64>> {
             return Box::new(TestNoise);
         }
     }
