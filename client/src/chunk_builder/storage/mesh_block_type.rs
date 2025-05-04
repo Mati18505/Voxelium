@@ -1,5 +1,7 @@
 use shared::entities::{BlockSide, BlockType};
 
+use crate::chunk_builder::MaterialName;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct MeshBlockType {
     pub block_type: BlockType,
@@ -35,5 +37,49 @@ impl Default for MeshBlockType {
             side_texture: "default".to_owned(),
             bottom_texture: None,
         }
+    }
+}
+
+#[derive(Default)]
+pub struct MeshBlockTypeBuilder {
+    block_type: MeshBlockType
+}
+
+impl MeshBlockTypeBuilder {
+    pub fn new(block_type: BlockType) -> MeshBlockTypeBuilder {
+        let mut mesh_block_type = MeshBlockType::default();
+        mesh_block_type.block_type = block_type;
+
+        MeshBlockTypeBuilder { block_type: mesh_block_type, }
+    }
+
+    pub fn visible(mut self, visible: bool) -> Self {
+        self.block_type.is_visible = visible;
+        self
+    }
+
+    pub fn translucent(mut self, translucent: bool) -> Self {
+        self.block_type.is_translucent = translucent;
+        self
+    }
+
+    pub fn material(mut self, material_name: MaterialName) -> Self {
+        self.block_type.material_name = material_name;
+        self
+    }
+
+    pub fn texture(mut self, block_side: BlockSide, texture_name: &str) -> Self {
+        use BlockSide::*;
+
+        match block_side {
+            Back | Front | Left | Right => self.block_type.side_texture = texture_name.to_owned(),
+            Top => self.block_type.top_texture = Some(texture_name.to_owned()),
+            Bottom => self.block_type.bottom_texture = Some(texture_name.to_owned()),
+        }
+        self
+    }
+
+    pub fn build(self) -> MeshBlockType {
+        self.block_type
     }
 }
