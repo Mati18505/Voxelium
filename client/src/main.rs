@@ -58,5 +58,6 @@ fn build_chunk(chunk: &Chunk) {
     block_type_storage.set_block_type(1, dirt);
 
     let texture_dictionary = Rc::new(TextureDictionary::new());
-    VoxelMesher::new(chunk.get_block_storage().clone(), Rc::new(block_type_storage), texture_dictionary);
+    let mut voxel_mesher = VoxelMesher::new(chunk.get_block_storage().clone(), Rc::new(block_type_storage), texture_dictionary);
+    voxel_mesher.create_mesh();
 }

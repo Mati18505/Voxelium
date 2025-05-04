@@ -29,7 +29,7 @@ impl VoxelMesher {
         }
     }
 
-    pub fn create_mesh(&mut self) -> ChunkMesh {
+    pub fn create_mesh(&mut self) -> &ChunkMesh {
         let mut chunk_mesh = ChunkMesh::default();
 
         for (index, block_id) in self.block_storage.iter().enumerate() {
@@ -59,7 +59,12 @@ impl VoxelMesher {
             }
         }
 
-        chunk_mesh
+        self.chunk_mesh = chunk_mesh;
+        &self.chunk_mesh
+    }
+
+    fn get_created_mesh(&self) -> &ChunkMesh {
+        &self.chunk_mesh
     }
 
     fn create_block(&self, block_type: &MeshBlockType, pos: BlockInChunkPos, mesh: &mut LayerMesh) {
