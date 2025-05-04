@@ -6,8 +6,6 @@ use voxelium::entities::{
     BlockID, BlockInChunkPos, BlockSide, BlockStorage, Chunk, Direction, CHUNK_SIZE,
 };
 
-use crate::block_type_storage;
-
 use super::{BlockTypeStorage, ChunkMesh, LayerMesh, MeshBlockType, TextureDictionary};
 
 pub struct VoxelMesher {
