@@ -1,6 +1,6 @@
 use std::ops::Range;
 
-use shared::entities::{BlockID, BlockInChunkPos, BlockStorage, ChunkPos, CHUNK_SIZE};
+use crate::entities::{BlockID, BlockInChunkPos, BlockStorage, ChunkPos, CHUNK_SIZE};
 
 pub struct Generator {
     chunk_pos: ChunkPos,

@@ -1,5 +1,5 @@
 use super::{generator::Noise, Generator, RandomNoise};
-use shared::entities::{Chunk, ChunkPos};
+use crate::entities::{Chunk, ChunkPos};
 
 pub struct ChunkLoader {
     noise_factory: Box<dyn NoiseFactory>,
@@ -42,7 +42,7 @@ impl NoiseFactory for RandomNoiseFactory {
 #[cfg(test)]
 mod test {
     use super::*;
-    use shared::entities::*;
+    use crate::entities::*;
 
     struct TestNoise;
     impl Noise<i64> for TestNoise {

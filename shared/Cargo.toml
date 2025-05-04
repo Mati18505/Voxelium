@@ -4,3 +4,4 @@ edition = "2021"
 
 [dependencies]
 cgmath = "0.18.0"
+rand = "0.9.1"
