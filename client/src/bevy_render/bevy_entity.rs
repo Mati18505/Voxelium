@@ -19,7 +19,7 @@ impl BevyChunkEntity {
         for (material_name, mesh) in mesh.layers {
             let mesh_handle = meshes.add(mesh);
             let material_handle = materials.add(StandardMaterial {
-                base_color: Color::srgb(255.0, 0.0, 0.0),
+                base_color: Color::srgb(0.396, 0.263, 0.129),
                 ..default()
             });
             let entity = commands.spawn((

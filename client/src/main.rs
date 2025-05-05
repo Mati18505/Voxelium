@@ -32,6 +32,13 @@ fn init_level(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     commands.spawn((
+        Mesh3d(meshes.add(Plane3d::new(Vec3::Y, Vec2::splat(5.0)))),
+        MeshMaterial3d(materials.add(Color::srgb(0.3, 0.5, 0.3))),
+        Transform::from_translation(Vec3::new(0.0, -0.5, 0.0)),
+        GlobalTransform::default(),
+    ));
+
+    commands.spawn((
         PointLight { ..default() },
         Transform::from_xyz(10.0, 20.0, 4.0),
         GlobalTransform::default(),
