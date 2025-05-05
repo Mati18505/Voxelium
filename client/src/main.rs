@@ -39,8 +39,8 @@ fn init_level(
     ));
 
     commands.spawn((
-        PointLight { ..default() },
-        Transform::from_xyz(10.0, 20.0, 4.0),
+        DirectionalLight { ..default() },
+        Transform::from_xyz(11.0, 20.0, 4.0).looking_at(Vec3::ZERO, Vec3::Y),
         GlobalTransform::default(),
     ));
 
