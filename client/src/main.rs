@@ -1,9 +1,7 @@
 use std::rc::Rc;
 
 use bevy::{
-    app::{App, Startup},
-    prelude::*,
-    DefaultPlugins,
+    app::{App, Startup}, color::palettes::css::*, pbr::wireframe::{WireframeConfig, WireframePlugin}, prelude::*, render::{settings::{RenderCreation, WgpuFeatures, WgpuSettings}, RenderPlugin}, DefaultPlugins
 };
 use bevy_render::{BevyChunkEntity, BevyChunkMesh};
 use controller::ControllerPlugin;
@@ -18,9 +16,22 @@ mod bevy_render;
 fn main() {
     App::new()
         .add_plugins((
-            DefaultPlugins.set(ImagePlugin::default_nearest()),
+            DefaultPlugins
+            .set(ImagePlugin::default_nearest())
+            .set(RenderPlugin {
+                render_creation: RenderCreation::Automatic(WgpuSettings {
+                    features: WgpuFeatures::POLYGON_MODE_LINE,
+                    ..default()
+                }),
+                ..default()
+            }),
+            WireframePlugin::default(),
             ControllerPlugin,
         ))
+        .insert_resource(WireframeConfig {
+            global: true,
+            default_color: WHITE.into(),
+        })
         .add_systems(Startup, init_level)
         .run();
 }
