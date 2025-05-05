@@ -5,6 +5,7 @@ use bevy::{
     prelude::*,
     DefaultPlugins,
 };
+use bevy_render::BevyChunkMesh;
 use controller::ControllerPlugin;
 use chunk_builder::*;
 use shared::entities::{world, BlockSide, BlockType, Chunk, ChunkPos};
@@ -12,6 +13,7 @@ use shared::chunk_loader::*;
 
 mod chunk_builder;
 mod controller;
+mod bevy_render;
 
 fn main() {
     App::new()
@@ -59,5 +61,7 @@ fn build_chunk(chunk: &Chunk) {
 
     let texture_dictionary = Rc::new(TextureDictionary::new());
     let mut voxel_mesher = VoxelMesher::new(chunk.get_block_storage().clone(), Rc::new(block_type_storage), texture_dictionary);
-    voxel_mesher.create_mesh();
+    let chunk_mesh = voxel_mesher.create_mesh();
+
+    let bevy_mesh = BevyChunkMesh::from(chunk_mesh.clone());
 }
