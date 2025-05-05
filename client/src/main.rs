@@ -94,7 +94,12 @@ fn build_chunk(chunk: &Chunk) -> BevyChunkMesh {
         Rc::new(block_type_storage),
         texture_dictionary,
     );
-    let chunk_mesh = voxel_mesher.create_mesh();
 
-    BevyChunkMesh::from(chunk_mesh.clone())
+    let chunk_mesh = voxel_mesher.create_mesh().clone();
+
+    if let Some(err) = voxel_mesher.get_last_err() {
+        eprintln!("{}", err);
+    }
+
+    BevyChunkMesh::from(chunk_mesh)
 }
