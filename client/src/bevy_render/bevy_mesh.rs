@@ -27,11 +27,15 @@ impl From<ChunkMesh> for BevyChunkMesh {
                 .iter()
                 .map(|e| *e as u32)
                 .collect();
+            let texture_indexes: Vec<[f32; 2]> = layer.texture_indexes
+                .iter()
+                .map(|e| [*e as f32, 0.0])
+                .collect();
 
             let mesh: Mesh = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::RENDER_WORLD)
             .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, layer.vertices)
             .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, layer.uvs)
-            .with_inserted_attribute(Mesh::ATTRIBUTE_UV_1, layer.texture_indexes)
+            .with_inserted_attribute(Mesh::ATTRIBUTE_UV_1, texture_indexes)
             .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, normals)
             .with_inserted_indices(Indices::U32(triangles));
 
