@@ -1,7 +1,6 @@
-use std::{alloc::LayoutError, collections::HashMap, rc::Rc};
+use std::rc::Rc;
 
-use bevy::render::view::Layer;
-use cgmath::{ElementWise, Vector3};
+use cgmath::Vector3;
 use shared::entities::{
     BlockID, BlockInChunkPos, BlockSide, BlockStorage, Chunk, Direction, CHUNK_SIZE,
 };
