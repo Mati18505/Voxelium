@@ -4,7 +4,7 @@ edition = "2021"
 
 [dependencies]
 cgmath = "0.18.0"
-bevy = "0.16.0"
+bevy = { version = "0.16.0", features = ["dynamic_linking"] }
 bevy_flycam = { git = 'https://github.com/kristoff3r/bevy_flycam/' }
 shared = { path = "../shared" }
 
