@@ -1,0 +1,35 @@
+use bevy::{asset::{Assets, Handle}, color::Color, ecs::{entity::Entity, system::{Commands, ResMut}}, pbr::{MeshMaterial3d, StandardMaterial}, render::mesh::{Mesh, Mesh3d}, utils::default};
+
+use super::BevyChunkMesh;
+
+#[derive(Debug, Default, Clone)]
+pub struct BevyChunkEntity {
+    entities: Vec<Entity>,
+}
+
+impl BevyChunkEntity {
+    pub fn new(
+        mesh: BevyChunkMesh,
+        mut commands: Commands, 
+        mut meshes: ResMut<Assets<Mesh>>, 
+        mut materials: ResMut<Assets<StandardMaterial>>
+    ) -> Self {
+        let mut render_resource = BevyChunkEntity::default();
+
+        for (material_name, mesh) in mesh.layers {
+            let mesh_handle = meshes.add(mesh);
+            let material_handle = materials.add(StandardMaterial {
+                base_color: Color::srgb(255.0, 0.0, 0.0),
+                ..default()
+            });
+            let entity = commands.spawn((
+                Mesh3d(mesh_handle),
+                MeshMaterial3d(material_handle)
+            )).id();
+
+            render_resource.entities.push(entity);
+        }
+
+        render_resource
+    }
+}

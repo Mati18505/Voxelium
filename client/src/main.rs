@@ -5,7 +5,7 @@ use bevy::{
     prelude::*,
     DefaultPlugins,
 };
-use bevy_render::BevyChunkMesh;
+use bevy_render::{BevyChunkEntity, BevyChunkMesh};
 use controller::ControllerPlugin;
 use chunk_builder::*;
 use shared::entities::{world, BlockSide, BlockType, Chunk, ChunkPos};
@@ -43,13 +43,13 @@ fn init_level(
 
     world.add_chunk(pos, chunk_loader.load_chunk(pos));
 
-    match world.get_chunk(pos) {
-        Some(chunk) => build_chunk(chunk),
-        None => (),
+    if let Some(chunk) = world.get_chunk(pos) {
+        let mesh: BevyChunkMesh = build_chunk(chunk);
+        let chunk_entity = BevyChunkEntity::new(mesh, commands, meshes, materials);
     }
 }
 
-fn build_chunk(chunk: &Chunk) {
+fn build_chunk(chunk: &Chunk) -> BevyChunkMesh {
     let air = BlockType::new("air", false);
     let air = MeshBlockTypeBuilder::new(air).build();
     let dirt = BlockType::new("dirt", true);
@@ -63,5 +63,5 @@ fn build_chunk(chunk: &Chunk) {
     let mut voxel_mesher = VoxelMesher::new(chunk.get_block_storage().clone(), Rc::new(block_type_storage), texture_dictionary);
     let chunk_mesh = voxel_mesher.create_mesh();
 
-    let bevy_mesh = BevyChunkMesh::from(chunk_mesh.clone());
+    BevyChunkMesh::from(chunk_mesh.clone())
 }
