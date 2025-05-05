@@ -4,3 +4,4 @@ members = [
     "client",
     "shared",
 ]
+resolver = "2"
