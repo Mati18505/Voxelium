@@ -1,4 +1,4 @@
-use bevy::{asset::{Assets, Handle}, color::Color, ecs::{entity::Entity, system::{Commands, ResMut}}, pbr::{MeshMaterial3d, StandardMaterial}, render::mesh::{Mesh, Mesh3d}, utils::default};
+use bevy::{asset::{Assets, Handle}, color::Color, ecs::{entity::Entity, system::{Commands, ResMut}}, math::{Quat, Vec3}, pbr::{MeshMaterial3d, StandardMaterial}, render::mesh::{Mesh, Mesh3d}, transform::components::Transform, utils::default};
 
 use super::BevyChunkMesh;
 
@@ -9,14 +9,14 @@ pub struct BevyChunkEntity {
 
 impl BevyChunkEntity {
     pub fn new(
-        mesh: BevyChunkMesh,
+        chunk_mesh: BevyChunkMesh,
         mut commands: Commands, 
         mut meshes: ResMut<Assets<Mesh>>, 
         mut materials: ResMut<Assets<StandardMaterial>>
     ) -> Self {
         let mut render_resource = BevyChunkEntity::default();
 
-        for (material_name, mesh) in mesh.layers {
+        for (material_name, mesh) in chunk_mesh.layers {
             let mesh_handle = meshes.add(mesh);
             let material_handle = materials.add(StandardMaterial {
                 base_color: Color::srgb(0.396, 0.263, 0.129),
@@ -24,7 +24,8 @@ impl BevyChunkEntity {
             });
             let entity = commands.spawn((
                 Mesh3d(mesh_handle),
-                MeshMaterial3d(material_handle)
+                MeshMaterial3d(material_handle),
+                chunk_mesh.transform
             )).id();
 
             render_resource.entities.push(entity);

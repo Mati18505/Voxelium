@@ -19,7 +19,7 @@ fn setup_controller(mut commands: Commands) {
     commands.spawn((
         Camera3d::default(),
         FlyCam,
-        Transform::from_xyz(-2.0, 5.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+        Transform::from_xyz(30.0, 25.0, 0.0).looking_at(Vec3::ZERO, Vec3::Y),
         Controller::default(),
     ));
 }

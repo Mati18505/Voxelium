@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
-use bevy::{asset::RenderAssetUsages, render::mesh::{Indices, Mesh, PrimitiveTopology}};
+use bevy::{asset::RenderAssetUsages, math::{Quat, Vec3}, render::mesh::{Indices, Mesh, PrimitiveTopology}, transform::components::Transform};
 
 use crate::chunk_builder::{ChunkMesh, MaterialName};
 
 #[derive(Debug, Default, Clone)]
 pub struct BevyChunkMesh {
     pub layers: HashMap<MaterialName, Mesh>,
+    pub transform: Transform,
 }
 
 impl From<ChunkMesh> for BevyChunkMesh {
@@ -42,6 +43,7 @@ impl From<ChunkMesh> for BevyChunkMesh {
             bevy_mesh.layers.insert(material_name, mesh);
         }
 
+        bevy_mesh.transform = Transform::from_rotation(Quat::from_axis_angle(Vec3::X, f32::to_radians(-90.0)));
         bevy_mesh
     }
 }
