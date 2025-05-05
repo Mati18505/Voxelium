@@ -9,7 +9,11 @@ pub struct BlockTypeStorage {
 }
 
 impl BlockTypeStorage {
-    pub fn new() -> BlockTypeStorage { BlockTypeStorage { block_types: HashMap::default() }}
+    pub fn new() -> BlockTypeStorage {
+        BlockTypeStorage {
+            block_types: HashMap::default(),
+        }
+    }
 
     pub fn set_block_type(&mut self, block_id: BlockID, block_type: MeshBlockType) {
         self.block_types.insert(block_id, block_type);

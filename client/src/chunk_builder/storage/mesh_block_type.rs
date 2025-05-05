@@ -42,7 +42,7 @@ impl Default for MeshBlockType {
 
 #[derive(Default)]
 pub struct MeshBlockTypeBuilder {
-    block_type: MeshBlockType
+    block_type: MeshBlockType,
 }
 
 impl MeshBlockTypeBuilder {
@@ -50,7 +50,9 @@ impl MeshBlockTypeBuilder {
         let mut mesh_block_type = MeshBlockType::default();
         mesh_block_type.block_type = block_type;
 
-        MeshBlockTypeBuilder { block_type: mesh_block_type, }
+        MeshBlockTypeBuilder {
+            block_type: mesh_block_type,
+        }
     }
 
     pub fn visible(mut self, visible: bool) -> Self {

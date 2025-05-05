@@ -1,30 +1,39 @@
 use std::rc::Rc;
 
+use bevy::prelude::*;
+use bevy::render::{
+    settings::{RenderCreation, WgpuSettings},
+    RenderPlugin,
+};
 use bevy::{
-    app::{App, Startup}, color::palettes::css::*, pbr::wireframe::{WireframeConfig, WireframePlugin}, prelude::*, render::{settings::{RenderCreation, WgpuFeatures, WgpuSettings}, RenderPlugin}, DefaultPlugins
+    color::palettes::css::*,
+    pbr::wireframe::{WireframeConfig, WireframePlugin},
+    render::settings::WgpuFeatures,
 };
 use bevy_render::{BevyChunkEntity, BevyChunkMesh};
-use controller::ControllerPlugin;
 use chunk_builder::*;
-use shared::entities::{world, BlockSide, BlockType, Chunk, ChunkPos};
-use shared::chunk_loader::*;
+use controller::ControllerPlugin;
+use shared::{
+    chunk_loader::*,
+    entities::{world, BlockSide, BlockType, Chunk, ChunkPos},
+};
 
+mod bevy_render;
 mod chunk_builder;
 mod controller;
-mod bevy_render;
 
 fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins
-            .set(ImagePlugin::default_nearest())
-            .set(RenderPlugin {
-                render_creation: RenderCreation::Automatic(WgpuSettings {
-                    features: WgpuFeatures::POLYGON_MODE_LINE,
+                .set(ImagePlugin::default_nearest())
+                .set(RenderPlugin {
+                    render_creation: RenderCreation::Automatic(WgpuSettings {
+                        features: WgpuFeatures::POLYGON_MODE_LINE,
+                        ..default()
+                    }),
                     ..default()
                 }),
-                ..default()
-            }),
             WireframePlugin::default(),
             ControllerPlugin,
         ))
@@ -35,7 +44,6 @@ fn main() {
         .add_systems(Startup, init_level)
         .run();
 }
-
 
 fn init_level(
     mut commands: Commands,
@@ -71,14 +79,21 @@ fn build_chunk(chunk: &Chunk) -> BevyChunkMesh {
     let air = BlockType::new("air", false);
     let air = MeshBlockTypeBuilder::new(air).translucent(true).build();
     let dirt = BlockType::new("dirt", true);
-    let dirt = MeshBlockTypeBuilder::new(dirt).visible(true).texture(BlockSide::Front, "dirt").build();
+    let dirt = MeshBlockTypeBuilder::new(dirt)
+        .visible(true)
+        .texture(BlockSide::Front, "dirt")
+        .build();
 
     let mut block_type_storage = BlockTypeStorage::new();
     block_type_storage.set_block_type(0, air);
     block_type_storage.set_block_type(1, dirt);
 
     let texture_dictionary = Rc::new(TextureDictionary::new());
-    let mut voxel_mesher = VoxelMesher::new(chunk.get_block_storage().clone(), Rc::new(block_type_storage), texture_dictionary);
+    let mut voxel_mesher = VoxelMesher::new(
+        chunk.get_block_storage().clone(),
+        Rc::new(block_type_storage),
+        texture_dictionary,
+    );
     let chunk_mesh = voxel_mesher.create_mesh();
 
     BevyChunkMesh::from(chunk_mesh.clone())

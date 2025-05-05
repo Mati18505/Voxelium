@@ -5,14 +5,14 @@ pub struct ControllerPlugin;
 impl Plugin for ControllerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(NoCameraPlayerPlugin)
-        .add_systems(Startup, setup_controller)
-        .add_systems(FixedUpdate, update);
+            .add_systems(Startup, setup_controller)
+            .add_systems(FixedUpdate, update);
     }
 }
 
 #[derive(Component, Debug, Default, Clone, Copy)]
 pub struct Controller {
-    last_player_pos: Vec3
+    last_player_pos: Vec3,
 }
 
 fn setup_controller(mut commands: Commands) {
@@ -32,7 +32,7 @@ pub fn update(
         if let Ok(transform) = q_fly_cam.single() {
             if controller.last_player_pos.floor() != transform.translation.floor() {
                 position_changed(controller.last_player_pos, transform.translation);
-                
+
                 controller.last_player_pos = transform.translation;
             }
         }

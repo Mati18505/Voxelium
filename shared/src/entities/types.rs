@@ -15,9 +15,21 @@ pub struct BlockInChunkPos(Vector3<usize>);
 
 impl ChunkPos {
     pub fn new(x: isize, y: isize, z: isize) -> Self {
-        assert!(x % CHUNK_SIZE as isize == 0, "ChunkPos must be multiple of CHUNK_SIZE. x = {}", x);
-        assert!(y % CHUNK_SIZE as isize == 0, "ChunkPos must be multiple of CHUNK_SIZE. y = {}", y);
-        assert!(z % CHUNK_SIZE as isize == 0, "ChunkPos must be multiple of CHUNK_SIZE. z = {}", z);
+        assert!(
+            x % CHUNK_SIZE as isize == 0,
+            "ChunkPos must be multiple of CHUNK_SIZE. x = {}",
+            x
+        );
+        assert!(
+            y % CHUNK_SIZE as isize == 0,
+            "ChunkPos must be multiple of CHUNK_SIZE. y = {}",
+            y
+        );
+        assert!(
+            z % CHUNK_SIZE as isize == 0,
+            "ChunkPos must be multiple of CHUNK_SIZE. z = {}",
+            z
+        );
 
         ChunkPos(Vector3::new(x, y, z))
     }
