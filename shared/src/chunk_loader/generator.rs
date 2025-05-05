@@ -60,7 +60,7 @@ impl Generator {
             }
         */
         if world_z < generated_height {
-            self.noise.gen_range(1..9) as BlockID
+            self.noise.gen_range(1..2) as BlockID
         } else {
             0
         }
