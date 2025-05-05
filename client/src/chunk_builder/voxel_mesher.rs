@@ -73,13 +73,13 @@ impl VoxelMesher {
         }
 
         for side in [Top, Bottom, Left, Right, Front, Back] {
-            if self.has_transparent_neighbor(side, pos) {
+            if self.has_translucent_neighbor(side, pos) {
                 self.create_block_side(side, pos, &block_type, mesh);
             }
         }
     }
 
-    fn has_transparent_neighbor(&self, side: BlockSide, pos: BlockInChunkPos) -> bool {
+    fn has_translucent_neighbor(&self, side: BlockSide, pos: BlockInChunkPos) -> bool {
         if let Some(neighbor_pos) = self.get_neighbor_pos(pos, side) {
             let neighbor_id: BlockID = self.block_storage.get_block(neighbor_pos);
             let result = self.block_type_storage.get_block_type_from_id(neighbor_id);
