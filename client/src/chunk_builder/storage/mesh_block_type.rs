@@ -30,7 +30,7 @@ impl Default for MeshBlockType {
         Self {
             block_type: BlockType::default(),
             is_visible: false,
-            is_translucent: true,
+            is_translucent: false,
             material_name: "default".to_owned(),
 
             top_texture: None,

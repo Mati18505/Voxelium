@@ -58,9 +58,9 @@ fn init_level(
 
 fn build_chunk(chunk: &Chunk) -> BevyChunkMesh {
     let air = BlockType::new("air", false);
-    let air = MeshBlockTypeBuilder::new(air).build();
+    let air = MeshBlockTypeBuilder::new(air).translucent(true).build();
     let dirt = BlockType::new("dirt", true);
-    let dirt = MeshBlockTypeBuilder::new(dirt).visible(true).translucent(false).texture(BlockSide::Front, "dirt").build();
+    let dirt = MeshBlockTypeBuilder::new(dirt).visible(true).texture(BlockSide::Front, "dirt").build();
 
     let mut block_type_storage = BlockTypeStorage::new();
     block_type_storage.set_block_type(0, air);
