@@ -9,9 +9,9 @@ pub struct BlockTypeStorage {
 }
 
 impl BlockTypeStorage {
-    pub fn new() -> BlockTypeStorage {
+    pub fn new(block_types: HashMap<BlockID, MeshBlockType>) -> BlockTypeStorage {
         BlockTypeStorage {
-            block_types: HashMap::default(),
+            block_types,
         }
     }
 

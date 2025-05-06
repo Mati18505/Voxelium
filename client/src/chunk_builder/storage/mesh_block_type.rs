@@ -4,7 +4,7 @@ use crate::chunk_builder::MaterialName;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct MeshBlockType {
-    pub block_type: BlockType,
+    pub block_type: String,
 
     pub is_visible: bool,
     pub is_translucent: bool,
@@ -28,7 +28,7 @@ impl MeshBlockType {
 impl Default for MeshBlockType {
     fn default() -> Self {
         Self {
-            block_type: BlockType::default(),
+            block_type: "none".to_owned(),
             is_visible: false,
             is_translucent: false,
             material_name: "default".to_owned(),
@@ -46,9 +46,9 @@ pub struct MeshBlockTypeBuilder {
 }
 
 impl MeshBlockTypeBuilder {
-    pub fn new(block_type: BlockType) -> MeshBlockTypeBuilder {
+    pub fn new(block_type: &str) -> MeshBlockTypeBuilder {
         let mut mesh_block_type = MeshBlockType::default();
-        mesh_block_type.block_type = block_type;
+        mesh_block_type.block_type = block_type.to_owned();
 
         MeshBlockTypeBuilder {
             block_type: mesh_block_type,
