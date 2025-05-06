@@ -1,0 +1,6 @@
+({
+    "opaque": Image (
+        path: "textures/opaque.png",
+        array_texture_layers: 10
+    ),
+})

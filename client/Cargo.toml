@@ -6,7 +6,7 @@ edition = "2021"
 cgmath = "0.18.0"
 bevy = { version = "0.16.0", features = ["dynamic_linking"] }
 bevy_flycam = { git = 'https://github.com/kristoff3r/bevy_flycam/' }
-bevy_asset_loader = { git = 'https://github.com/NiklasEi/bevy_asset_loader/', branch = 'bevy_main' }
+bevy_asset_loader = { git = 'https://github.com/NiklasEi/bevy_asset_loader/', branch = 'bevy_main', features=["standard_dynamic_assets", "2d"] }
 shared = { path = "../shared" }
 thiserror = "2.0.12"
 serde = { version = "1.0.219", features = ["derive"] }

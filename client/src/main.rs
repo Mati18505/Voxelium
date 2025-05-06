@@ -11,7 +11,7 @@ use bevy::{
     render::settings::WgpuFeatures,
 };
 use bevy_asset_loader::prelude::*;
-use bevy_render::{BevyChunkEntity, BevyChunkMesh};
+use bevy_render::{VoxelMaterial, BevyChunkEntity, BevyChunkMesh, VoxelRenderPlugin};
 use bevy_resources::block_types::{MeshBlockTypeStorageLoader, MeshBlockTypeStorageResource};
 use chunk_builder::*;
 use controller::ControllerPlugin;
@@ -39,6 +39,7 @@ fn main() {
                 }),
             WireframePlugin::default(),
             ControllerPlugin,
+            VoxelRenderPlugin,
         ))
         .insert_resource(WireframeConfig {
             global: true,
@@ -50,6 +51,7 @@ fn main() {
         .add_loading_state(
             LoadingState::new(AppStates::Loading)
                 .continue_to_state(AppStates::InGame)
+                .with_dynamic_assets_file::<StandardDynamicAssetCollection>("texture_array.assets.ron")
                 .load_collection::<VoxelAssets>(),
         )
         .add_systems(OnEnter(AppStates::InGame), init_level)
@@ -67,14 +69,18 @@ enum AppStates {
 struct VoxelAssets {
     #[asset(path = "global.blocks.json")]
     block_type_storage: Handle<MeshBlockTypeStorageResource>,
+    #[asset(key = "opaque")]
+    opaque_texture: Handle<Image>
 }
 
 fn init_level(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut ambient_light: ResMut<AmbientLight>,
     voxel_assets: Res<VoxelAssets>,
     assets: Res<Assets<MeshBlockTypeStorageResource>>,
+    voxel_materials: ResMut<Assets<VoxelMaterial>>,
 ) {
     commands.spawn((
         Mesh3d(meshes.add(Plane3d::new(Vec3::Y, Vec2::splat(5.0)))),
@@ -82,6 +88,9 @@ fn init_level(
         Transform::from_translation(Vec3::new(0.0, -0.5, 0.0)),
         GlobalTransform::default(),
     ));
+
+    ambient_light.color = Color::WHITE;
+    ambient_light.brightness = 100.0;
 
     commands.spawn((
         DirectionalLight { ..default() },
@@ -98,7 +107,7 @@ fn init_level(
     if let Some(chunk) = world.get_chunk(pos) {
         let mesh: BevyChunkMesh =
             build_chunk(chunk, Rc::new((block_type_storage.to_owned()).into()));
-        let chunk_entity = BevyChunkEntity::new(mesh, commands, meshes, materials);
+        let chunk_entity = BevyChunkEntity::new(mesh, commands, meshes, voxel_materials, voxel_assets.opaque_texture.clone());
     }
 }
 
