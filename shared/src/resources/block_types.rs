@@ -57,7 +57,11 @@ mod test {
         let resource = BlockTypeStorageResource::deserialize(block_types).unwrap();
         let storage: BlockTypeStorage = resource.into();
 
-        let expected_block_types = vec![BlockType::new("air", false), BlockType::new("dirt", true), BlockType::new("stone", true)];
+        let expected_block_types = vec![
+            BlockType::new("air", false),
+            BlockType::new("dirt", true),
+            BlockType::new("stone", true),
+        ];
         assert_eq!(storage, BlockTypeStorage::new(expected_block_types));
     }
 }

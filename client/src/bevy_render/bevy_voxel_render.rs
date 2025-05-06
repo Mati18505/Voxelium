@@ -1,13 +1,14 @@
-use bevy::{prelude::*, render::render_resource::{AsBindGroup, ShaderRef}};
+use bevy::{
+    prelude::*,
+    render::render_resource::{AsBindGroup, ShaderRef},
+};
 
 const SHADER_ASSET_PATH: &str = "shaders/array_texture.wgsl";
 
 pub struct VoxelRenderPlugin;
 impl Plugin for VoxelRenderPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(
-            MaterialPlugin::<VoxelMaterial>::default(),
-        );
+        app.add_plugins(MaterialPlugin::<VoxelMaterial>::default());
     }
 }
 

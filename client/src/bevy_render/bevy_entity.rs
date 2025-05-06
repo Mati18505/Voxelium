@@ -1,12 +1,18 @@
 use bevy::{
-    asset::{Assets, Handle}, color::Color, ecs::{
+    asset::{Assets, Handle},
+    color::Color,
+    ecs::{
         entity::Entity,
         system::{Commands, ResMut},
-    }, image::Image, pbr::{MeshMaterial3d, StandardMaterial}, render::mesh::{Mesh, Mesh3d}, utils::default
+    },
+    image::Image,
+    pbr::{MeshMaterial3d, StandardMaterial},
+    render::mesh::{Mesh, Mesh3d},
+    utils::default,
 };
 
-use super::BevyChunkMesh;
 use super::bevy_voxel_render::VoxelMaterial;
+use super::BevyChunkMesh;
 
 #[derive(Debug, Default, Clone)]
 pub struct BevyChunkEntity {
