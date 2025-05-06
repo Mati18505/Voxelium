@@ -10,9 +10,9 @@ use bevy::{
     pbr::wireframe::{WireframeConfig, WireframePlugin},
     render::settings::WgpuFeatures,
 };
+use bevy_asset_loader::prelude::*;
 use bevy_render::{BevyChunkEntity, BevyChunkMesh};
 use bevy_resources::block_types::{MeshBlockTypeStorageLoader, MeshBlockTypeStorageResource};
-use bevy_asset_loader::prelude::*;
 use chunk_builder::*;
 use controller::ControllerPlugin;
 use shared::{
@@ -94,9 +94,10 @@ fn init_level(
     let pos = ChunkPos::new(0, 0, 0);
     world.add_chunk(pos, chunk_loader.load_chunk(pos));
     let block_type_storage = assets.get(&voxel_assets.block_type_storage).unwrap();
-    
+
     if let Some(chunk) = world.get_chunk(pos) {
-        let mesh: BevyChunkMesh = build_chunk(chunk, Rc::new((block_type_storage.to_owned()).into()));
+        let mesh: BevyChunkMesh =
+            build_chunk(chunk, Rc::new((block_type_storage.to_owned()).into()));
         let chunk_entity = BevyChunkEntity::new(mesh, commands, meshes, materials);
     }
 }

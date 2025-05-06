@@ -1,4 +1,4 @@
-use shared::entities::{BlockSide, BlockType};
+use shared::entities::BlockSide;
 
 use crate::chunk_builder::MaterialName;
 

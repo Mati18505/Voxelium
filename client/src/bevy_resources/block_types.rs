@@ -14,7 +14,12 @@ pub struct MeshBlockTypeStorageResource {
 
 impl Into<BlockTypeStorage> for MeshBlockTypeStorageResource {
     fn into(self) -> BlockTypeStorage {
-        let block_types: HashMap<BlockID, MeshBlockType> = self.block_types.into_iter().enumerate().map(|(i, e)| (i as u8, e)).collect();
+        let block_types: HashMap<BlockID, MeshBlockType> = self
+            .block_types
+            .into_iter()
+            .enumerate()
+            .map(|(i, e)| (i as u8, e))
+            .collect();
 
         BlockTypeStorage::new(block_types)
     }

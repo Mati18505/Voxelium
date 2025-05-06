@@ -10,9 +10,7 @@ pub struct BlockTypeStorage {
 
 impl BlockTypeStorage {
     pub fn new(block_types: HashMap<BlockID, MeshBlockType>) -> BlockTypeStorage {
-        BlockTypeStorage {
-            block_types,
-        }
+        BlockTypeStorage { block_types }
     }
 
     pub fn set_block_type(&mut self, block_id: BlockID, block_type: MeshBlockType) {

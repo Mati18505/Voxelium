@@ -1,14 +1,12 @@
 use bevy::{
-    asset::{Assets, Handle},
+    asset::Assets,
     color::Color,
     ecs::{
         entity::Entity,
         system::{Commands, ResMut},
     },
-    math::{Quat, Vec3},
     pbr::{MeshMaterial3d, StandardMaterial},
     render::mesh::{Mesh, Mesh3d},
-    transform::components::Transform,
     utils::default,
 };
 
