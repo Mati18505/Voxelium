@@ -111,13 +111,13 @@ impl AssetLoader for MeshBlockTypeStorageLoader {
                 .translucent(translucent);
 
             if let Some(textures) = block.get("textures") {
-                if let Some(side_texture) = textures.get("side").map(|e| e.to_string()) {
+                if let Some(side_texture) = textures.get("side").map(|e| e.as_str()).flatten() {
                     builder = builder.texture(BlockSide::Left, &side_texture);
                 }
-                if let Some(top_texture) = textures.get("top").map(|e| e.to_string()) {
+                if let Some(top_texture) = textures.get("top").map(|e| e.as_str()).flatten() {
                     builder = builder.texture(BlockSide::Top, &top_texture);
                 }
-                if let Some(bottom_texture) = textures.get("bottom").map(|e| e.to_string()) {
+                if let Some(bottom_texture) = textures.get("bottom").map(|e| e.as_str()).flatten() {
                     builder = builder.texture(BlockSide::Bottom, &bottom_texture);
                 }
             }

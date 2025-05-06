@@ -9,9 +9,9 @@ pub struct TextureDictionary {
 }
 
 impl TextureDictionary {
-    pub fn new() -> TextureDictionary {
+    pub fn new(textures: HashMap<TextureName, TextureIndex>) -> TextureDictionary {
         TextureDictionary {
-            texture_index_dictionary: HashMap::default(),
+            texture_index_dictionary: textures,
         }
     }
 

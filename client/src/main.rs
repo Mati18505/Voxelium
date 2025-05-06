@@ -11,8 +11,10 @@ use bevy::{
     render::settings::WgpuFeatures,
 };
 use bevy_asset_loader::prelude::*;
+use bevy_common_assets::yaml::YamlAssetPlugin;
 use bevy_render::{VoxelMaterial, BevyChunkEntity, BevyChunkMesh, VoxelRenderPlugin};
 use bevy_resources::block_types::{MeshBlockTypeStorageLoader, MeshBlockTypeStorageResource};
+use bevy_resources::textures_config::TextureConfig;
 use chunk_builder::*;
 use controller::ControllerPlugin;
 use shared::{
@@ -38,6 +40,7 @@ fn main() {
                     ..default()
                 }),
             WireframePlugin::default(),
+            YamlAssetPlugin::<TextureConfig>::new(&["config.yaml"]),
             ControllerPlugin,
             VoxelRenderPlugin,
         ))
@@ -70,7 +73,9 @@ struct VoxelAssets {
     #[asset(path = "global.blocks.json")]
     block_type_storage: Handle<MeshBlockTypeStorageResource>,
     #[asset(key = "opaque")]
-    opaque_texture: Handle<Image>
+    opaque_texture: Handle<Image>,
+    #[asset(path = "textures.config.yaml")]
+    texture_config: Handle<TextureConfig>,
 }
 
 fn init_level(
@@ -79,7 +84,8 @@ fn init_level(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut ambient_light: ResMut<AmbientLight>,
     voxel_assets: Res<VoxelAssets>,
-    assets: Res<Assets<MeshBlockTypeStorageResource>>,
+    block_type_assets: Res<Assets<MeshBlockTypeStorageResource>>,
+    textures_assets: Res<Assets<TextureConfig>>,
     voxel_materials: ResMut<Assets<VoxelMaterial>>,
 ) {
     commands.spawn((
@@ -102,17 +108,21 @@ fn init_level(
     let mut world = world::World::new();
     let pos = ChunkPos::new(0, 0, 0);
     world.add_chunk(pos, chunk_loader.load_chunk(pos));
-    let block_type_storage = assets.get(&voxel_assets.block_type_storage).unwrap();
+
+    let block_type_storage = block_type_assets.get(&voxel_assets.block_type_storage).unwrap().to_owned();
+    let block_type_storage: Rc<BlockTypeStorage> = Rc::new(block_type_storage.into());
+
+    let texture_dictionary: TextureConfig = textures_assets.get(&voxel_assets.texture_config).unwrap().to_owned();
+    let texture_dictionary: Rc<TextureDictionary> = Rc::new(texture_dictionary.into());
 
     if let Some(chunk) = world.get_chunk(pos) {
         let mesh: BevyChunkMesh =
-            build_chunk(chunk, Rc::new((block_type_storage.to_owned()).into()));
+            build_chunk(chunk, block_type_storage, texture_dictionary);
         let chunk_entity = BevyChunkEntity::new(mesh, commands, meshes, voxel_materials, voxel_assets.opaque_texture.clone());
     }
 }
 
-fn build_chunk(chunk: &Chunk, block_type_storage: Rc<BlockTypeStorage>) -> BevyChunkMesh {
-    let texture_dictionary = Rc::new(TextureDictionary::new());
+fn build_chunk(chunk: &Chunk, block_type_storage: Rc<BlockTypeStorage>, texture_dictionary: Rc<TextureDictionary>) -> BevyChunkMesh {
     let mut voxel_mesher = VoxelMesher::new(
         chunk.get_block_storage().clone(),
         block_type_storage,
