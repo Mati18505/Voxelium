@@ -18,8 +18,19 @@ pub trait ChunkBuilder {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Config {
-    pub load_distance: usize,
-    pub render_distance: usize,
+    load_distance: usize,
+    render_distance: usize,
+}
+
+impl Config {
+    pub fn new(load_distance: usize, render_distance: usize) -> Self {
+        assert!(render_distance <= load_distance);
+
+        Config {
+            load_distance,
+            render_distance,
+        }
+    }
 }
 
 // Manage chunks dependent on controller position.

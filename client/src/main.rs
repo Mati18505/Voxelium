@@ -121,15 +121,12 @@ fn init_level(
         .to_owned();
     let texture_dictionary: Rc<TextureDictionary> = Rc::new(texture_dictionary.into());
 
-    let mut chunk_loader = ChunkLoader::default();
-    let mut chunk_builder = Box::new(ChunkBuilder {
+    let chunk_loader = ChunkLoader::default();
+    let chunk_builder = Box::new(ChunkBuilder {
         block_type_storage,
         texture_dictionary,
     });
-    let config = chunk_manager::Config {
-        load_distance: 6,
-        render_distance: 4,
-    };
+    let config = chunk_manager::Config::new(4, 4);
 
     let mut chunk_manager = ChunkManager::new(chunk_loader, chunk_builder, config);
     chunk_manager.update(ChunkPos::new(0,0,0));
