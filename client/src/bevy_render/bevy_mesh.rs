@@ -1,10 +1,7 @@
 use std::collections::HashMap;
 
 use bevy::{
-    asset::RenderAssetUsages,
-    math::{Quat, Vec3},
-    render::mesh::{Indices, Mesh, PrimitiveTopology},
-    transform::components::Transform,
+    asset::RenderAssetUsages, math::{Quat, Vec3}, reflect::PartialReflect, render::mesh::{Indices, Mesh, PrimitiveTopology}, transform::components::Transform
 };
 
 use crate::chunk_builder::{ChunkMesh, MaterialName};
@@ -13,6 +10,12 @@ use crate::chunk_builder::{ChunkMesh, MaterialName};
 pub struct BevyChunkMesh {
     pub layers: HashMap<MaterialName, Mesh>,
     pub transform: Transform,
+}
+
+impl BevyChunkMesh {
+    pub fn apply_transform(&mut self, transform: Transform) {
+        self.transform = self.transform * transform;
+    }
 }
 
 impl From<ChunkMesh> for BevyChunkMesh {

@@ -126,13 +126,15 @@ fn init_level(
         block_type_storage,
         texture_dictionary,
     });
-    let config = chunk_manager::Config::new(4, 4);
+    let config = chunk_manager::Config::new(5, 4);
 
     let mut chunk_manager = ChunkManager::new(chunk_loader, chunk_builder, config);
     chunk_manager.update(ChunkPos::new(0,0,0));
 
     for (pos, mesh) in chunk_manager.get_world().chunk_meshes.iter() {
-        let mesh = BevyChunkMesh::from(mesh.clone());
+        let mut mesh = BevyChunkMesh::from(mesh.clone());
+        mesh.apply_transform(Transform::from_xyz(pos.x as f32, pos.y as f32, pos.z as f32));
+
         let chunk_entity = BevyChunkEntity::new(
             mesh,
             &mut commands,
