@@ -1,11 +1,9 @@
-
-
 // (controller_pos, chunk_storage) -> (, )
 // - load needed chunks
 // - manage chunks: chunk_state
 
 use cgmath::MetricSpace;
-use shared::{chunk_loader::chunk_loader, entities::{Chunk, ChunkPos, CHUNK_SIZE}};
+use shared::{chunk_loader::chunk_loader, entities::{chunk, Chunk, ChunkPos, CHUNK_SIZE}};
 use std::{collections::HashSet, error::Error};
 
 use crate::chunk_builder::{ChunkMesh};
@@ -101,13 +99,22 @@ impl ChunkManager {
 
         for pos in chunks_in_load_distance {
             if !chunks_in_render_distance.contains(&pos) {
+                self.world.chunk_meshes.remove(&pos);
+                self.world.change_chunk_state(pos, super::ChunkState::Generated);
+            }
+        } 
+
+        // Outside load distance?
+        /*
+        for pos in chunks_in_load_distance {
+            if !chunks_in_render_distance.contains(&pos) {
                 self.world.change_chunk_state(pos, super::ChunkState::Empty);
                 self.world.world.remove_chunk(pos);
             }
-        }
+        } 
+        */
 
         // To redraw?
-        // Outside load distance?
         // chunks_to_draw -> draw_chunk
     }
 
