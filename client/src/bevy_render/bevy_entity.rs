@@ -22,9 +22,9 @@ pub struct BevyChunkEntity {
 impl BevyChunkEntity {
     pub fn new(
         chunk_mesh: BevyChunkMesh,
-        mut commands: Commands,
-        mut meshes: ResMut<Assets<Mesh>>,
-        mut materials: ResMut<Assets<VoxelMaterial>>,
+        commands: &mut Commands,
+        meshes: &mut ResMut<Assets<Mesh>>,
+        materials: &mut ResMut<Assets<VoxelMaterial>>,
         base_color_texture: Handle<Image>,
     ) -> Self {
         let mut render_resource = BevyChunkEntity::default();

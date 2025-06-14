@@ -20,6 +20,9 @@ impl World {
     pub fn add_chunk(&mut self, pos: ChunkPos, chunk: Chunk) {
         self.chunks.insert(pos, chunk);
     }
+    pub fn remove_chunk(&mut self, pos: ChunkPos) {
+        self.chunks.remove(&pos);
+    }
     pub fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
         self.chunks.get(&pos)
     }

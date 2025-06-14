@@ -22,10 +22,13 @@ use shared::{
     entities::{world, Chunk, ChunkPos},
 };
 
+use crate::chunk_manager::ChunkManager;
+
 mod bevy_render;
 mod bevy_resources;
 mod chunk_builder;
 mod controller;
+mod chunk_manager;
 
 fn main() {
     App::new()
@@ -88,7 +91,7 @@ fn init_level(
     voxel_assets: Res<VoxelAssets>,
     block_type_assets: Res<Assets<MeshBlockTypeStorageResource>>,
     textures_assets: Res<Assets<TextureConfig>>,
-    voxel_materials: ResMut<Assets<VoxelMaterial>>,
+    mut voxel_materials: ResMut<Assets<VoxelMaterial>>,
 ) {
     commands.spawn((
         Mesh3d(meshes.add(Plane3d::new(Vec3::Y, Vec2::splat(5.0)))),
@@ -106,11 +109,6 @@ fn init_level(
         GlobalTransform::default(),
     ));
 
-    let mut chunk_loader = ChunkLoader::default();
-    let mut world = world::World::new();
-    let pos = ChunkPos::new(0, 0, 0);
-    world.add_chunk(pos, chunk_loader.load_chunk(pos));
-
     let block_type_storage = block_type_assets
         .get(&voxel_assets.block_type_storage)
         .unwrap()
@@ -123,34 +121,54 @@ fn init_level(
         .to_owned();
     let texture_dictionary: Rc<TextureDictionary> = Rc::new(texture_dictionary.into());
 
-    if let Some(chunk) = world.get_chunk(pos) {
-        let mesh: BevyChunkMesh = build_chunk(chunk, block_type_storage, texture_dictionary);
+    let mut chunk_loader = ChunkLoader::default();
+    let mut chunk_builder = Box::new(ChunkBuilder {
+        block_type_storage,
+        texture_dictionary,
+    });
+    let config = chunk_manager::Config {
+        load_distance: 6,
+        render_distance: 4,
+    };
+
+    let mut chunk_manager = ChunkManager::new(chunk_loader, chunk_builder, config);
+    chunk_manager.update(ChunkPos::new(0,0,0));
+
+    for (pos, mesh) in chunk_manager.get_world().chunk_meshes.iter() {
+        let mesh = BevyChunkMesh::from(mesh.clone());
         let chunk_entity = BevyChunkEntity::new(
             mesh,
-            commands,
-            meshes,
-            voxel_materials,
+            &mut commands,
+            &mut meshes,
+            &mut voxel_materials,
             voxel_assets.opaque_texture.clone(),
         );
     }
 }
 
-fn build_chunk(
-    chunk: &Chunk,
+#[derive(Debug, Clone, PartialEq)]
+struct ChunkBuilder {
     block_type_storage: Rc<BlockTypeStorage>,
     texture_dictionary: Rc<TextureDictionary>,
-) -> BevyChunkMesh {
-    let mut voxel_mesher = VoxelMesher::new(
-        chunk.get_block_storage().clone(),
-        block_type_storage,
-        texture_dictionary,
-    );
+}
 
-    let chunk_mesh = voxel_mesher.create_mesh().clone();
+impl chunk_manager::ChunkBuilder for ChunkBuilder {
+    fn build_chunk(
+        &self,
+        chunk: &Chunk,
+    ) -> ChunkMesh {
+        let mut voxel_mesher = VoxelMesher::new(
+            chunk.get_block_storage().clone(),
+            self.block_type_storage.clone(),
+            self.texture_dictionary.clone(),
+        );
 
-    if let Some(err) = voxel_mesher.get_last_err() {
-        eprintln!("{}", err);
+        let chunk_mesh = voxel_mesher.create_mesh().clone();
+
+        if let Some(err) = voxel_mesher.get_last_err() {
+            eprintln!("{}", err);
+        }
+
+        chunk_mesh
     }
-
-    BevyChunkMesh::from(chunk_mesh)
 }

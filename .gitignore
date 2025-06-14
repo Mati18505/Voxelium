@@ -15,3 +15,5 @@ Cargo.lock
 
 # texture packs
 *.tps
+
+.old
