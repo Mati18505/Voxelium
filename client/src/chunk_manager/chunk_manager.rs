@@ -146,3 +146,24 @@ impl ChunkManager {
 
     }
 }
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_for_each_chunk_in_distance() {
+        let mut actual_positions: HashSet<ChunkPos> = HashSet::new();
+
+        ChunkManager::for_each_chunk_in_distance(ChunkPos::new(0, 0, 0), 2, |pos| {
+            actual_positions.insert(pos);
+        });
+
+        let expected_positions: HashSet<ChunkPos> = (-2..=2)
+            .flat_map(|y| (-2..=2).map(move |x| ChunkPos::new(x * CHUNK_SIZE as isize, y * CHUNK_SIZE as isize, 0)))
+            .collect();
+
+        assert_eq!(actual_positions, expected_positions);
+    }
+}
