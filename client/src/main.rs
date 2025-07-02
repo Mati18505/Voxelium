@@ -174,7 +174,7 @@ fn update(
         let new_block_pos = BlockPos::new(new_pos.x as isize, new_pos.y as isize, new_pos.z as isize);
         let new_chunk_pos = ChunkPos::from(new_block_pos);
 
-        game_resources.chunk_manager.update(new_chunk_pos);
+        let need_redraw = game_resources.chunk_manager.update(new_chunk_pos);
     }
 }
 
