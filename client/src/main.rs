@@ -19,7 +19,7 @@ use controller::ControllerPlugin;
 
 use shared::{
     chunk_loader::*,
-    entities::{world, Chunk, ChunkPos},
+    entities::{world, BlockPos, Chunk, ChunkPos},
 };
 
 use crate::chunk_manager::ChunkManager;
@@ -171,10 +171,11 @@ fn update(
     for e in controller_events.read() {
         let prev_pos = e.prev_pos;
         let new_pos = e.new_pos;
+        let new_block_pos = BlockPos::new(new_pos.x as isize, new_pos.y as isize, new_pos.z as isize);
+        let new_chunk_pos = ChunkPos::from(new_block_pos);
 
-        println!("Controller position changed: prev = {prev_pos}, new = {new_pos}");
+        game_resources.chunk_manager.update(new_chunk_pos);
     }
-    game_resources.chunk_manager.update(ChunkPos::new(0,0,0));
 }
 
 #[derive(Debug, Clone, PartialEq)]

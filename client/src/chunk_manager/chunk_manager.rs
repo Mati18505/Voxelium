@@ -52,16 +52,24 @@ impl ChunkManager {
     }
 
     pub fn update(&mut self, controller_pos: ChunkPos) {
-        if self.distance2_from_last_pos(controller_pos) <= CHUNK_SIZE * CHUNK_SIZE {
+        let distance = self.distance2_from_last_pos(controller_pos);
+
+        if distance == 0 {
+
+        } else if distance <= CHUNK_SIZE * CHUNK_SIZE {
             // Offest one chunk? Move.
-            self.update_chunks_on_controller_move(controller_pos);
+            self.update_all_chunks_in_controller_range(controller_pos);
+            println!("Offset one chunk!");
             
         } else {
             // Completly different position? Clear, and load all.
             // TODO: Remove only chunks outside range.
+            println!("Completly different position!");
             self.world = PhysicalWorld::default();
             self.update_all_chunks_in_controller_range(controller_pos);
         }
+
+        self.last_controller_pos = Some(controller_pos);
     }
 
     pub fn get_world(&self) -> &PhysicalWorld {
