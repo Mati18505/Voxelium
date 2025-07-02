@@ -28,7 +28,7 @@ impl Default for ChunkLoader {
     }
 }
 
-pub trait NoiseFactory {
+pub trait NoiseFactory: Send + Sync {
     fn create_noise(&self) -> Box<dyn Noise<i64>>;
 }
 

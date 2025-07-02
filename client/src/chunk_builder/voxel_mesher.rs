@@ -1,4 +1,4 @@
-use std::{fmt, rc::Rc};
+use std::{fmt, sync::Arc};
 
 use cgmath::Vector3;
 use shared::entities::{BlockID, BlockInChunkPos, BlockSide, BlockStorage, Direction};
@@ -10,8 +10,8 @@ use super::{
 pub struct VoxelMesher {
     block_storage: BlockStorage,
     chunk_mesh: ChunkMesh,
-    block_type_storage: Rc<BlockTypeStorage>,
-    texture_dictionary: Rc<TextureDictionary>,
+    block_type_storage: Arc<BlockTypeStorage>,
+    texture_dictionary: Arc<TextureDictionary>,
     last_error: Option<MesherError>,
 }
 
@@ -40,8 +40,8 @@ impl fmt::Display for MesherError {
 impl VoxelMesher {
     pub fn new(
         block_storage: BlockStorage,
-        block_type_storage: Rc<BlockTypeStorage>,
-        texture_dictionary: Rc<TextureDictionary>,
+        block_type_storage: Arc<BlockTypeStorage>,
+        texture_dictionary: Arc<TextureDictionary>,
     ) -> Self {
         VoxelMesher {
             block_storage,

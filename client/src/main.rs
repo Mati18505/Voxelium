@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{rc::Rc, sync::Arc};
 
 use bevy::{
     color::palettes::css::WHITE,
@@ -63,6 +63,7 @@ fn main() {
                 .load_collection::<VoxelAssets>(),
         )
         .add_systems(OnEnter(AppStates::InGame), init_level)
+        .add_systems(Update, update.run_if(in_state(AppStates::InGame)))
         .run();
 }
 
@@ -81,6 +82,11 @@ struct VoxelAssets {
     opaque_texture: Handle<Image>,
     #[asset(path = "textures.config.yaml")]
     texture_config: Handle<TextureConfig>,
+}
+
+#[derive(Resource)]
+struct GameResources {
+    chunk_manager: ChunkManager,
 }
 
 fn init_level(
@@ -113,13 +119,13 @@ fn init_level(
         .get(&voxel_assets.block_type_storage)
         .unwrap()
         .to_owned();
-    let block_type_storage: Rc<BlockTypeStorage> = Rc::new(block_type_storage.into());
+    let block_type_storage: Arc<BlockTypeStorage> = Arc::new(block_type_storage.into());
 
     let texture_dictionary: TextureConfig = textures_assets
         .get(&voxel_assets.texture_config)
         .unwrap()
         .to_owned();
-    let texture_dictionary: Rc<TextureDictionary> = Rc::new(texture_dictionary.into());
+    let texture_dictionary: Arc<TextureDictionary> = Arc::new(texture_dictionary.into());
 
     let chunk_loader = ChunkLoader::default();
     let chunk_builder = Box::new(ChunkBuilder {
@@ -143,12 +149,31 @@ fn init_level(
             voxel_assets.opaque_texture.clone(),
         );
     }
+
+    let game_resources = GameResources{
+        chunk_manager
+    };
+    commands.insert_resource(game_resources);
+}
+
+fn update(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut ambient_light: ResMut<AmbientLight>,
+    voxel_assets: Res<VoxelAssets>,
+    block_type_assets: Res<Assets<MeshBlockTypeStorageResource>>,
+    textures_assets: Res<Assets<TextureConfig>>,
+    mut voxel_materials: ResMut<Assets<VoxelMaterial>>,
+    mut game_resources: ResMut<GameResources>,
+) {
+    game_resources.chunk_manager.update(ChunkPos::new(0,0,0));
 }
 
 #[derive(Debug, Clone, PartialEq)]
 struct ChunkBuilder {
-    block_type_storage: Rc<BlockTypeStorage>,
-    texture_dictionary: Rc<TextureDictionary>,
+    block_type_storage: Arc<BlockTypeStorage>,
+    texture_dictionary: Arc<TextureDictionary>,
 }
 
 impl chunk_manager::ChunkBuilder for ChunkBuilder {

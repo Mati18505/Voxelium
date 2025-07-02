@@ -4,13 +4,13 @@
 
 use cgmath::MetricSpace;
 use shared::{chunk_loader::chunk_loader, entities::{chunk, Chunk, ChunkPos, CHUNK_SIZE}};
-use std::{collections::HashSet, error::Error};
+use std::{collections::HashSet, error::Error, sync::Arc};
 
 use crate::chunk_builder::{ChunkMesh};
 
 use super::physical_world::PhysicalWorld;
 
-pub trait ChunkBuilder {
+pub trait ChunkBuilder: Send + Sync {
     fn build_chunk(&self, chunk: &Chunk) -> ChunkMesh;
 }
 
