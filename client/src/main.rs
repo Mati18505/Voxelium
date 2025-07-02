@@ -166,7 +166,14 @@ fn update(
     textures_assets: Res<Assets<TextureConfig>>,
     mut voxel_materials: ResMut<Assets<VoxelMaterial>>,
     mut game_resources: ResMut<GameResources>,
+    mut controller_events: EventReader<controller::PositionChangeEvent>,
 ) {
+    for e in controller_events.read() {
+        let prev_pos = e.prev_pos;
+        let new_pos = e.new_pos;
+
+        println!("Controller position changed: prev = {prev_pos}, new = {new_pos}");
+    }
     game_resources.chunk_manager.update(ChunkPos::new(0,0,0));
 }
 

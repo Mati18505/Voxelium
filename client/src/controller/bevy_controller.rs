@@ -5,6 +5,7 @@ pub struct ControllerPlugin;
 impl Plugin for ControllerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(NoCameraPlayerPlugin)
+            .add_event::<PositionChangeEvent>()
             .add_systems(Startup, setup_controller)
             .add_systems(FixedUpdate, update);
     }
@@ -13,6 +14,12 @@ impl Plugin for ControllerPlugin {
 #[derive(Component, Debug, Default, Clone, Copy)]
 pub struct Controller {
     last_player_pos: Vec3,
+}
+
+#[derive(Event)]
+pub struct PositionChangeEvent {
+    pub prev_pos: Vec3,
+    pub new_pos: Vec3,
 }
 
 fn setup_controller(mut commands: Commands) {
@@ -26,12 +33,13 @@ fn setup_controller(mut commands: Commands) {
 
 pub fn update(
     mut q_controller: Query<&mut Controller>,
+    events: EventWriter<PositionChangeEvent>,
     q_fly_cam: Query<&Transform, With<FlyCam>>,
 ) {
     if let Ok(mut controller) = q_controller.single_mut() {
         if let Ok(transform) = q_fly_cam.single() {
             if controller.last_player_pos.floor() != transform.translation.floor() {
-                position_changed(controller.last_player_pos, transform.translation);
+                position_changed(events, controller.last_player_pos, transform.translation);
 
                 controller.last_player_pos = transform.translation;
             }
@@ -41,6 +49,10 @@ pub fn update(
     }
 }
 
-fn position_changed(prev_pos: Vec3, new_pos: Vec3) {
-    println!("Controller position changed: prev = {prev_pos}, new = {new_pos}");
+fn position_changed(
+    mut events: EventWriter<PositionChangeEvent>,
+    prev_pos: Vec3,
+    new_pos: Vec3
+) {
+    events.write(PositionChangeEvent { prev_pos, new_pos });
 }
