@@ -59,7 +59,6 @@ impl ChunkManager {
 
         } else if distance <= CHUNK_SIZE * CHUNK_SIZE {
             // Offest one chunk? Move.
-            self.world = PhysicalWorld::default();
             self.update_all_chunks_in_controller_range(controller_pos);
             println!("Offset one chunk! {:?}", controller_pos);
             
@@ -88,17 +87,16 @@ impl ChunkManager {
     }
 
     fn update_all_chunks_in_controller_range(&mut self, controller_pos: ChunkPos) {
-        let mut chunks_in_load_distance = HashSet::<ChunkPos>::default();
 
+        // Load
         Self::for_each_chunk_in_distance(controller_pos, self.config.load_distance, |pos| {
-            chunks_in_load_distance.insert(pos);
-
             let chunk = self.chunk_loader.load_chunk(pos);
             self.world.world.add_chunk(pos, chunk);
 
             self.world.change_chunk_state(pos, super::ChunkState::Generated);
         });
 
+        // Render
         let mut chunks_in_render_distance = HashSet::<ChunkPos>::default();
 
         Self::for_each_chunk_in_distance(controller_pos, self.config.render_distance, |pos| {
@@ -108,12 +106,20 @@ impl ChunkManager {
             self.draw_chunk(pos);
         });
 
-        for pos in chunks_in_load_distance {
+        // Remove meshes outside render distance
+        let drawn_chunks: HashSet::<ChunkPos> = self.world.chunk_states
+            .iter()
+            .filter(|(_, chunk_state)| **chunk_state == super::ChunkState::Drawn)
+            .map(|(chunk_pos, _)| *chunk_pos)
+            .collect();
+
+        for pos in drawn_chunks {
             if !chunks_in_render_distance.contains(&pos) {
                 self.world.chunk_meshes.remove(&pos);
                 self.world.change_chunk_state(pos, super::ChunkState::Generated);
             }
-        } 
+        }
+
 
         // Outside load distance?
         /*

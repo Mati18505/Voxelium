@@ -10,7 +10,7 @@ use super::ChunkState;
 pub struct PhysicalWorld {
     pub world: World,
     pub chunk_meshes: HashMap<ChunkPos, ChunkMesh>,
-    chunk_states: HashMap<ChunkPos, ChunkState>,
+    pub chunk_states: HashMap<ChunkPos, ChunkState>,
 }
 
 impl PhysicalWorld {
