@@ -2,7 +2,7 @@
 // - load needed chunks
 // - manage chunks: chunk_state
 
-use cgmath::MetricSpace;
+use cgmath::{MetricSpace, Vector3};
 use shared::{chunk_loader::chunk_loader, entities::{chunk, Chunk, ChunkPos, CHUNK_SIZE}};
 use std::{collections::HashSet, error::Error, sync::Arc};
 
@@ -61,12 +61,12 @@ impl ChunkManager {
             // Offest one chunk? Move.
             self.world = PhysicalWorld::default();
             self.update_all_chunks_in_controller_range(controller_pos);
-            println!("Offset one chunk!");
+            println!("Offset one chunk! {:?}", controller_pos);
             
         } else {
             // Completly different position? Clear, and load all.
             // TODO: Remove only chunks outside range.
-            println!("Completly different position!");
+            println!("Completly different position! {:?}", controller_pos);
             self.world = PhysicalWorld::default();
             self.update_all_chunks_in_controller_range(controller_pos);
         }
@@ -130,6 +130,8 @@ impl ChunkManager {
     }
 
     fn for_each_chunk_in_distance<F: FnMut(ChunkPos)>(controller_pos: ChunkPos, dist: usize, mut func: F) {
+        let controller_pos = *controller_pos / 16;
+
         let y_start = controller_pos.y - dist as isize;
         let y_end = controller_pos.y + dist as isize;
         let x_start = controller_pos.x - dist as isize;
@@ -144,10 +146,29 @@ impl ChunkManager {
         } 
     }
 
+    fn for_each_chunk_in_row_x<F: FnMut(ChunkPos)>(controller_pos: ChunkPos, dist: usize, x: isize, mut func: F) {
+        let y_start = controller_pos.y - dist as isize;
+        let y_end = controller_pos.y + dist as isize;
+
+        for y in y_start..=y_end {
+            let pos = ChunkPos::new(x * CHUNK_SIZE as isize, y * CHUNK_SIZE as isize, 0);
+
+            func(pos)
+        } 
+    }
+
     fn update_chunks_on_controller_move(&mut self, controller_pos: ChunkPos) {
         assert!(self.last_controller_pos.is_some());
 
         let last_controller_pos = self.last_controller_pos.unwrap();
+        let diff_x = controller_pos.x - last_controller_pos.x;
+        let diff_y = controller_pos.y - last_controller_pos.y;
+
+        if diff_y == 0 {
+            while diff_x > 0 {
+                //for_each_chunk_in_row_x(controller_pos, self.config.load_distance)
+            }
+        }
     }
 
     fn draw_chunk(&mut self, pos: ChunkPos) {
@@ -180,6 +201,21 @@ mod test {
 
         let expected_positions: HashSet<ChunkPos> = (-2..=2)
             .flat_map(|y| (-2..=2).map(move |x| ChunkPos::new(x * CHUNK_SIZE as isize, y * CHUNK_SIZE as isize, 0)))
+            .collect();
+
+        assert_eq!(actual_positions, expected_positions);
+    }
+
+    #[test]
+    fn test_for_each_chunk_in_row_x() {
+        let mut actual_positions: HashSet<ChunkPos> = HashSet::new();
+
+        ChunkManager::for_each_chunk_in_row_x(ChunkPos::new(0, 0, 0), 2, -2, |pos| {
+            actual_positions.insert(pos);
+        });
+
+        let expected_positions: HashSet<ChunkPos> = (-2..=2)
+            .map(|y| ChunkPos::new(-2 * CHUNK_SIZE as isize, y * CHUNK_SIZE as isize, 0))
             .collect();
 
         assert_eq!(actual_positions, expected_positions);

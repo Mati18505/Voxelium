@@ -22,7 +22,7 @@ use shared::{
     entities::{world, BlockPos, Chunk, ChunkPos},
 };
 
-use crate::chunk_manager::ChunkManager;
+use crate::chunk_manager::{physical_world::{self, PhysicalWorld}, ChunkManager};
 
 mod bevy_render;
 mod bevy_resources;
@@ -87,6 +87,7 @@ struct VoxelAssets {
 #[derive(Resource)]
 struct GameResources {
     chunk_manager: ChunkManager,
+    chunk_entities_manager: ChunkEntitiesManager,
 }
 
 fn init_level(
@@ -94,9 +95,9 @@ fn init_level(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut ambient_light: ResMut<AmbientLight>,
-    voxel_assets: Res<VoxelAssets>,
     block_type_assets: Res<Assets<MeshBlockTypeStorageResource>>,
     textures_assets: Res<Assets<TextureConfig>>,
+    voxel_assets: Res<VoxelAssets>,
     mut voxel_materials: ResMut<Assets<VoxelMaterial>>,
 ) {
     commands.spawn((
@@ -137,21 +138,12 @@ fn init_level(
     let mut chunk_manager = ChunkManager::new(chunk_loader, chunk_builder, config);
     chunk_manager.update(ChunkPos::new(0,0,0));
 
-    for (pos, mesh) in chunk_manager.get_world().chunk_meshes.iter() {
-        let mut mesh = BevyChunkMesh::from(mesh.clone());
-        mesh.apply_transform(Transform::from_xyz(pos.x as f32, pos.y as f32, pos.z as f32));
+    let mut chunk_entities_manager = ChunkEntitiesManager::default();
+    chunk_entities_manager.update(&mut commands, &mut meshes, &voxel_assets, &mut voxel_materials, chunk_manager.get_world());
 
-        let chunk_entity = BevyChunkEntity::new(
-            mesh,
-            &mut commands,
-            &mut meshes,
-            &mut voxel_materials,
-            voxel_assets.opaque_texture.clone(),
-        );
-    }
-
-    let game_resources = GameResources{
-        chunk_manager
+    let game_resources = GameResources {
+        chunk_manager,
+        chunk_entities_manager,
     };
     commands.insert_resource(game_resources);
 }
@@ -171,10 +163,17 @@ fn update(
     for e in controller_events.read() {
         let prev_pos = e.prev_pos;
         let new_pos = e.new_pos;
-        let new_block_pos = BlockPos::new(new_pos.x as isize, new_pos.y as isize, new_pos.z as isize);
+        // Convert bevy direction to our direction
+        let new_block_pos = BlockPos::new(new_pos.x as isize, -new_pos.z as isize, new_pos.y as isize);
         let new_chunk_pos = ChunkPos::from(new_block_pos);
 
         let need_redraw = game_resources.chunk_manager.update(new_chunk_pos);
+
+        if need_redraw {
+            println!("need redraw");
+            let physical_world = game_resources.chunk_manager.get_world().clone();
+            game_resources.chunk_entities_manager.update(&mut commands, &mut meshes, &voxel_assets, &mut voxel_materials, &physical_world);
+        }
     }
 }
 
@@ -202,5 +201,49 @@ impl chunk_manager::ChunkBuilder for ChunkBuilder {
         }
 
         chunk_mesh
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Default)]
+struct ChunkEntitiesManager {
+    chunk_entities: Vec<BevyChunkEntity>,
+}
+
+impl ChunkEntitiesManager {
+    fn update(
+        &mut self,
+        mut commands: &mut Commands,
+        mut meshes: &mut ResMut<Assets<Mesh>>,
+        voxel_assets: &Res<VoxelAssets>,
+        mut voxel_materials: &mut ResMut<Assets<VoxelMaterial>>,
+        physical_world: &PhysicalWorld
+    ) {
+
+        for (pos, mesh) in physical_world.chunk_meshes.iter() {
+            print!("x");
+            let mut mesh = BevyChunkMesh::from(mesh.clone());
+            mesh.apply_transform(Transform::from_xyz(pos.x as f32, pos.y as f32, pos.z as f32));
+
+            let chunk_entity = BevyChunkEntity::new(
+                mesh,
+                &mut commands,
+                &mut meshes,
+                &mut voxel_materials,
+                voxel_assets.opaque_texture.clone(),
+            );
+
+            self.chunk_entities.push(chunk_entity);
+        }
+    }
+
+    fn cleanup(
+        &mut self,
+        mut commands: &mut Commands,
+    ) {
+        for entity in self.chunk_entities.iter() {
+            entity.cleanup(&mut commands);
+        }
+
+        self.chunk_entities.clear();
     }
 }
