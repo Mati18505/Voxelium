@@ -1,4 +1,4 @@
-use std::{rc::Rc, sync::Arc};
+use std::{collections::HashMap, hash::Hash, rc::Rc, sync::Arc};
 
 use bevy::{
     color::palettes::css::WHITE,
@@ -7,7 +7,7 @@ use bevy::{
     render::{
         settings::{RenderCreation, WgpuFeatures, WgpuSettings},
         *,
-    },
+    }, tasks::{futures_lite::{self, future}, AsyncComputeTaskPool, Task},
 };
 use bevy_asset_loader::prelude::*;
 use bevy_common_assets::yaml::YamlAssetPlugin;
@@ -87,6 +87,7 @@ struct VoxelAssets {
 #[derive(Resource)]
 struct GameResources {
     chunk_manager: ChunkManager,
+    chunk_builder: ChunkBuilder,
     chunk_entities_manager: ChunkEntitiesManager,
 }
 
@@ -129,20 +130,15 @@ fn init_level(
     let texture_dictionary: Arc<TextureDictionary> = Arc::new(texture_dictionary.into());
 
     let chunk_loader = ChunkLoader::default();
-    let chunk_builder = Box::new(ChunkBuilder {
-        block_type_storage,
-        texture_dictionary,
-    });
+    let chunk_builder = ChunkBuilder::new(block_type_storage, texture_dictionary);
     let config = chunk_manager::Config::new(5, 4);
 
-    let mut chunk_manager = ChunkManager::new(chunk_loader, chunk_builder, config);
-    chunk_manager.update_controller_pos(ChunkPos::new(0,0,0));
-
-    let mut chunk_entities_manager = ChunkEntitiesManager::default();
-    chunk_entities_manager.update(&mut commands, &mut meshes, &voxel_assets, &mut voxel_materials, chunk_manager.get_world());
+    let chunk_manager = ChunkManager::new(chunk_loader, config);
+    let chunk_entities_manager = ChunkEntitiesManager::default();
 
     let game_resources = GameResources {
         chunk_manager,
+        chunk_builder,
         chunk_entities_manager,
     };
     commands.insert_resource(game_resources);
@@ -161,7 +157,6 @@ fn update(
     mut controller_events: EventReader<controller::PositionChangeEvent>,
 ) {
     for e in controller_events.read() {
-        let prev_pos = e.prev_pos;
         let new_pos = e.new_pos;
         // Convert bevy direction to our direction
         let new_block_pos = BlockPos::new(new_pos.x as isize, -new_pos.z as isize, new_pos.y as isize);
@@ -171,81 +166,139 @@ fn update(
 
         if need_redraw {
             println!("need redraw");
+
             let physical_world = game_resources.chunk_manager.get_world().clone();
+            let chunks_to_draw = game_resources.chunk_manager.get_chunks_to_draw();
+
+            println!("Chunk to draw: {}", chunks_to_draw.len());
+
+            for chunk_pos in chunks_to_draw.iter() {
+                let chunk_to_build = physical_world.world.get_chunk(*chunk_pos);
+
+                if let Some(chunk_to_build) = chunk_to_build {
+                    game_resources.chunk_builder.build_chunk(*chunk_pos, chunk_to_build);
+                } else {
+                    eprintln!("Chunk to build don't exist in world!");
+                }
+            }
+
             println!("Chunk meshes: {}", physical_world.chunk_meshes.len());
             println!("Chunk states: {}", physical_world.chunk_states.len());
-            game_resources.chunk_entities_manager.update(&mut commands, &mut meshes, &voxel_assets, &mut voxel_materials, &physical_world);
         }
+    }
+    let builded_chunks = game_resources.chunk_builder.get_builded_chunks();
+
+    for (pos, mesh) in builded_chunks {
+        game_resources.chunk_manager.add_drawn_chunk(pos, mesh.clone());
+        game_resources.chunk_entities_manager.add_chunk_entity(&mut commands, &mut meshes, &voxel_assets, &mut voxel_materials, pos, mesh);
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Resource)]
+struct ChunkBuildTask(Task<ChunkMesh>);
+
 struct ChunkBuilder {
     block_type_storage: Arc<BlockTypeStorage>,
     texture_dictionary: Arc<TextureDictionary>,
+    tasks: HashMap<ChunkPos, ChunkBuildTask>,
 }
 
-impl chunk_manager::ChunkBuilder for ChunkBuilder {
+impl ChunkBuilder {
+    fn new(
+        block_type_storage: Arc<BlockTypeStorage>,
+        texture_dictionary: Arc<TextureDictionary>,
+    ) -> ChunkBuilder {
+        ChunkBuilder {
+            block_type_storage,
+            texture_dictionary,
+            tasks: HashMap::default(),
+        }
+    }
     fn build_chunk(
-        &self,
+        &mut self,
+        chunk_pos: ChunkPos,
         chunk: &Chunk,
-    ) -> ChunkMesh {
+    ) {
+        assert!(!self.tasks.contains_key(&chunk_pos), "Can't build a fragment at the same position a second time.");
+
+        // TODO
+        // Chunk Grouping (for each thread job give multiple chunks).
+        // What if chunk needs to be redrawn before being build? Assert will crash the application.
+
         let mut voxel_mesher = VoxelMesher::new(
             chunk.get_block_storage().clone(),
             self.block_type_storage.clone(),
             self.texture_dictionary.clone(),
         );
 
-        let chunk_mesh = voxel_mesher.create_mesh().clone();
+        let pool = AsyncComputeTaskPool::get();
+        let task = pool.spawn(async move {
+            let chunk_mesh = voxel_mesher.create_mesh().clone();
 
-        if let Some(err) = voxel_mesher.get_last_err() {
-            eprintln!("{}", err);
+            if let Some(err) = voxel_mesher.get_last_err() {
+                eprintln!("{}", err);
+            }
+
+            chunk_mesh
+        });
+
+        self.tasks.insert(chunk_pos, ChunkBuildTask(task));
+    }
+
+    fn get_builded_chunks(&mut self) -> HashMap<ChunkPos, ChunkMesh> {
+        let mut completed: HashMap<ChunkPos, ChunkMesh> = HashMap::default();
+
+        for (chunk_pos, build_task) in self.tasks.iter_mut() {
+            if let Some(chunk_mesh) = future::block_on(future::poll_once(&mut build_task.0)) {
+                completed.insert(*chunk_pos, chunk_mesh);
+            }
         }
 
-        chunk_mesh
+        for chunk_pos in completed.keys() {
+            self.tasks.remove(chunk_pos);
+        }
+
+        completed
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
 struct ChunkEntitiesManager {
-    chunk_entities: Vec<BevyChunkEntity>,
+    chunk_entities: HashMap<ChunkPos, BevyChunkEntity>,
 }
 
 impl ChunkEntitiesManager {
-    fn update(
+    fn add_chunk_entity(
         &mut self,
         mut commands: &mut Commands,
         mut meshes: &mut ResMut<Assets<Mesh>>,
         voxel_assets: &Res<VoxelAssets>,
         mut voxel_materials: &mut ResMut<Assets<VoxelMaterial>>,
-        physical_world: &PhysicalWorld
+        pos: ChunkPos,
+        mesh: ChunkMesh,
     ) {
-        self.cleanup(commands);
+        let mut mesh = BevyChunkMesh::from(mesh);
+        mesh.apply_transform(Transform::from_xyz(pos.x as f32, pos.y as f32, pos.z as f32));
 
-        for (pos, mesh) in physical_world.chunk_meshes.iter() {
-            let mut mesh = BevyChunkMesh::from(mesh.clone());
-            mesh.apply_transform(Transform::from_xyz(pos.x as f32, pos.y as f32, pos.z as f32));
+        let chunk_entity = BevyChunkEntity::new(
+            mesh,
+            &mut commands,
+            &mut meshes,
+            &mut voxel_materials,
+            voxel_assets.opaque_texture.clone(),
+        );
 
-            let chunk_entity = BevyChunkEntity::new(
-                mesh,
-                &mut commands,
-                &mut meshes,
-                &mut voxel_materials,
-                voxel_assets.opaque_texture.clone(),
-            );
-
-            self.chunk_entities.push(chunk_entity);
-        }
+        self.chunk_entities.insert(pos, chunk_entity);
     }
 
-    fn cleanup(
+    fn remove_chunk_entity(
         &mut self,
         mut commands: &mut Commands,
+        pos: &ChunkPos,
     ) {
-        for entity in self.chunk_entities.iter() {
+        if let Some(entity) = self.chunk_entities.get(pos) {
             entity.cleanup(&mut commands);
+            self.chunk_entities.remove(pos);
         }
-
-        self.chunk_entities.clear();
     }
 }

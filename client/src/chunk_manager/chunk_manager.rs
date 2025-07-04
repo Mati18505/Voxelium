@@ -1,3 +1,4 @@
+use bevy::ecs::query::Has;
 use cgmath::MetricSpace;
 use shared::{chunk_loader::chunk_loader, entities::{Chunk, ChunkPos, CHUNK_SIZE}};
 use std::collections::HashSet;
@@ -5,10 +6,6 @@ use std::collections::HashSet;
 use crate::chunk_builder::{ChunkMesh};
 
 use super::physical_world::PhysicalWorld;
-
-pub trait ChunkBuilder: Send + Sync {
-    fn build_chunk(&self, chunk: &Chunk) -> ChunkMesh;
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Config {
@@ -31,17 +28,15 @@ impl Config {
 pub struct ChunkManager {
     world: PhysicalWorld,
     chunk_loader: chunk_loader::ChunkLoader,
-    chunk_builder: Box<dyn ChunkBuilder>,
     config: Config,
     last_controller_pos: Option<ChunkPos>,
 }
 
 impl ChunkManager {
-    pub fn new(chunk_loader: chunk_loader::ChunkLoader, chunk_builder: Box<dyn ChunkBuilder>, config: Config) -> Self {
+    pub fn new(chunk_loader: chunk_loader::ChunkLoader, config: Config) -> Self {
         ChunkManager {
             world: PhysicalWorld::default(),
             chunk_loader,
-            chunk_builder,
             config,
             last_controller_pos: None,
         }
@@ -64,6 +59,17 @@ impl ChunkManager {
         &self.world
     }
 
+    pub fn get_chunks_to_draw(&self) -> Vec<ChunkPos> {
+        self.get_chunks_with_state(super::ChunkState::ToDraw)
+    }
+
+    pub fn add_drawn_chunk(&mut self, pos: ChunkPos, chunk_mesh: ChunkMesh) {
+        assert_eq!(self.world.get_chunk_state(pos), Some(&super::ChunkState::ToDraw), "Drawn chunk must first be in to_draw state.");
+
+        self.world.add_chunk_mesh(pos, chunk_mesh);
+        self.world.change_chunk_state(pos, super::ChunkState::Drawn);
+    }
+
     fn update_chunk_states_in_controller_range(&mut self, controller_pos: ChunkPos) {
 
         // empty -> generated
@@ -81,7 +87,7 @@ impl ChunkManager {
             }
         });
 
-        // generated -> to_draw (drawn)
+        // generated -> to_draw
         let mut chunks_in_render_distance = HashSet::<ChunkPos>::default();
 
         Self::for_each_chunk_in_distance(controller_pos, self.config.render_distance, |pos| {
@@ -90,12 +96,11 @@ impl ChunkManager {
 
             if curr_chunk_state == Some(&super::ChunkState::Generated) {
                 self.world.change_chunk_state(pos, super::ChunkState::ToDraw);
-                self.draw_chunk(pos);
             }
         });
 
         // drawn -> generated
-        let drawn_chunks = self.get_chunks_with_state(super::ChunkState::Drawn);
+        let drawn_chunks: HashSet<ChunkPos> = self.get_chunks_with_state(super::ChunkState::Drawn);
 
         for pos in drawn_chunks {
             if !chunks_in_render_distance.contains(&pos) {
@@ -105,7 +110,7 @@ impl ChunkManager {
         }
 
         // generated -> empty
-        let loaded_chunks = self.get_chunks_with_state(super::ChunkState::Generated);
+        let loaded_chunks: HashSet<ChunkPos> = self.get_chunks_with_state(super::ChunkState::Generated);
 
         for pos in loaded_chunks {
             if !chunks_in_load_distance.contains(&pos) {
@@ -120,7 +125,7 @@ impl ChunkManager {
         // to_draw -> generated
     }
 
-    fn get_chunks_with_state(&self, state: super::ChunkState) -> HashSet<ChunkPos> {
+    fn get_chunks_with_state<T: FromIterator<ChunkPos>>(&self, state: super::ChunkState) -> T {
         self.world.chunk_states
             .iter()
             .filter(|(_, chunk_state)| **chunk_state == state)
@@ -143,20 +148,6 @@ impl ChunkManager {
                 func(pos)
             }
         } 
-    }
-
-    fn draw_chunk(&mut self, pos: ChunkPos) {
-        let chunk = self.world.world.get_chunk(pos);
-
-        if let Some(chunk) = chunk {
-            let chunk_mesh = self.chunk_builder.build_chunk(chunk);
-
-            self.world.add_chunk_mesh(pos, chunk_mesh);
-            self.world.change_chunk_state(pos, super::ChunkState::Drawn);
-        } else {
-            eprintln!("Not loaded chunk in render distance.");
-        }
-
     }
 }
 
