@@ -172,6 +172,8 @@ fn update(
         if need_redraw {
             println!("need redraw");
             let physical_world = game_resources.chunk_manager.get_world().clone();
+            println!("Chunk meshes: {}", physical_world.chunk_meshes.len());
+            println!("Chunk states: {}", physical_world.chunk_states.len());
             game_resources.chunk_entities_manager.update(&mut commands, &mut meshes, &voxel_assets, &mut voxel_materials, &physical_world);
         }
     }
@@ -218,9 +220,9 @@ impl ChunkEntitiesManager {
         mut voxel_materials: &mut ResMut<Assets<VoxelMaterial>>,
         physical_world: &PhysicalWorld
     ) {
+        self.cleanup(commands);
 
         for (pos, mesh) in physical_world.chunk_meshes.iter() {
-            print!("x");
             let mut mesh = BevyChunkMesh::from(mesh.clone());
             mesh.apply_transform(Transform::from_xyz(pos.x as f32, pos.y as f32, pos.z as f32));
 

@@ -26,4 +26,7 @@ impl PhysicalWorld {
 
         self.chunk_states.insert(pos, state);
     }
+    pub fn get_chunk_state(&self, pos: ChunkPos) -> Option<&ChunkState> {
+        self.chunk_states.get(&pos)
+    }
 }

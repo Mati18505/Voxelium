@@ -90,10 +90,16 @@ impl ChunkManager {
 
         // Load
         Self::for_each_chunk_in_distance(controller_pos, self.config.load_distance, |pos| {
-            let chunk = self.chunk_loader.load_chunk(pos);
-            self.world.world.add_chunk(pos, chunk);
+            let curr_chunk_state = self.world.get_chunk_state(pos);
 
-            self.world.change_chunk_state(pos, super::ChunkState::Generated);
+            if  curr_chunk_state == Some(&super::ChunkState::Empty) ||
+                curr_chunk_state == None 
+            {
+                let chunk = self.chunk_loader.load_chunk(pos);
+                self.world.world.add_chunk(pos, chunk);
+
+                self.world.change_chunk_state(pos, super::ChunkState::Generated);
+            }
         });
 
         // Render
@@ -101,9 +107,12 @@ impl ChunkManager {
 
         Self::for_each_chunk_in_distance(controller_pos, self.config.render_distance, |pos| {
             chunks_in_render_distance.insert(pos);
+            let curr_chunk_state = self.world.get_chunk_state(pos);
 
-            self.world.change_chunk_state(pos, super::ChunkState::ToDraw);
-            self.draw_chunk(pos);
+            if curr_chunk_state == Some(&super::ChunkState::Generated) {
+                self.world.change_chunk_state(pos, super::ChunkState::ToDraw);
+                self.draw_chunk(pos);
+            }
         });
 
         // Remove meshes outside render distance
@@ -112,6 +121,9 @@ impl ChunkManager {
             .filter(|(_, chunk_state)| **chunk_state == super::ChunkState::Drawn)
             .map(|(chunk_pos, _)| *chunk_pos)
             .collect();
+
+        println!("Chunks in rd: {}", chunks_in_render_distance.len());
+        println!("Drawn chunks: {}", drawn_chunks.len());
 
         for pos in drawn_chunks {
             if !chunks_in_render_distance.contains(&pos) {
