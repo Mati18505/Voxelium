@@ -88,13 +88,14 @@ impl ChunkManager {
 
     fn update_all_chunks_in_controller_range(&mut self, controller_pos: ChunkPos) {
 
-        // Load
+        // empty -> generated
+        let mut chunks_in_load_distance = HashSet::<ChunkPos>::default();
+
         Self::for_each_chunk_in_distance(controller_pos, self.config.load_distance, |pos| {
+            chunks_in_load_distance.insert(pos);
             let curr_chunk_state = self.world.get_chunk_state(pos);
 
-            if  curr_chunk_state == Some(&super::ChunkState::Empty) ||
-                curr_chunk_state == None 
-            {
+            if curr_chunk_state == None {
                 let chunk = self.chunk_loader.load_chunk(pos);
                 self.world.world.add_chunk(pos, chunk);
 
@@ -102,7 +103,7 @@ impl ChunkManager {
             }
         });
 
-        // Render
+        // generated -> to_draw (drawn)
         let mut chunks_in_render_distance = HashSet::<ChunkPos>::default();
 
         Self::for_each_chunk_in_distance(controller_pos, self.config.render_distance, |pos| {
@@ -115,7 +116,8 @@ impl ChunkManager {
             }
         });
 
-        // Remove meshes outside render distance
+        // drawn -> generated
+        println!("  drawn -> generated");
         let drawn_chunks: HashSet::<ChunkPos> = self.world.chunk_states
             .iter()
             .filter(|(_, chunk_state)| **chunk_state == super::ChunkState::Drawn)
@@ -133,18 +135,27 @@ impl ChunkManager {
         }
 
 
-        // Outside load distance?
-        /*
-        for pos in chunks_in_load_distance {
-            if !chunks_in_render_distance.contains(&pos) {
-                self.world.change_chunk_state(pos, super::ChunkState::Empty);
+        // generated -> empty
+        println!("  generated -> empty");
+        let loaded_chunks: HashSet::<ChunkPos> = self.world.chunk_states
+            .iter()
+            .filter(|(_, chunk_state)| **chunk_state == super::ChunkState::Generated)
+            .map(|(chunk_pos, _)| *chunk_pos)
+            .collect();
+
+        println!("Chunks in ld: {}", chunks_in_load_distance.len());
+        println!("Loaded chunks: {}", loaded_chunks.len());
+
+        for pos in loaded_chunks {
+            if !chunks_in_load_distance.contains(&pos) {
+                self.world.chunk_states.remove(&pos);
                 self.world.world.remove_chunk(pos);
             }
-        } 
-        */
+        }
 
-        // To redraw?
-        // chunks_to_draw -> draw_chunk
+        // to_draw -> drawn: async
+        // drawn -> to_draw: redraw (chunk update)
+        // to_draw -> generated
     }
 
     fn for_each_chunk_in_distance<F: FnMut(ChunkPos)>(controller_pos: ChunkPos, dist: usize, mut func: F) {
