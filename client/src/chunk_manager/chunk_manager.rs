@@ -47,14 +47,14 @@ impl ChunkManager {
         }
     }
 
-    pub fn update(&mut self, controller_pos: ChunkPos) -> bool {
+    pub fn update_controller_pos(&mut self, controller_pos: ChunkPos) -> bool {
         if let Some(last_controller_pos) = self.last_controller_pos {
             if controller_pos == last_controller_pos {
                 return false;
             }
         }
 
-        self.update_all_chunks_in_controller_range(controller_pos);
+        self.update_chunk_states_in_controller_range(controller_pos);
         self.last_controller_pos = Some(controller_pos);
         
         return true;
@@ -64,7 +64,7 @@ impl ChunkManager {
         &self.world
     }
 
-    fn update_all_chunks_in_controller_range(&mut self, controller_pos: ChunkPos) {
+    fn update_chunk_states_in_controller_range(&mut self, controller_pos: ChunkPos) {
 
         // empty -> generated
         let mut chunks_in_load_distance = HashSet::<ChunkPos>::default();

@@ -136,7 +136,7 @@ fn init_level(
     let config = chunk_manager::Config::new(5, 4);
 
     let mut chunk_manager = ChunkManager::new(chunk_loader, chunk_builder, config);
-    chunk_manager.update(ChunkPos::new(0,0,0));
+    chunk_manager.update_controller_pos(ChunkPos::new(0,0,0));
 
     let mut chunk_entities_manager = ChunkEntitiesManager::default();
     chunk_entities_manager.update(&mut commands, &mut meshes, &voxel_assets, &mut voxel_materials, chunk_manager.get_world());
@@ -167,7 +167,7 @@ fn update(
         let new_block_pos = BlockPos::new(new_pos.x as isize, -new_pos.z as isize, new_pos.y as isize);
         let new_chunk_pos = ChunkPos::from(new_block_pos);
 
-        let need_redraw = game_resources.chunk_manager.update(new_chunk_pos);
+        let need_redraw = game_resources.chunk_manager.update_controller_pos(new_chunk_pos);
 
         if need_redraw {
             println!("need redraw");
