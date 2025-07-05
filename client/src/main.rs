@@ -161,16 +161,7 @@ fn update(
         let new_block_pos = BlockPos::new(new_pos.x as isize, -new_pos.z as isize, new_pos.y as isize);
         let new_chunk_pos = ChunkPos::from(new_block_pos);
 
-        let need_redraw = game_resources.chunk_manager.update_controller_pos(new_chunk_pos);
-
-        if need_redraw {
-            println!("need redraw");
-
-            let physical_world = game_resources.chunk_manager.get_world().clone();
-
-            println!("Chunk meshes: {}", physical_world.chunk_meshes.len());
-            println!("Chunk states: {}", physical_world.chunk_states.len());
-        }
+        game_resources.chunk_manager.update_controller_pos(new_chunk_pos);
     }
 
     game_resources.chunk_manager.check_builded_chunks();

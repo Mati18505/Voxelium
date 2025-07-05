@@ -58,17 +58,15 @@ impl ChunkManager {
         self.chunk_object_callback = Some(callback);
     }
 
-    pub fn update_controller_pos(&mut self, controller_pos: ChunkPos) -> bool {
+    pub fn update_controller_pos(&mut self, controller_pos: ChunkPos) {
         if let Some(last_controller_pos) = self.last_controller_pos {
             if controller_pos == last_controller_pos {
-                return false;
+                return;
             }
         }
 
         self.update_chunk_states_in_controller_range(controller_pos);
         self.last_controller_pos = Some(controller_pos);
-        
-        return true;
     }
 
     pub fn check_builded_chunks(&mut self) {
