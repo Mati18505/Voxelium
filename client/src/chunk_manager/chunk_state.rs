@@ -1,6 +1,6 @@
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ChunkState {
-    Generated,
+    Loaded,
 
     ToDraw,
     Drawn,

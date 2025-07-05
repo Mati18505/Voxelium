@@ -80,6 +80,7 @@ impl ChunkManager {
     }
 
     fn add_drawn_chunk(&mut self, pos: ChunkPos, chunk_mesh: ChunkMesh) {
+        // to_draw -> drawn
         assert_eq!(self.world.get_chunk_state(pos), Some(&super::ChunkState::ToDraw), "Drawn chunk must first be in to_draw state.");
 
         self.world.add_chunk_mesh(pos, chunk_mesh.clone());
@@ -93,8 +94,7 @@ impl ChunkManager {
     }
 
     fn update_chunk_states_in_controller_range(&mut self, controller_pos: ChunkPos) {
-
-        // empty -> generated
+        // empty -> loaded
         let mut chunks_in_load_distance = HashSet::<ChunkPos>::default();
 
         Self::for_each_chunk_in_distance(controller_pos, self.config.load_distance, |pos| {
@@ -105,18 +105,18 @@ impl ChunkManager {
                 let chunk = self.chunk_loader.load_chunk(pos);
                 self.world.world.add_chunk(pos, chunk);
 
-                self.world.change_chunk_state(pos, super::ChunkState::Generated);
+                self.world.change_chunk_state(pos, super::ChunkState::Loaded);
             }
         });
 
-        // generated -> to_draw
+        // loaded -> to_draw
         let mut chunks_in_render_distance = HashSet::<ChunkPos>::default();
 
         Self::for_each_chunk_in_distance(controller_pos, self.config.render_distance, |pos| {
             chunks_in_render_distance.insert(pos);
             let curr_chunk_state = self.world.get_chunk_state(pos);
 
-            if curr_chunk_state == Some(&super::ChunkState::Generated) {
+            if curr_chunk_state == Some(&super::ChunkState::Loaded) {
                 if let Some(chunk_to_build) = self.world.world.get_chunk(pos) {
                     self.chunk_builder.build_chunk(pos, chunk_to_build);
                     self.world.change_chunk_state(pos, super::ChunkState::ToDraw);
@@ -126,13 +126,13 @@ impl ChunkManager {
             }
         });
 
-        // drawn -> generated
+        // drawn -> loaded
         let drawn_chunks: HashSet<ChunkPos> = self.get_chunks_with_state(super::ChunkState::Drawn);
 
         for pos in drawn_chunks {
             if !chunks_in_render_distance.contains(&pos) {
                 self.world.chunk_meshes.remove(&pos);
-                self.world.change_chunk_state(pos, super::ChunkState::Generated);
+                self.world.change_chunk_state(pos, super::ChunkState::Loaded);
 
                 if let Some(callback) = &self.chunk_object_callback {
                     if let Ok(mut callback) = callback.lock() {
@@ -142,8 +142,8 @@ impl ChunkManager {
             }
         }
 
-        // generated -> empty
-        let loaded_chunks: HashSet<ChunkPos> = self.get_chunks_with_state(super::ChunkState::Generated);
+        // loaded -> empty
+        let loaded_chunks: HashSet<ChunkPos> = self.get_chunks_with_state(super::ChunkState::Loaded);
 
         for pos in loaded_chunks {
             if !chunks_in_load_distance.contains(&pos) {
@@ -153,9 +153,8 @@ impl ChunkManager {
         }
 
         // TODO
-        // to_draw -> drawn: async
         // drawn -> to_draw: redraw (chunk update)
-        // to_draw -> generated
+        // to_draw -> loaded
     }
 
     fn get_chunks_with_state<T: FromIterator<ChunkPos>>(&self, state: super::ChunkState) -> T {
