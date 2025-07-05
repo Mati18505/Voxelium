@@ -1,11 +1,19 @@
-use bevy::ecs::query::Has;
-use cgmath::MetricSpace;
 use shared::{chunk_loader::chunk_loader, entities::{Chunk, ChunkPos, CHUNK_SIZE}};
-use std::collections::HashSet;
+use std::{collections::{HashMap, HashSet}, sync::{Arc, Mutex}};
 
 use crate::chunk_builder::{ChunkMesh};
 
 use super::physical_world::PhysicalWorld;
+
+pub trait ChunkObjectCallback: Send + Sync {
+    fn chunk_object_created(&mut self, chunk_pos: ChunkPos, chunk_mesh: &ChunkMesh);
+    fn chunk_object_removed(&mut self, chunk_pos: ChunkPos);
+}
+
+pub trait ChunkBuilder: Send + Sync {
+    fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk);
+    fn get_builded_chunks(&mut self) -> HashMap<ChunkPos, ChunkMesh>;
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Config {
@@ -28,18 +36,26 @@ impl Config {
 pub struct ChunkManager {
     world: PhysicalWorld,
     chunk_loader: chunk_loader::ChunkLoader,
+    chunk_builder: Box<dyn ChunkBuilder>,
+    chunk_object_callback: Option<Arc<Mutex<dyn ChunkObjectCallback>>>,
     config: Config,
     last_controller_pos: Option<ChunkPos>,
 }
 
 impl ChunkManager {
-    pub fn new(chunk_loader: chunk_loader::ChunkLoader, config: Config) -> Self {
+    pub fn new(chunk_loader: chunk_loader::ChunkLoader, chunk_builder: Box<dyn ChunkBuilder>, config: Config) -> Self {
         ChunkManager {
             world: PhysicalWorld::default(),
             chunk_loader,
+            chunk_builder,
+            chunk_object_callback: None,
             config,
             last_controller_pos: None,
         }
+    }
+
+    pub fn set_chunk_object_callback(&mut self, callback: Arc<Mutex<dyn ChunkObjectCallback>>) {
+        self.chunk_object_callback = Some(callback);
     }
 
     pub fn update_controller_pos(&mut self, controller_pos: ChunkPos) -> bool {
@@ -55,19 +71,27 @@ impl ChunkManager {
         return true;
     }
 
+    pub fn check_builded_chunks(&mut self) {
+        for (pos, mesh) in self.chunk_builder.get_builded_chunks() {
+            self.add_drawn_chunk(pos, mesh);
+        }
+    }
+
     pub fn get_world(&self) -> &PhysicalWorld {
         &self.world
     }
 
-    pub fn get_chunks_to_draw(&self) -> Vec<ChunkPos> {
-        self.get_chunks_with_state(super::ChunkState::ToDraw)
-    }
-
-    pub fn add_drawn_chunk(&mut self, pos: ChunkPos, chunk_mesh: ChunkMesh) {
+    fn add_drawn_chunk(&mut self, pos: ChunkPos, chunk_mesh: ChunkMesh) {
         assert_eq!(self.world.get_chunk_state(pos), Some(&super::ChunkState::ToDraw), "Drawn chunk must first be in to_draw state.");
 
-        self.world.add_chunk_mesh(pos, chunk_mesh);
+        self.world.add_chunk_mesh(pos, chunk_mesh.clone());
         self.world.change_chunk_state(pos, super::ChunkState::Drawn);
+
+        if let Some(callback) = &self.chunk_object_callback {
+            if let Ok(mut callback) = callback.lock() {
+                callback.chunk_object_created(pos, &chunk_mesh);
+            }
+        }
     }
 
     fn update_chunk_states_in_controller_range(&mut self, controller_pos: ChunkPos) {
@@ -95,7 +119,12 @@ impl ChunkManager {
             let curr_chunk_state = self.world.get_chunk_state(pos);
 
             if curr_chunk_state == Some(&super::ChunkState::Generated) {
-                self.world.change_chunk_state(pos, super::ChunkState::ToDraw);
+                if let Some(chunk_to_build) = self.world.world.get_chunk(pos) {
+                    self.chunk_builder.build_chunk(pos, chunk_to_build);
+                    self.world.change_chunk_state(pos, super::ChunkState::ToDraw);
+                } else {
+                    eprintln!("Chunk to build don't exist in world!");
+                }
             }
         });
 
@@ -106,6 +135,12 @@ impl ChunkManager {
             if !chunks_in_render_distance.contains(&pos) {
                 self.world.chunk_meshes.remove(&pos);
                 self.world.change_chunk_state(pos, super::ChunkState::Generated);
+
+                if let Some(callback) = &self.chunk_object_callback {
+                    if let Ok(mut callback) = callback.lock() {
+                        callback.chunk_object_removed(pos);
+                    }
+                }
             }
         }
 
