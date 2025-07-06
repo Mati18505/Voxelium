@@ -79,6 +79,30 @@ impl ChunkManager {
         &self.world
     }
 
+    pub fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
+        self.world.world.get_chunk(pos)
+    }
+
+    pub fn set_chunk(&mut self, pos: ChunkPos, new_chunk: Chunk) {
+        let curr_chunk_state = self.world.get_chunk_state(pos);
+
+        if curr_chunk_state == None {
+            self.world.change_chunk_state(pos, super::ChunkState::Loaded);
+        } 
+        else if curr_chunk_state == Some(&super::ChunkState::Drawn) {
+            self.world.change_chunk_state(pos, super::ChunkState::ToDraw);
+            self.chunk_builder.build_chunk(pos, &new_chunk);
+        }
+
+        self.world.world.add_chunk(pos, new_chunk);
+
+        // Co jeśli stan był już to_draw? 
+        // Co jeśli wtedy narysowanie nowej wersji zajmie mniej czasu, niż narysowanie wersji starej? 
+        // Odp. Gra wyrenderuje mesh starej wersji chunka, ale dane będą nowej wersji. - czyli mamy problem.
+        // Wniosek: muszę jakoś anulować poprzednie tworzenie mesha, albo je zignoro
+        // uuid?
+    }
+
     fn add_drawn_chunk(&mut self, pos: ChunkPos, chunk_mesh: ChunkMesh) {
         // to_draw -> drawn
         assert_eq!(self.world.get_chunk_state(pos), Some(&super::ChunkState::ToDraw), "Drawn chunk must first be in to_draw state.");
@@ -153,7 +177,6 @@ impl ChunkManager {
         }
 
         // TODO
-        // drawn -> to_draw: redraw (chunk update)
         // to_draw -> loaded
     }
 
