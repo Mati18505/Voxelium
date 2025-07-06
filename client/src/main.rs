@@ -120,6 +120,10 @@ fn init_level(
     });
 }
 
-fn update() {
-
+fn update(
+    mut controller_ev: EventReader<controller::ActionEvent>,
+) {
+    for ev in controller_ev.read() {
+        println!("{:?}", ev);
+    }
 }

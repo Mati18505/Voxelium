@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{input::mouse::MouseButtonInput, prelude::*, text::cosmic_text::Action};
 use bevy_flycam::*;
 
 pub struct ControllerPlugin;
@@ -6,8 +6,9 @@ impl Plugin for ControllerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(NoCameraPlayerPlugin)
             .add_event::<PositionChangeEvent>()
+            .add_event::<ActionEvent>()
             .add_systems(Startup, setup_controller)
-            .add_systems(FixedUpdate, update);
+            .add_systems(Update, (update, player_action));
     }
 }
 
@@ -16,10 +17,22 @@ pub struct Controller {
     last_player_pos: Vec3,
 }
 
-#[derive(Event)]
+#[derive(Event, Debug)]
 pub struct PositionChangeEvent {
     pub prev_pos: Vec3,
     pub new_pos: Vec3,
+}
+
+#[derive(Event, Debug)]
+pub struct ActionEvent {
+    pub action_type: ActionType,
+    pub controller_forward: Vec3,
+}
+
+#[derive(Debug)]
+pub enum ActionType {
+    RightClick,
+    LeftClick,
 }
 
 fn setup_controller(mut commands: Commands) {
@@ -46,6 +59,20 @@ pub fn update(
         }
     } else {
         warn!("Controller not found for 'update'!");
+    }
+}
+
+pub fn player_action(
+    mut action_ev: EventWriter<ActionEvent>,
+    mouse: Res<ButtonInput<MouseButton>>,
+    q_fly_cam: Query<&Transform, With<FlyCam>>,
+) {
+    if let Ok(transform) = q_fly_cam.single() {
+        if mouse.just_pressed(MouseButton::Left) {
+            action_ev.write(ActionEvent { action_type: ActionType::LeftClick, controller_forward: *transform.forward() });
+        } else if mouse.just_pressed(MouseButton::Right) {
+            action_ev.write(ActionEvent { action_type: ActionType::RightClick, controller_forward: *transform.forward() });
+        }
     }
 }
 
