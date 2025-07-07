@@ -1,6 +1,7 @@
 use crate::entities::{BlockID, BlockPos, BlockTypeStorage, World};
 use cgmath::{MetricSpace, Vector3};
 
+#[derive(Debug)]
 pub struct Hitpoint {
     pub pos: BlockPos,
     pub block_id: BlockID,
@@ -15,11 +16,11 @@ impl Default for Hitpoint {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct RaycastResult {
     pub collide: bool,
     pub hitpoint: Hitpoint,
-    pub prev_hitpoint: Hitpoint,
+    pub step_before_hitpoint: Hitpoint,
 }
 
 pub struct RaycastConfig<'a> {
@@ -32,6 +33,7 @@ pub struct RaycastConfig<'a> {
 pub fn raycast(start: Vector3<f32>, dir: Vector3<f32>, config: &RaycastConfig) -> RaycastResult {
     let mut curr_pos = start;
     let mut raycast_result = RaycastResult::default();
+    let mut previous_block_id = BlockID::default();
 
     while curr_pos.distance2(start) <= config.range * config.range && !raycast_result.collide {
         let curr_block_pos = f32_pos_to_block_pos(curr_pos);
@@ -41,13 +43,20 @@ pub fn raycast(start: Vector3<f32>, dir: Vector3<f32>, config: &RaycastConfig) -
 
                 if block_type.affect_raycast {
                     raycast_result.collide = true;
-                    raycast_result.prev_hitpoint = raycast_result.hitpoint;
                     raycast_result.hitpoint = Hitpoint {
                         pos: curr_block_pos,
                         block_id: block_id,
+                    };
+                    raycast_result.step_before_hitpoint = Hitpoint {
+                        pos: f32_pos_to_block_pos(curr_pos - dir * config.increment),
+                        block_id: previous_block_id,
                     }
                 }
             }
+
+            previous_block_id = block_id;
+        } else {
+            previous_block_id = BlockID::default();
         }
 
         curr_pos += dir * config.increment;
