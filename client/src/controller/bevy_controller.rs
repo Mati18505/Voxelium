@@ -7,6 +7,7 @@ impl Plugin for ControllerPlugin {
         app.add_plugins(NoCameraPlayerPlugin)
             .insert_resource(MovementSettings { speed: 6.0, ..default() })
             .add_event::<PositionChangeEvent>()
+            .add_event::<LookingDirChangeEvent>()
             .add_event::<ActionEvent>()
             .add_systems(Startup, setup_controller)
             .add_systems(Update, (update, player_action));
@@ -16,12 +17,19 @@ impl Plugin for ControllerPlugin {
 #[derive(Component, Debug, Default, Clone, Copy)]
 pub struct Controller {
     last_player_pos: Vec3,
+    last_looking_dir: Vec3,
 }
 
 #[derive(Event, Debug)]
 pub struct PositionChangeEvent {
     pub prev_pos: Vec3,
     pub new_pos: Vec3,
+}
+
+#[derive(Event, Debug)]
+pub struct LookingDirChangeEvent {
+    pub prev_looking_dir: Vec3,
+    pub new_looking_dir: Vec3,
 }
 
 #[derive(Event, Debug)]
@@ -48,15 +56,21 @@ fn setup_controller(mut commands: Commands) {
 
 pub fn update(
     mut q_controller: Query<&mut Controller>,
-    events: EventWriter<PositionChangeEvent>,
+    position_ev: EventWriter<PositionChangeEvent>,
+    mut looking_dir_ev: EventWriter<LookingDirChangeEvent>,
     q_fly_cam: Query<&Transform, With<FlyCam>>,
 ) {
     if let Ok(mut controller) = q_controller.single_mut() {
         if let Ok(transform) = q_fly_cam.single() {
             if controller.last_player_pos.floor() != transform.translation.floor() {
-                position_changed(events, controller.last_player_pos, transform.translation);
+                position_changed(position_ev, controller.last_player_pos, transform.translation);
 
                 controller.last_player_pos = transform.translation;
+            }
+            if controller.last_looking_dir != Vec3::from(transform.forward()) {
+                looking_dir_ev.write(LookingDirChangeEvent { prev_looking_dir: controller.last_looking_dir, new_looking_dir: Vec3::from(transform.forward()) });
+
+                controller.last_looking_dir = Vec3::from(transform.forward());
             }
         }
     } else {

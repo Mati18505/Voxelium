@@ -62,7 +62,7 @@ fn main() {
                 .load_collection::<VoxelAssets>(),
         )
         .add_systems(OnExit(AppStates::Loading), init_level)
-        .add_systems(Update, update.run_if(in_state(AppStates::InGame)))
+        .add_systems(Update, (update, update_gizmo).run_if(in_state(AppStates::InGame)))
         .run();
 }
 
@@ -124,6 +124,10 @@ fn init_level(
         texture_dictionary,
         opaque_texture: voxel_assets.opaque_texture.clone(),
     });
+
+    commands.spawn((
+        GizmoData::default(),
+    ));
 }
 
 fn update(
@@ -131,12 +135,7 @@ fn update(
     game_resources: ResMut<GameResources>,
     mut controller_ev: EventReader<controller::ActionEvent>,
 ) {
-
     for ev in controller_ev.read() {
-        println!("{:?}", ev);
-
-        println!("{}", ev.controller_pos);
-
         let world = &chunk_manager_resources.chunk_manager.get_world().world;
         let raycast_result = raycast_from_controller(ev.controller_pos, ev.controller_forward, world, &game_resources.server_block_type_storage);
 
@@ -148,9 +147,74 @@ fn update(
                 
             set_block_and_update_chunk(&mut chunk_manager_resources.chunk_manager, block_action.pos, block_action.new_block);
         } else {
-            warn!("don't collide");
+            println!("Raycast don't collide.");
         }
     }
+}
+
+#[derive(Component, Debug, Clone, Copy)]
+pub struct GizmoData {
+    block_pos: BlockPos,
+    last_controller_pos: Vec3,
+    last_looking_dir: Vec3,
+}
+
+impl Default for GizmoData {
+    fn default() -> Self {
+        Self { block_pos: BlockPos::new(0, 0, 0), last_controller_pos: Default::default(), last_looking_dir: Default::default() }
+    }
+}
+
+fn update_gizmo(
+    mut gizmos: Gizmos,
+    chunk_manager_resources: ResMut<ChunkManagerResources>,
+    game_resources: ResMut<GameResources>,
+    mut controller_position_change_ev: EventReader<controller::PositionChangeEvent>,
+    mut controller_looking_dir_change_ev: EventReader<controller::LookingDirChangeEvent>,
+    mut gizmo_data: Query<&mut GizmoData>,
+) {
+    let mut gizmo_data = match gizmo_data.single_mut() {
+        Ok(gizmo_data) => gizmo_data,
+        Err(_) => {
+            warn!("Gizmo data not found for update_gizmo!");
+            return;
+        },
+    };
+
+    let mut dirty = false;
+
+    for ev in controller_position_change_ev.read() {
+        gizmo_data.last_controller_pos = ev.new_pos;
+        dirty = true;
+    }
+
+    for ev in controller_looking_dir_change_ev.read() {
+        gizmo_data.last_looking_dir = ev.new_looking_dir;
+        dirty = true;
+    }
+
+    if dirty {
+        let world = &chunk_manager_resources.chunk_manager.get_world().world;
+        let raycast_result = raycast_from_controller(gizmo_data.last_controller_pos, gizmo_data.last_looking_dir, world, &game_resources.server_block_type_storage);
+
+        if raycast_result.collide {
+            gizmo_data.block_pos = raycast_result.hitpoint.pos;
+    
+        }
+    }
+
+    gizmos.cuboid({
+        let translation = Vec3::new(
+            gizmo_data.block_pos.x as f32,
+            gizmo_data.block_pos.z as f32,
+            -gizmo_data.block_pos.y as f32,
+        );
+        Transform {
+            translation,
+            ..Transform::IDENTITY
+        }
+    },
+    Color::WHITE);
 }
 
 fn raycast_from_controller(
