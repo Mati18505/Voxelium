@@ -154,6 +154,7 @@ fn update(
 
 #[derive(Component, Debug, Clone, Copy)]
 pub struct GizmoData {
+    visible: bool,
     block_pos: BlockPos,
     last_controller_pos: Vec3,
     last_looking_dir: Vec3,
@@ -161,7 +162,12 @@ pub struct GizmoData {
 
 impl Default for GizmoData {
     fn default() -> Self {
-        Self { block_pos: BlockPos::new(0, 0, 0), last_controller_pos: Default::default(), last_looking_dir: Default::default() }
+        Self {
+            visible: false,
+            block_pos: BlockPos::new(0, 0, 0),
+            last_controller_pos: Default::default(),
+            last_looking_dir: Default::default() 
+        }
     }
 }
 
@@ -199,22 +205,26 @@ fn update_gizmo(
 
         if raycast_result.collide {
             gizmo_data.block_pos = raycast_result.hitpoint.pos;
-    
+            gizmo_data.visible = true;
+        } else {
+            gizmo_data.visible = false;
         }
     }
 
-    gizmos.cuboid({
-        let translation = Vec3::new(
-            gizmo_data.block_pos.x as f32,
-            gizmo_data.block_pos.z as f32,
-            -gizmo_data.block_pos.y as f32,
-        );
-        Transform {
-            translation,
-            ..Transform::IDENTITY
-        }
-    },
-    Color::WHITE);
+    if gizmo_data.visible {
+        gizmos.cuboid({
+            let translation = Vec3::new(
+                gizmo_data.block_pos.x as f32,
+                gizmo_data.block_pos.z as f32,
+                -gizmo_data.block_pos.y as f32,
+            );
+            Transform {
+                translation,
+                ..Transform::IDENTITY
+            }
+        },
+        Color::WHITE);
+    }
 }
 
 fn raycast_from_controller(
