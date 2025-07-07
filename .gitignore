@@ -17,3 +17,6 @@ Cargo.lock
 *.tps
 
 .old
+generate-graphs.sh
+graph1.png
+graph2.png

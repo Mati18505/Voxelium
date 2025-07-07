@@ -1,25 +1,25 @@
-use std::sync::Arc;
+use std::{fs, sync::Arc};
 
 use bevy::{
-    color::palettes::css::WHITE,
-    pbr::wireframe::{WireframeConfig, WireframePlugin},
-    prelude::*,
-    render::{
+    color::palettes::css::WHITE, pbr::wireframe::{WireframeConfig, WireframePlugin}, prelude::*, render::{
         settings::{RenderCreation, WgpuFeatures, WgpuSettings},
         *,
-    },
+    }
 };
 use bevy_asset_loader::prelude::*;
 use bevy_common_assets::yaml::YamlAssetPlugin;
 
 use bevy_render::VoxelRenderPlugin;
 use bevy_resources::{MeshBlockTypeStorageLoader, MeshBlockTypeStorageResource, TextureConfig};
+use cgmath::Vector3;
 use chunk_builder::*;
 use controller::ControllerPlugin;
 use bevy_types::{AppStates, GameResources};
-use shared::chunk_loader::ChunkLoader;
+use shared::{entities::{BlockID, BlockInChunkPos, BlockPos, Chunk, ChunkPos}, physics::{raycast, RaycastConfig, RaycastResult}, resources::BlockTypeStorageResource};
 
 use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
+
+use crate::{chunk_manager::ChunkManager, controller::ActionType};
 
 mod bevy_render;
 mod bevy_resources;
@@ -47,7 +47,7 @@ fn main() {
             ChunkManagerPlugin,
         ))
         .insert_resource(WireframeConfig {
-            global: true,
+            global: false,
             default_color: WHITE.into(),
         })
         .init_asset_loader::<MeshBlockTypeStorageLoader>()
@@ -113,17 +113,104 @@ fn init_level(
         .to_owned();
     let texture_dictionary: Arc<TextureDictionary> = Arc::new(texture_dictionary.into());
 
+    let server_block_types = fs::read_to_string("assets/server_blocks.json").unwrap();
+    let resource = BlockTypeStorageResource::deserialize(&server_block_types).unwrap();
+    let server_block_type_storage: shared::entities::BlockTypeStorage = resource.into();
+    let server_block_type_storage = Arc::new(server_block_type_storage);
+
     commands.insert_resource(GameResources{
         block_type_storage,
+        server_block_type_storage,
         texture_dictionary,
         opaque_texture: voxel_assets.opaque_texture.clone(),
     });
 }
 
 fn update(
+    mut chunk_manager_resources: ResMut<ChunkManagerResources>,
+    game_resources: ResMut<GameResources>,
     mut controller_ev: EventReader<controller::ActionEvent>,
 ) {
+
     for ev in controller_ev.read() {
         println!("{:?}", ev);
+
+        println!("{}", ev.controller_pos);
+
+        let world = &chunk_manager_resources.chunk_manager.get_world().world;
+        let raycast_result = raycast_from_controller(ev.controller_pos, ev.controller_forward, world, &game_resources.server_block_type_storage);
+
+        if raycast_result.collide {
+            let block_action: BlockAction = match ev.action_type {
+                ActionType::LeftClick => destroy_block_action(raycast_result),
+                ActionType::RightClick => place_block_action(raycast_result),
+            };
+                
+            set_block_and_update_chunk(&mut chunk_manager_resources.chunk_manager, block_action.pos, block_action.new_block);
+        } else {
+            warn!("don't collide");
+        }
+    }
+}
+
+fn raycast_from_controller(
+    controller_pos: Vec3, 
+    controller_forward: Vec3, 
+    world: &shared::entities::World, 
+    server_block_type_storage: &shared::entities::BlockTypeStorage
+) -> RaycastResult {
+    // Convert bevy direction to our direction
+    let mut start = Vector3::new(controller_pos.x, -controller_pos.z, controller_pos.y);
+    let dir = Vector3::new(controller_forward.x, -controller_forward.z, controller_forward.y);
+
+    let config = RaycastConfig {
+        world: world,
+        block_type_storage: &server_block_type_storage,
+        range: 16.0,
+        increment: 0.01,
+    };
+
+    start -= dir * config.increment;
+
+    raycast(start, dir, &config)
+}
+
+fn set_block_and_update_chunk(
+    chunk_manager: &mut ChunkManager, 
+    set_pos: BlockPos,
+    new_block: BlockID,
+) {
+    let chunk_pos = ChunkPos::from(set_pos);
+    let block_in_chunk_pos = BlockInChunkPos::from(set_pos);
+
+    if let Some(chunk) = chunk_manager.get_chunk(chunk_pos) {
+        let mut new_block_storage = chunk.get_block_storage().clone();
+        new_block_storage.set_block(block_in_chunk_pos, new_block);
+
+        let new_chunk = Chunk::new(new_block_storage);
+        chunk_manager.set_chunk(chunk_pos, new_chunk);
+        
+    } else {
+        // TODO: If chunk don't exist generate it and set block.
+        warn!("Chunk to change don't exist.");
+    }
+}
+
+struct BlockAction {
+    pos: BlockPos,
+    new_block: BlockID,
+}
+
+fn destroy_block_action(raycast_result: RaycastResult) -> BlockAction {
+    BlockAction { 
+        pos: raycast_result.hitpoint.pos,
+        new_block: 0
+    }
+}
+
+fn place_block_action(raycast_result: RaycastResult) -> BlockAction {
+    BlockAction { 
+        pos: raycast_result.step_before_hitpoint.pos,
+        new_block: 2
     }
 }

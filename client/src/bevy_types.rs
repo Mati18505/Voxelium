@@ -14,6 +14,7 @@ pub enum AppStates {
 #[derive(Resource)]
 pub struct GameResources {
     pub block_type_storage: Arc<BlockTypeStorage>,
+    pub server_block_type_storage: Arc<shared::entities::BlockTypeStorage>,
     pub texture_dictionary: Arc<TextureDictionary>, 
     pub opaque_texture: Handle<Image>,
 }

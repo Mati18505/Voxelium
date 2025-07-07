@@ -5,6 +5,7 @@ pub struct ControllerPlugin;
 impl Plugin for ControllerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(NoCameraPlayerPlugin)
+            .insert_resource(MovementSettings { speed: 6.0, ..default() })
             .add_event::<PositionChangeEvent>()
             .add_event::<ActionEvent>()
             .add_systems(Startup, setup_controller)
@@ -27,6 +28,7 @@ pub struct PositionChangeEvent {
 pub struct ActionEvent {
     pub action_type: ActionType,
     pub controller_forward: Vec3,
+    pub controller_pos: Vec3,
 }
 
 #[derive(Debug)]
@@ -69,9 +71,9 @@ pub fn player_action(
 ) {
     if let Ok(transform) = q_fly_cam.single() {
         if mouse.just_pressed(MouseButton::Left) {
-            action_ev.write(ActionEvent { action_type: ActionType::LeftClick, controller_forward: *transform.forward() });
+            action_ev.write(ActionEvent { action_type: ActionType::LeftClick, controller_forward: *transform.forward(), controller_pos: transform.translation });
         } else if mouse.just_pressed(MouseButton::Right) {
-            action_ev.write(ActionEvent { action_type: ActionType::RightClick, controller_forward: *transform.forward() });
+            action_ev.write(ActionEvent { action_type: ActionType::RightClick, controller_forward: *transform.forward(), controller_pos: transform.translation });
         }
     }
 }

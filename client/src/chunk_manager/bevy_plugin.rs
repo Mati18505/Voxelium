@@ -17,7 +17,7 @@ impl Plugin for ChunkManagerPlugin {
 
 #[derive(Resource)]
 pub struct ChunkManagerResources {
-    chunk_manager: ChunkManager,
+    pub chunk_manager: ChunkManager,
     chunk_entities_manager: Arc<Mutex<ChunkEntitiesManager>>,
 }
 
@@ -26,7 +26,7 @@ fn init_chunk_manager(
     game_resources: Res<GameResources>,
 ) {
     let chunk_builder = Box::new(AsyncChunkBuilder::new(game_resources.block_type_storage.clone(), game_resources.texture_dictionary.clone()));
-    let config = Config::new(17, 16);
+    let config = Config::new(2, 1);
 
     let chunk_entities_manager = Arc::new(Mutex::new(ChunkEntitiesManager::default()));
     let mut chunk_manager = ChunkManager::new(ChunkLoader::default(), chunk_builder, config);
