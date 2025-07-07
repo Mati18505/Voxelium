@@ -32,6 +32,7 @@ impl ChunkEntitiesManager {
         voxel_materials: &mut ResMut<Assets<VoxelMaterial>>,
     ) {
         for (pos, mesh) in std::mem::take(&mut self.pending_to_create) {
+            self.remove_chunk_entity(&pos, commands);
             self.create_chunk_entity(pos, mesh, commands, meshes, opaque_texture.clone(), voxel_materials);
         }
 
