@@ -53,6 +53,8 @@ impl ChunkEntitiesManager {
         opaque_texture: Handle<Image>,
         mut voxel_materials: &mut ResMut<Assets<VoxelMaterial>>,
     ) {
+        assert!(self.chunk_entities.get(&pos).is_none(), "Potential memory leak!");
+
         let mut mesh = BevyChunkMesh::from(mesh);
         mesh.apply_transform(Transform::from_xyz(pos.x as f32, pos.y as f32, pos.z as f32));
 
