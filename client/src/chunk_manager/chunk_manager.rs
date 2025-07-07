@@ -83,6 +83,19 @@ impl ChunkManager {
         self.world.world.get_chunk(pos)
     }
 
+    pub fn get_or_load_chunk(&mut self, pos: ChunkPos) -> &Chunk {
+        let curr_chunk_state = self.world.get_chunk_state(pos);
+
+        if curr_chunk_state == None {
+            let chunk = self.chunk_loader.load_chunk(pos);
+            self.world.world.add_chunk(pos, chunk);
+
+            self.world.change_chunk_state(pos, super::ChunkState::Loaded);
+        }
+
+        self.get_chunk(pos).unwrap()
+    }
+
     pub fn set_chunk(&mut self, pos: ChunkPos, new_chunk: Chunk) {
         let curr_chunk_state = self.world.get_chunk_state(pos);
 
