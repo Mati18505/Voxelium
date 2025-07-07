@@ -2,8 +2,8 @@ use crate::entities::{BlockID, BlockPos, BlockTypeStorage, World};
 use cgmath::{MetricSpace, Vector3};
 
 pub struct Hitpoint {
-    pos: BlockPos,
-    block_id: BlockID,
+    pub pos: BlockPos,
+    pub block_id: BlockID,
 }
 
 impl Default for Hitpoint {
@@ -17,15 +17,16 @@ impl Default for Hitpoint {
 
 #[derive(Default)]
 pub struct RaycastResult {
-    collide: bool,
-    hitpoint: Hitpoint,
-    prev_hitpoint: Hitpoint,
+    pub collide: bool,
+    pub hitpoint: Hitpoint,
+    pub prev_hitpoint: Hitpoint,
 }
 
 pub struct RaycastConfig<'a> {
-    world: &'a World, 
-    block_type_storage: &'a BlockTypeStorage, 
-    range: f32,
+    pub world: &'a World, 
+    pub block_type_storage: &'a BlockTypeStorage, 
+    pub range: f32,
+    pub increment: f32,
 }
 
 pub fn raycast(start: Vector3<f32>, dir: Vector3<f32>, config: &RaycastConfig) -> RaycastResult {
@@ -49,7 +50,7 @@ pub fn raycast(start: Vector3<f32>, dir: Vector3<f32>, config: &RaycastConfig) -
             }
         }
 
-        curr_pos += dir;
+        curr_pos += dir * config.increment;
     }
 
     raycast_result
@@ -57,9 +58,9 @@ pub fn raycast(start: Vector3<f32>, dir: Vector3<f32>, config: &RaycastConfig) -
 
 fn f32_pos_to_block_pos(pos: Vector3<f32>) -> BlockPos {
     BlockPos {
-        x: pos.x.floor() as isize,
-        y: pos.y.floor() as isize,
-        z: pos.z.floor() as isize,
+        x: pos.x.round() as isize,
+        y: pos.y.round() as isize,
+        z: pos.z.round() as isize,
     }
 }
 
@@ -76,6 +77,7 @@ mod test {
             world: &World::default(),
             block_type_storage: &BlockTypeStorage::default(),
             range: 20.0,
+            increment: 0.01,
         };
 
         let result = raycast(start, dir, &config);
