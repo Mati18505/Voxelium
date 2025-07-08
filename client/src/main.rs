@@ -8,6 +8,7 @@ use bevy::{
 };
 use bevy_asset_loader::prelude::*;
 use bevy_common_assets::yaml::YamlAssetPlugin;
+use bevy_common_assets::json::JsonAssetPlugin;
 
 use bevy_render::VoxelRenderPlugin;
 use bevy_resources::{MeshBlockTypeStorageLoader, MeshBlockTypeStorageResource, TextureConfig};
@@ -15,11 +16,11 @@ use cgmath::Vector3;
 use chunk_builder::*;
 use controller::ControllerPlugin;
 use bevy_types::{AppStates, GameResources};
-use shared::{entities::{BlockID, BlockInChunkPos, BlockPos, Chunk, ChunkPos}, physics::{raycast, RaycastConfig, RaycastResult}, resources::BlockTypeStorageResource};
+use shared::{entities::{BlockID, BlockInChunkPos, BlockPos, BlockTypeStorage, Chunk, ChunkPos}, physics::{raycast, RaycastConfig, RaycastResult}, resources::BlockTypeStorageResource};
 
 use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
 
-use crate::{chunk_manager::{ChunkManager, WorldChunkUpdateEvent}, controller::ActionType};
+use crate::{bevy_resources::BevyBlockTypeStorageResource, chunk_manager::{ChunkManager, WorldChunkUpdateEvent}, controller::ActionType};
 
 mod bevy_render;
 mod bevy_resources;
@@ -42,6 +43,7 @@ fn main() {
                 }),
             WireframePlugin::default(),
             YamlAssetPlugin::<TextureConfig>::new(&["config.yaml"]),
+            JsonAssetPlugin::<BevyBlockTypeStorageResource>::new(&["server_blocks.json"]),
             ControllerPlugin,
             VoxelRenderPlugin,
             ChunkManagerPlugin,
@@ -52,6 +54,7 @@ fn main() {
         })
         .init_asset_loader::<MeshBlockTypeStorageLoader>()
         .init_asset::<MeshBlockTypeStorageResource>()
+        .init_asset::<BevyBlockTypeStorageResource>()
         .init_state::<AppStates>()
         .add_loading_state(
             LoadingState::new(AppStates::Loading)
@@ -74,6 +77,8 @@ struct VoxelAssets {
     opaque_texture: Handle<Image>,
     #[asset(path = "textures.config.yaml")]
     texture_config: Handle<TextureConfig>,
+    #[asset(path = "global.server_blocks.json")]
+    server_blocks: Handle<BevyBlockTypeStorageResource>,
 }
 
 fn init_level(
@@ -82,6 +87,7 @@ fn init_level(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut ambient_light: ResMut<AmbientLight>,
     block_type_assets: Res<Assets<MeshBlockTypeStorageResource>>,
+    server_block_type_assets: Res<Assets<BevyBlockTypeStorageResource>>,
     textures_assets: Res<Assets<TextureConfig>>,
     voxel_assets: Res<VoxelAssets>,
 ) {
@@ -113,10 +119,11 @@ fn init_level(
         .to_owned();
     let texture_dictionary: Arc<TextureDictionary> = Arc::new(texture_dictionary.into());
 
-    let server_block_types = fs::read_to_string("assets/server_blocks.json").unwrap();
-    let resource = BlockTypeStorageResource::deserialize(&server_block_types).unwrap();
-    let server_block_type_storage: shared::entities::BlockTypeStorage = resource.into();
-    let server_block_type_storage = Arc::new(server_block_type_storage);
+    let server_block_type_storage = server_block_type_assets
+        .get(&voxel_assets.server_blocks)
+        .expect("Failed to get server_block_type_storage asset")
+        .to_owned();
+    let server_block_type_storage: Arc<BlockTypeStorage> = Arc::new(server_block_type_storage.into());
 
     commands.insert_resource(GameResources{
         block_type_storage,
@@ -238,7 +245,7 @@ fn raycast_from_controller(
     controller_pos: Vec3, 
     controller_forward: Vec3, 
     world: &shared::entities::World, 
-    server_block_type_storage: &shared::entities::BlockTypeStorage
+    server_block_type_storage: &BlockTypeStorage
 ) -> RaycastResult {
     // Convert bevy direction to our direction
     let mut start = Vector3::new(controller_pos.x, -controller_pos.z, controller_pos.y);

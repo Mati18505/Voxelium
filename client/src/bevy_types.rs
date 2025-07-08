@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use bevy::{asset::Handle, ecs::resource::Resource, image::Image, state::state::States};
+use shared::entities::BlockTypeStorage;
 
 use crate::chunk_builder::{MeshBlockTypeStorage, TextureDictionary};
 
@@ -14,7 +15,7 @@ pub enum AppStates {
 #[derive(Resource)]
 pub struct GameResources {
     pub block_type_storage: Arc<MeshBlockTypeStorage>,
-    pub server_block_type_storage: Arc<shared::entities::BlockTypeStorage>,
+    pub server_block_type_storage: Arc<BlockTypeStorage>,
     pub texture_dictionary: Arc<TextureDictionary>, 
     pub opaque_texture: Handle<Image>,
 }
