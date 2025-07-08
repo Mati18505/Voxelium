@@ -30,6 +30,7 @@ pub trait ChunkBuilder: Send + Sync {
 pub struct Config {
     load_distance: usize,
     render_distance: usize,
+    pub dynamic_vertical_loading: bool,
 }
 
 impl Config {
@@ -39,6 +40,7 @@ impl Config {
         Config {
             load_distance,
             render_distance,
+            dynamic_vertical_loading: false,
         }
     }
 }
@@ -151,7 +153,7 @@ impl ChunkManager {
         // empty -> loaded
         let mut chunks_in_load_distance = HashSet::<ChunkPos>::default();
 
-        Self::for_each_chunk_in_distance(controller_pos, self.config.load_distance, |pos| {
+        Self::for_each_chunk_in_distance(controller_pos, self.config.load_distance, self.config.dynamic_vertical_loading, |pos| {
             chunks_in_load_distance.insert(pos);
             let curr_chunk_state = self.world.get_chunk_state(pos);
 
@@ -166,7 +168,7 @@ impl ChunkManager {
         // loaded -> to_draw
         let mut chunks_in_render_distance = HashSet::<ChunkPos>::default();
 
-        Self::for_each_chunk_in_distance(controller_pos, self.config.render_distance, |pos| {
+        Self::for_each_chunk_in_distance(controller_pos, self.config.render_distance, self.config.dynamic_vertical_loading, |pos| {
             chunks_in_render_distance.insert(pos);
             let curr_chunk_state = self.world.get_chunk_state(pos);
 
@@ -218,21 +220,35 @@ impl ChunkManager {
             .collect()
     }
 
-    fn for_each_chunk_in_distance<F: FnMut(ChunkPos)>(controller_pos: ChunkPos, dist: usize, mut func: F) {
+    fn for_each_chunk_in_distance<F: FnMut(ChunkPos)>(controller_pos: ChunkPos, dist: usize, vertical: bool, mut func: F) {
         let controller_pos = *controller_pos / 16;
 
+        let z_start = controller_pos.z - dist as isize;
+        let z_end = controller_pos.z + dist as isize;
         let y_start = controller_pos.y - dist as isize;
         let y_end = controller_pos.y + dist as isize;
         let x_start = controller_pos.x - dist as isize;
         let x_end = controller_pos.x + dist as isize;
 
-        for y in y_start..=y_end {
-            for x in x_start..=x_end {
-                let pos = ChunkPos::new(x * CHUNK_SIZE as isize, y * CHUNK_SIZE as isize, 0);
+        if vertical {
+            for z in z_start..=z_end {
+                for y in y_start..=y_end {
+                    for x in x_start..=x_end {
+                        let pos = ChunkPos::new(x * CHUNK_SIZE as isize, y * CHUNK_SIZE as isize, z * CHUNK_SIZE as isize);
 
-                func(pos)
+                        func(pos)
+                    }
+                } 
             }
-        } 
+        } else {
+            for y in y_start..=y_end {
+                for x in x_start..=x_end {
+                    let pos = ChunkPos::new(x * CHUNK_SIZE as isize, y * CHUNK_SIZE as isize, 0);
+
+                    func(pos)
+                }
+            } 
+        }
     }
 
     fn change_world_chunk(&mut self, pos: ChunkPos, new_chunk: Chunk) {
@@ -267,7 +283,7 @@ mod test {
     fn test_for_each_chunk_in_distance() {
         let mut actual_positions: HashSet<ChunkPos> = HashSet::new();
 
-        ChunkManager::for_each_chunk_in_distance(ChunkPos::new(0, 0, 0), 2, |pos| {
+        ChunkManager::for_each_chunk_in_distance(ChunkPos::new(0, 0, 0), 2, false, |pos| {
             actual_positions.insert(pos);
         });
 

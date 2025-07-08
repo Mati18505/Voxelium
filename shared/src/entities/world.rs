@@ -27,10 +27,6 @@ impl World {
         self.chunks.get(&pos)
     }
     pub fn get_block(&self, world_pos: BlockPos) -> Result<BlockID, GetBlockErr> {
-        if world_pos.z < 0 {
-            return Err(GetBlockErr::OutsideOfWorld);
-        }
-
         let chunk_pos = ChunkPos::from(world_pos);
         let in_chunk_pos = BlockInChunkPos::from(world_pos);
 

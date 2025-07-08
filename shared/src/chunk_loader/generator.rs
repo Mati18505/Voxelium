@@ -59,7 +59,7 @@ impl Generator {
                 _ => 0
             }
         */
-        if world_z < generated_height {
+        if world_z.abs() < generated_height {
             self.noise.gen_range(4..5) as BlockID
         } else {
             0

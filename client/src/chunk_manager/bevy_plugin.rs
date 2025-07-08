@@ -28,7 +28,8 @@ fn init_chunk_manager(
     game_resources: Res<GameResources>,
 ) {
     let chunk_builder = Box::new(AsyncChunkBuilder::new(game_resources.block_type_storage.clone(), game_resources.texture_dictionary.clone()));
-    let config = Config::new(2, 1);
+    let mut config = Config::new(5, 4);
+    config.dynamic_vertical_loading = true;
 
     let chunk_entities_manager = Arc::new(Mutex::new(ChunkEntitiesManager::default()));
     let event_manager = Arc::new(Mutex::new(EventManager::default()));
