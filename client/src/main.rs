@@ -19,7 +19,7 @@ use shared::{entities::{BlockID, BlockInChunkPos, BlockPos, Chunk, ChunkPos}, ph
 
 use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
 
-use crate::{chunk_manager::ChunkManager, controller::ActionType};
+use crate::{chunk_manager::{ChunkManager, WorldChunkUpdateEvent}, controller::ActionType};
 
 mod bevy_render;
 mod bevy_resources;
@@ -178,6 +178,7 @@ fn update_gizmo(
     mut controller_position_change_ev: EventReader<controller::PositionChangeEvent>,
     mut controller_looking_dir_change_ev: EventReader<controller::LookingDirChangeEvent>,
     mut gizmo_data: Query<&mut GizmoData>,
+    mut chunk_manager_events: EventReader<WorldChunkUpdateEvent>,
 ) {
     let mut gizmo_data = match gizmo_data.single_mut() {
         Ok(gizmo_data) => gizmo_data,
@@ -196,6 +197,10 @@ fn update_gizmo(
 
     for ev in controller_looking_dir_change_ev.read() {
         gizmo_data.last_looking_dir = ev.new_looking_dir;
+        dirty = true;
+    }
+
+    for _ in chunk_manager_events.read() {
         dirty = true;
     }
 

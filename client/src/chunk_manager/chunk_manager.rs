@@ -10,6 +10,17 @@ pub trait ChunkObjectCallback: Send + Sync {
     fn chunk_object_removed(&mut self, chunk_pos: ChunkPos);
 }
 
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct WorldChunkUpdate {
+    pub chunk_pos: ChunkPos,
+    pub chunk: Chunk,
+}
+
+pub trait EventCallback: Send + Sync {
+    fn chunk_update_callback(&mut self, ev: WorldChunkUpdate);
+}
+
 pub trait ChunkBuilder: Send + Sync {
     fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk);
     fn get_builded_chunks(&mut self) -> HashMap<ChunkPos, ChunkMesh>;
@@ -38,6 +49,7 @@ pub struct ChunkManager {
     chunk_loader: chunk_loader::ChunkLoader,
     chunk_builder: Box<dyn ChunkBuilder>,
     chunk_object_callback: Option<Arc<Mutex<dyn ChunkObjectCallback>>>,
+    event_callback: Option<Arc<Mutex<dyn EventCallback>>>,
     config: Config,
     last_controller_pos: Option<ChunkPos>,
 }
@@ -49,6 +61,7 @@ impl ChunkManager {
             chunk_loader,
             chunk_builder,
             chunk_object_callback: None,
+            event_callback: None,
             config,
             last_controller_pos: None,
         }
@@ -56,6 +69,10 @@ impl ChunkManager {
 
     pub fn set_chunk_object_callback(&mut self, callback: Arc<Mutex<dyn ChunkObjectCallback>>) {
         self.chunk_object_callback = Some(callback);
+    }
+
+    pub fn set_event_callback(&mut self, callback: Arc<Mutex<dyn EventCallback>>) {
+        self.event_callback = Some(callback);
     }
 
     pub fn update_controller_pos(&mut self, controller_pos: ChunkPos) {
@@ -88,7 +105,7 @@ impl ChunkManager {
 
         if curr_chunk_state == None {
             let chunk = self.chunk_loader.load_chunk(pos);
-            self.world.world.add_chunk(pos, chunk);
+            self.change_world_chunk(pos, chunk);
 
             self.world.change_chunk_state(pos, super::ChunkState::Loaded);
         }
@@ -107,7 +124,7 @@ impl ChunkManager {
             self.chunk_builder.build_chunk(pos, &new_chunk);
         }
 
-        self.world.world.add_chunk(pos, new_chunk);
+        self.change_world_chunk(pos, new_chunk);
 
         // Co jeśli stan był już to_draw? 
         // Co jeśli wtedy narysowanie nowej wersji zajmie mniej czasu, niż narysowanie wersji starej? 
@@ -140,7 +157,7 @@ impl ChunkManager {
 
             if curr_chunk_state == None {
                 let chunk = self.chunk_loader.load_chunk(pos);
-                self.world.world.add_chunk(pos, chunk);
+                self.change_world_chunk(pos, chunk);
 
                 self.world.change_chunk_state(pos, super::ChunkState::Loaded);
             }
@@ -185,7 +202,7 @@ impl ChunkManager {
         for pos in loaded_chunks {
             if !chunks_in_load_distance.contains(&pos) {
                 self.world.chunk_states.remove(&pos);
-                self.world.world.remove_chunk(pos);
+                self.remove_world_chunk(pos);
             }
         }
 
@@ -216,6 +233,28 @@ impl ChunkManager {
                 func(pos)
             }
         } 
+    }
+
+    fn change_world_chunk(&mut self, pos: ChunkPos, new_chunk: Chunk) {
+        self.world.world.add_chunk(pos, new_chunk.clone());
+
+        if let Some(callback) = &self.event_callback {
+            if let Ok(mut callback) = callback.lock() {
+                callback.chunk_update_callback(WorldChunkUpdate { chunk_pos: pos, chunk: new_chunk });
+            }
+        }
+    }
+
+    fn remove_world_chunk(&mut self, pos: ChunkPos) {
+        if let Some(chunk) = self.world.world.get_chunk(pos) {
+            if let Some(callback) = &self.event_callback {
+                if let Ok(mut callback) = callback.lock() {
+                    callback.chunk_update_callback(WorldChunkUpdate { chunk_pos: pos, chunk: chunk.clone() });
+                }
+            }
+        }
+
+        self.world.world.remove_chunk(pos);
     }
 }
 
