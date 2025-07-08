@@ -7,15 +7,14 @@ use super::{
     BlockTypeStorage, ChunkMesh, LayerMesh, MeshBlockType, TextureDictionary, TextureName,
 };
 
+#[derive(Debug, Clone)]
 pub struct VoxelMesher {
-    block_storage: BlockStorage,
-    chunk_mesh: ChunkMesh,
     block_type_storage: Arc<BlockTypeStorage>,
     texture_dictionary: Arc<TextureDictionary>,
     last_error: Option<MesherError>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MesherError {
     UnknownBlockType(BlockID),
     UnknownTextureName(TextureName),
@@ -39,24 +38,24 @@ impl fmt::Display for MesherError {
 
 impl VoxelMesher {
     pub fn new(
-        block_storage: BlockStorage,
         block_type_storage: Arc<BlockTypeStorage>,
         texture_dictionary: Arc<TextureDictionary>,
     ) -> Self {
         VoxelMesher {
-            block_storage,
-            chunk_mesh: ChunkMesh::default(),
             block_type_storage,
             texture_dictionary,
             last_error: None,
         }
     }
 
-    pub fn create_mesh(&mut self) -> &ChunkMesh {
+    pub fn create_mesh(
+        &mut self,
+        block_storage: &BlockStorage,
+    ) -> ChunkMesh {
         let mut chunk_mesh = ChunkMesh::default();
         let mut last_err = None;
 
-        for (index, block_id) in self.block_storage.iter().enumerate() {
+        for (index, block_id) in block_storage.iter().enumerate() {
             let pos = BlockInChunkPos::from_index(index);
             let result = self.block_type_storage.get_block_type_from_id(*block_id);
 
@@ -71,6 +70,7 @@ impl VoxelMesher {
                         block_type,
                         BlockInChunkPos::new(pos.x, pos.y, pos.z),
                         &mut layer_mesh,
+                        block_storage,
                     );
 
                     if let Err(err) = result {
@@ -88,12 +88,7 @@ impl VoxelMesher {
             self.set_last_err(err);
         }
 
-        self.chunk_mesh = chunk_mesh;
-        &self.chunk_mesh
-    }
-
-    pub fn get_created_mesh(&mut self) -> &ChunkMesh {
-        &self.chunk_mesh
+        chunk_mesh
     }
 
     pub fn get_last_err(&self) -> &Option<MesherError> {
@@ -109,6 +104,7 @@ impl VoxelMesher {
         block_type: &MeshBlockType,
         pos: BlockInChunkPos,
         mesh: &mut LayerMesh,
+        block_storage: &BlockStorage,
     ) -> Result<(), MesherError> {
         use BlockSide::*;
         if !block_type.is_visible {
@@ -118,7 +114,7 @@ impl VoxelMesher {
         let mut last_err = None;
 
         for side in [Top, Bottom, Left, Right, Front, Back] {
-            let result = self.has_translucent_neighbor(side, pos);
+            let result = self.has_translucent_neighbor(side, pos, block_storage);
 
             let has_transparent_neighbor = match result {
                 Err(err) => {
@@ -148,9 +144,10 @@ impl VoxelMesher {
         &self,
         side: BlockSide,
         pos: BlockInChunkPos,
+        block_storage: &BlockStorage,
     ) -> Result<bool, MesherError> {
         if let Some(neighbor_pos) = self.get_neighbor_pos(pos, side) {
-            let neighbor_id: BlockID = self.block_storage.get_block(neighbor_pos);
+            let neighbor_id: BlockID = block_storage.get_block(neighbor_pos);
             let neighbor_block_type: &MeshBlockType = self
                 .block_type_storage
                 .get_block_type_from_id(neighbor_id)

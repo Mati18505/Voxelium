@@ -1,31 +1,25 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use bevy::tasks::futures_lite::future;
 use bevy::tasks::AsyncComputeTaskPool;
 use bevy::{prelude::*, tasks::Task};
 use shared::entities::{Chunk, ChunkPos};
 
-use crate::chunk_builder::{BlockTypeStorage, ChunkMesh, TextureDictionary, VoxelMesher};
+use crate::chunk_builder::{ChunkMesh, VoxelMesher};
 use crate::chunk_manager::chunk_manager;
 
 #[derive(Resource)]
 struct ChunkBuildTask(Task<ChunkMesh>);
 
 pub struct AsyncChunkBuilder {
-    block_type_storage: Arc<BlockTypeStorage>,
-    texture_dictionary: Arc<TextureDictionary>,
+    voxel_mesher: VoxelMesher,
     tasks: HashMap<ChunkPos, ChunkBuildTask>,
 }
 
 impl AsyncChunkBuilder {
-    pub fn new(
-        block_type_storage: Arc<BlockTypeStorage>,
-        texture_dictionary: Arc<TextureDictionary>,
-    ) -> AsyncChunkBuilder {
-        AsyncChunkBuilder {
-            block_type_storage,
-            texture_dictionary,
+    pub fn new(voxel_mesher: VoxelMesher) -> Self {
+        Self {
+            voxel_mesher,
             tasks: HashMap::default(),
         }
     }
@@ -43,15 +37,12 @@ impl chunk_manager::ChunkBuilder for AsyncChunkBuilder {
         // Chunk Grouping (for each thread job give multiple chunks).
         // What if chunk needs to be redrawn before being build? Assert will crash the application.
 
-        let mut voxel_mesher = VoxelMesher::new(
-            chunk.get_block_storage().clone(),
-            self.block_type_storage.clone(),
-            self.texture_dictionary.clone(),
-        );
+        let block_storage = chunk.get_block_storage().clone();
+        let mut voxel_mesher = self.voxel_mesher.clone();
 
         let pool = AsyncComputeTaskPool::get();
         let task = pool.spawn(async move {
-            let chunk_mesh = voxel_mesher.create_mesh().clone();
+            let chunk_mesh = voxel_mesher.create_mesh(&block_storage).clone();
 
             if let Some(err) = voxel_mesher.get_last_err() {
                 eprintln!("{}", err);

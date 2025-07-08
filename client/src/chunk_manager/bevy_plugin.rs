@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use bevy::prelude::*;
 use shared::{chunk_loader::ChunkLoader, entities::{BlockPos, ChunkPos}};
 
-use crate::{bevy_render::VoxelMaterial, bevy_types::{AppStates, GameResources}, chunk_manager::bevy_event_manager::WorldChunkUpdateEvent, controller};
+use crate::{bevy_render::VoxelMaterial, bevy_types::{AppStates, GameResources}, chunk_builder::VoxelMesher, chunk_manager::bevy_event_manager::WorldChunkUpdateEvent, controller};
 
 use super::{ChunkManager, ChunkEntitiesManager, Config, AsyncChunkBuilder, EventManager};
 
@@ -27,7 +27,12 @@ fn init_chunk_manager(
     mut commands: Commands,
     game_resources: Res<GameResources>,
 ) {
-    let chunk_builder = Box::new(AsyncChunkBuilder::new(game_resources.block_type_storage.clone(), game_resources.texture_dictionary.clone()));
+    let voxel_mesher = VoxelMesher::new(
+        game_resources.block_type_storage.clone(),
+        game_resources.texture_dictionary.clone(),
+    );
+
+    let chunk_builder = Box::new(AsyncChunkBuilder::new(voxel_mesher));
     let mut config = Config::new(5, 4);
     config.dynamic_vertical_loading = true;
 
