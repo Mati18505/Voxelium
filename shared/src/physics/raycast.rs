@@ -1,5 +1,5 @@
 use crate::entities::{BlockID, BlockPos, BlockTypeStorage, World};
-use cgmath::{MetricSpace, Vector3};
+use cgmath::{InnerSpace, MetricSpace, Vector3};
 
 #[derive(Debug)]
 pub struct Hitpoint {
@@ -31,6 +31,10 @@ pub struct RaycastConfig<'a> {
 }
 
 pub fn raycast(start: Vector3<f32>, dir: Vector3<f32>, config: &RaycastConfig) -> RaycastResult {
+    assert!(is_normalized(dir), "Direction must be normalized.");
+    assert!(config.range >= 0.0, "Range must be positive.");
+    assert!(config.increment > 0.0, "Increment must be greater than zero.");
+
     let mut curr_pos = start;
     let mut raycast_result = RaycastResult::default();
     let mut previous_block_id = BlockID::default();
@@ -72,6 +76,13 @@ fn f32_pos_to_block_pos(pos: Vector3<f32>) -> BlockPos {
         z: pos.z.round() as isize,
     }
 }
+
+fn is_normalized(v: Vector3<f32>) -> bool {
+    let length = v.magnitude();
+    let epsilon = 1e-6;
+    (length - 1.0).abs() < epsilon
+}
+
 
 #[cfg(test)]
 mod test {

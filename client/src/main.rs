@@ -199,7 +199,7 @@ fn update_gizmo(
         dirty = true;
     }
 
-    if dirty {
+    if dirty && gizmo_data.last_looking_dir != Vec3::default() { 
         let world = &chunk_manager_resources.chunk_manager.get_world().world;
         let raycast_result = raycast_from_controller(gizmo_data.last_controller_pos, gizmo_data.last_looking_dir, world, &game_resources.server_block_type_storage);
 
