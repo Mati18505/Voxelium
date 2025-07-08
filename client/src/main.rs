@@ -144,8 +144,10 @@ fn update(
                 ActionType::LeftClick => destroy_block_action(raycast_result),
                 ActionType::RightClick => place_block_action(raycast_result),
             };
-                
-            set_block_and_update_chunk(&mut chunk_manager_resources.chunk_manager, block_action.pos, block_action.new_block);
+
+            if block_action.feasible {
+                set_block_and_update_chunk(&mut chunk_manager_resources.chunk_manager, block_action.pos, block_action.new_block);
+            }
         } else {
             println!("Raycast don't collide.");
         }
@@ -272,19 +274,24 @@ fn set_block_and_update_chunk(
 }
 
 struct BlockAction {
+    feasible: bool,
     pos: BlockPos,
     new_block: BlockID,
 }
 
 fn destroy_block_action(raycast_result: RaycastResult) -> BlockAction {
     BlockAction { 
+        feasible: true,
         pos: raycast_result.hitpoint.pos,
         new_block: 0
     }
 }
 
 fn place_block_action(raycast_result: RaycastResult) -> BlockAction {
+    let previous_block_id = raycast_result.step_before_hitpoint.block_id;
+
     BlockAction { 
+        feasible: previous_block_id == 0,
         pos: raycast_result.step_before_hitpoint.pos,
         new_block: 2
     }

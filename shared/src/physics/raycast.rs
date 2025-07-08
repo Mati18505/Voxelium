@@ -37,7 +37,7 @@ pub fn raycast(start: Vector3<f32>, dir: Vector3<f32>, config: &RaycastConfig) -
 
     let mut curr_pos = start;
     let mut raycast_result = RaycastResult::default();
-    let mut previous_block_id = BlockID::default();
+    let mut previous_block_id: BlockID = config.world.get_block(f32_pos_to_block_pos(start)).unwrap_or_default();
 
     while curr_pos.distance2(start) <= config.range * config.range && !raycast_result.collide {
         let curr_block_pos = f32_pos_to_block_pos(curr_pos);
