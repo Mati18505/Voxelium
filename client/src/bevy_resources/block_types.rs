@@ -5,15 +5,15 @@ use thiserror::Error;
 
 use bevy::asset::{io::Reader, AssetLoader, LoadContext};
 
-use crate::chunk_builder::{BlockTypeStorage, MeshBlockType, MeshBlockTypeBuilder};
+use crate::chunk_builder::{MeshBlockTypeStorage, MeshBlockType, MeshBlockTypeBuilder};
 
 #[derive(bevy::asset::Asset, bevy::reflect::TypePath, Debug, Clone, PartialEq)]
 pub struct MeshBlockTypeStorageResource {
     block_types: Vec<MeshBlockType>,
 }
 
-impl Into<BlockTypeStorage> for MeshBlockTypeStorageResource {
-    fn into(self) -> BlockTypeStorage {
+impl Into<MeshBlockTypeStorage> for MeshBlockTypeStorageResource {
+    fn into(self) -> MeshBlockTypeStorage {
         let block_types: HashMap<BlockID, MeshBlockType> = self
             .block_types
             .into_iter()
@@ -21,7 +21,7 @@ impl Into<BlockTypeStorage> for MeshBlockTypeStorageResource {
             .map(|(i, e)| (i as u8, e))
             .collect();
 
-        BlockTypeStorage::new(block_types)
+        MeshBlockTypeStorage::new(block_types)
     }
 }
 

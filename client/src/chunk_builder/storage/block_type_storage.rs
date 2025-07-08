@@ -4,13 +4,13 @@ use super::MeshBlockType;
 use shared::entities::BlockID;
 
 #[derive(Debug, Default, Clone, PartialEq)]
-pub struct BlockTypeStorage {
+pub struct MeshBlockTypeStorage {
     block_types: HashMap<BlockID, MeshBlockType>,
 }
 
-impl BlockTypeStorage {
-    pub fn new(block_types: HashMap<BlockID, MeshBlockType>) -> BlockTypeStorage {
-        BlockTypeStorage { block_types }
+impl MeshBlockTypeStorage {
+    pub fn new(block_types: HashMap<BlockID, MeshBlockType>) -> MeshBlockTypeStorage {
+        MeshBlockTypeStorage { block_types }
     }
 
     pub fn set_block_type(&mut self, block_id: BlockID, block_type: MeshBlockType) {

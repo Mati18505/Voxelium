@@ -105,7 +105,7 @@ fn init_level(
         .get(&voxel_assets.block_type_storage)
         .unwrap()
         .to_owned();
-    let block_type_storage: Arc<BlockTypeStorage> = Arc::new(block_type_storage.into());
+    let block_type_storage: Arc<MeshBlockTypeStorage> = Arc::new(block_type_storage.into());
 
     let texture_dictionary: TextureConfig = textures_assets
         .get(&voxel_assets.texture_config)

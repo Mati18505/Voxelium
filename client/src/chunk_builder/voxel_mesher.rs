@@ -4,12 +4,12 @@ use cgmath::Vector3;
 use shared::entities::{BlockID, BlockInChunkPos, BlockSide, BlockStorage, Direction};
 
 use super::{
-    BlockTypeStorage, ChunkMesh, LayerMesh, MeshBlockType, TextureDictionary, TextureName,
+    MeshBlockTypeStorage, ChunkMesh, LayerMesh, MeshBlockType, TextureDictionary, TextureName,
 };
 
 #[derive(Debug, Clone)]
 pub struct VoxelMesher {
-    block_type_storage: Arc<BlockTypeStorage>,
+    block_type_storage: Arc<MeshBlockTypeStorage>,
     texture_dictionary: Arc<TextureDictionary>,
     last_error: Option<MesherError>,
 }
@@ -38,7 +38,7 @@ impl fmt::Display for MesherError {
 
 impl VoxelMesher {
     pub fn new(
-        block_type_storage: Arc<BlockTypeStorage>,
+        block_type_storage: Arc<MeshBlockTypeStorage>,
         texture_dictionary: Arc<TextureDictionary>,
     ) -> Self {
         VoxelMesher {
