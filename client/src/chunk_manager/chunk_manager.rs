@@ -102,7 +102,12 @@ impl ChunkManager {
         self.world.world.get_chunk(pos)
     }
 
-    pub fn get_or_load_chunk(&mut self, pos: ChunkPos) -> &Chunk {
+    // Returns None only if the position is outside the world scope.
+    pub fn get_or_load_chunk(&mut self, pos: ChunkPos) -> Option<&Chunk> {
+        if !self.is_in_world_scope(pos) {
+            return None;
+        }
+        
         let curr_chunk_state = self.world.get_chunk_state(pos);
 
         if curr_chunk_state == None {
@@ -112,7 +117,7 @@ impl ChunkManager {
             self.world.change_chunk_state(pos, super::ChunkState::Loaded);
         }
 
-        self.get_chunk(pos).unwrap()
+        self.get_chunk(pos)
     }
 
     pub fn set_chunk(&mut self, pos: ChunkPos, new_chunk: Chunk) {
@@ -271,6 +276,16 @@ impl ChunkManager {
         }
 
         self.world.world.remove_chunk(pos);
+    }
+
+    fn is_in_world_scope(&self, pos: ChunkPos) -> bool {
+        if !self.config.dynamic_vertical_loading {
+            if pos.z != 0 {
+                return false;
+            }
+        }
+
+        true
     }
 }
 

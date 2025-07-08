@@ -264,13 +264,14 @@ fn set_block_and_update_chunk(
     let chunk_pos = ChunkPos::from(set_pos);
     let block_in_chunk_pos = BlockInChunkPos::from(set_pos);
 
-    let chunk = chunk_manager.get_or_load_chunk(chunk_pos);
-    let mut new_block_storage = chunk.get_block_storage().clone();
+    if let Some(chunk) = chunk_manager.get_or_load_chunk(chunk_pos) {
+        let mut new_block_storage = chunk.get_block_storage().clone();
 
-    new_block_storage.set_block(block_in_chunk_pos, new_block);
-    let new_chunk = Chunk::new(new_block_storage);
+        new_block_storage.set_block(block_in_chunk_pos, new_block);
+        let new_chunk = Chunk::new(new_block_storage);
 
-    chunk_manager.set_chunk(chunk_pos, new_chunk);
+        chunk_manager.set_chunk(chunk_pos, new_chunk);
+    }
 }
 
 struct BlockAction {
