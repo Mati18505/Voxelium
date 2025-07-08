@@ -16,7 +16,7 @@ use cgmath::Vector3;
 use chunk_builder::*;
 use controller::ControllerPlugin;
 use bevy_types::{AppStates, GameResources};
-use shared::{entities::{BlockID, BlockInChunkPos, BlockPos, BlockTypeStorage, Chunk, ChunkPos}, physics::{raycast, RaycastConfig, RaycastResult}, resources::BlockTypeStorageResource};
+use shared::{entities::{init_block_names, name_to_block_id, BlockID, BlockInChunkPos, BlockPos, BlockTypeStorage, Chunk, ChunkPos}, physics::{raycast, RaycastConfig, RaycastResult}, resources::BlockTypeStorageResource};
 
 use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
 
@@ -119,11 +119,11 @@ fn init_level(
         .to_owned();
     let texture_dictionary: Arc<TextureDictionary> = Arc::new(texture_dictionary.into());
 
-    let server_block_type_storage = server_block_type_assets
+    let server_block_type_storage_asset = server_block_type_assets
         .get(&voxel_assets.server_blocks)
         .expect("Failed to get server_block_type_storage asset")
         .to_owned();
-    let server_block_type_storage: Arc<BlockTypeStorage> = Arc::new(server_block_type_storage.into());
+    let server_block_type_storage: Arc<BlockTypeStorage> = Arc::new(server_block_type_storage_asset.clone().into());
 
     commands.insert_resource(GameResources{
         block_type_storage,
@@ -135,6 +135,8 @@ fn init_level(
     commands.spawn((
         GizmoData::default(),
     ));
+
+    init_block_names(server_block_type_storage_asset.into());
 }
 
 fn update(
@@ -291,7 +293,7 @@ fn destroy_block_action(raycast_result: RaycastResult) -> BlockAction {
     BlockAction { 
         feasible: true,
         pos: raycast_result.hitpoint.pos,
-        new_block: 0
+        new_block: name_to_block_id("air"),
     }
 }
 
@@ -299,8 +301,8 @@ fn place_block_action(raycast_result: RaycastResult) -> BlockAction {
     let previous_block_id = raycast_result.step_before_hitpoint.block_id;
 
     BlockAction { 
-        feasible: previous_block_id == 0,
+        feasible: previous_block_id == name_to_block_id("air"),
         pos: raycast_result.step_before_hitpoint.pos,
-        new_block: 2
+        new_block: name_to_block_id("wood"),
     }
 }

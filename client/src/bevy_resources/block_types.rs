@@ -1,5 +1,5 @@
 use bevy::{asset::Asset, reflect::TypePath};
-use shared::entities::{BlockType, BlockTypeStorage};
+use shared::entities::{BlockID, BlockType, BlockTypeStorage};
 
 #[derive(serde::Deserialize, Asset, TypePath, Debug, Clone, PartialEq)]
 struct BevyBlockTypeResource {
@@ -21,5 +21,17 @@ impl Into<BlockTypeStorage> for BevyBlockTypeStorageResource {
             .collect();
 
         BlockTypeStorage::new(block_types)
+    }
+}
+
+impl Into<Vec<(String, BlockID)>> for BevyBlockTypeStorageResource {
+    fn into(self) -> Vec<(String, BlockID)> {
+        self
+            .blocks
+            .into_iter()
+            .map(|e| e.name)
+            .enumerate()
+            .map(|(id, name)| (name, id as BlockID))
+            .collect()
     }
 }

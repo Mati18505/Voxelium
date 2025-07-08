@@ -1,6 +1,6 @@
 use std::ops::Range;
 
-use crate::entities::{BlockID, BlockInChunkPos, BlockStorage, ChunkPos, CHUNK_SIZE};
+use crate::entities::{name_to_block_id, BlockID, BlockInChunkPos, BlockStorage, ChunkPos, CHUNK_SIZE};
 
 pub struct Generator {
     chunk_pos: ChunkPos,
@@ -60,9 +60,10 @@ impl Generator {
             }
         */
         if world_z.abs() < generated_height {
-            self.noise.gen_range(4..5) as BlockID
+            //self.noise.gen_range(4..5) as BlockID
+            name_to_block_id("grass")
         } else {
-            0
+            name_to_block_id("air")
         }
     }
 }
