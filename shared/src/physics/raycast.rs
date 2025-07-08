@@ -38,6 +38,7 @@ pub fn raycast(start: Vector3<f32>, dir: Vector3<f32>, config: &RaycastConfig) -
     let mut curr_pos = start;
     let mut raycast_result = RaycastResult::default();
     let mut previous_block_id: BlockID = config.world.get_block(f32_pos_to_block_pos(start)).unwrap_or_default();
+    let mut curr_dir_axis = 0;
 
     while curr_pos.distance2(start) <= config.range * config.range && !raycast_result.collide {
         let curr_block_pos = f32_pos_to_block_pos(curr_pos);
@@ -63,7 +64,15 @@ pub fn raycast(start: Vector3<f32>, dir: Vector3<f32>, config: &RaycastConfig) -
             previous_block_id = BlockID::default();
         }
 
-        curr_pos += dir * config.increment;
+        match curr_dir_axis {
+            0 => curr_pos.x += dir.x * config.increment,
+            1 => curr_pos.y += dir.y * config.increment,
+            2 => curr_pos.z += dir.z * config.increment,
+            _ => unreachable!(),
+        }
+
+        curr_dir_axis += 1;
+        curr_dir_axis %= 3;
     }
 
     raycast_result
