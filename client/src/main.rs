@@ -28,6 +28,7 @@ mod chunk_builder;
 mod controller;
 mod chunk_manager;
 mod bevy_types;
+mod voxel_edits;
 
 fn main() {
     App::new()
@@ -155,7 +156,7 @@ fn update(
             };
 
             if block_action.feasible {
-                set_block_and_update_chunk(&mut chunk_manager_resources.chunk_manager, block_action.pos, block_action.new_block);
+                voxel_edits::set_block_and_update_chunk(&mut chunk_manager_resources.chunk_manager, block_action.pos, block_action.new_block);
             }
         } else {
             println!("Raycast don't collide.");
@@ -266,23 +267,7 @@ fn raycast_from_controller(
     raycast(start, dir, &config)
 }
 
-fn set_block_and_update_chunk(
-    chunk_manager: &mut ChunkManager, 
-    set_pos: BlockPos,
-    new_block: BlockID,
-) {
-    let chunk_pos = ChunkPos::from(set_pos);
-    let block_in_chunk_pos = BlockInChunkPos::from(set_pos);
 
-    if let Some(chunk) = chunk_manager.get_or_load_chunk(chunk_pos) {
-        let mut new_block_storage = chunk.get_block_storage().clone();
-
-        new_block_storage.set_block(block_in_chunk_pos, new_block);
-        let new_chunk = Chunk::new(new_block_storage);
-
-        chunk_manager.set_chunk(chunk_pos, new_chunk);
-    }
-}
 
 struct BlockAction {
     feasible: bool,
