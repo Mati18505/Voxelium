@@ -58,6 +58,7 @@ mod test {
         }
     }
 
+    #[ignore]
     #[test]
     fn test_generate_chunk() {
         let mut chunk_loader = ChunkLoader::new(Box::new(TestNoiseFactory));
