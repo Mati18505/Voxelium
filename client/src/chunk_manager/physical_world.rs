@@ -41,6 +41,14 @@ impl PhysicalWorld {
     pub fn get_chunk_mesh_version(&self, pos: ChunkPos) -> Version {
         self.chunk_mesh_versions.get(&pos).copied().unwrap_or(0)
     }
+
+    pub fn get_chunks_with_state<T: FromIterator<ChunkPos>>(&self, state: super::ChunkState) -> T {
+        self.chunk_states
+            .iter()
+            .filter(|(_, chunk_state)| **chunk_state == state)
+            .map(|(chunk_pos, _)| *chunk_pos)
+            .collect()
+    }
 }
 
 impl ChunkRepository for PhysicalWorld {

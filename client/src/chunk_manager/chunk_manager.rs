@@ -170,7 +170,7 @@ impl ChunkManager {
         });
 
         // drawn -> loaded
-        let drawn_chunks: HashSet<ChunkPos> = self.get_chunks_with_state(super::ChunkState::Drawn);
+        let drawn_chunks: HashSet<ChunkPos> = self.world.get_chunks_with_state(super::ChunkState::Drawn);
 
         for pos in drawn_chunks {
             if !chunks_in_render_distance.contains(&pos) {
@@ -186,21 +186,13 @@ impl ChunkManager {
         }
 
         // loaded -> empty
-        let loaded_chunks: HashSet<ChunkPos> = self.get_chunks_with_state(super::ChunkState::Loaded);
+        let loaded_chunks: HashSet<ChunkPos> = self.world.get_chunks_with_state(super::ChunkState::Loaded);
 
         for pos in loaded_chunks {
             if !chunks_in_load_distance.contains(&pos) {
                 self.remove_world_chunk(pos);
             }
         }
-    }
-
-    fn get_chunks_with_state<T: FromIterator<ChunkPos>>(&self, state: super::ChunkState) -> T {
-        self.world.chunk_states
-            .iter()
-            .filter(|(_, chunk_state)| **chunk_state == state)
-            .map(|(chunk_pos, _)| *chunk_pos)
-            .collect()
     }
 
     fn for_each_chunk_in_distance<F: FnMut(ChunkPos)>(controller_pos: ChunkPos, dist: usize, vertical: bool, mut func: F) {
