@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use shared::entities::{world::World, ChunkPos};
+use shared::entities::{world::World, Chunk, ChunkPos, ChunkRepository};
 
 use crate::chunk_builder::ChunkMesh;
 
@@ -40,5 +40,21 @@ impl PhysicalWorld {
 
     pub fn get_chunk_mesh_version(&self, pos: ChunkPos) -> Version {
         self.chunk_mesh_versions.get(&pos).copied().unwrap_or(0)
+    }
+}
+
+impl ChunkRepository for PhysicalWorld {
+    fn set_chunk(&mut self, pos: ChunkPos, new_chunk: Chunk) {
+        self.world.set_chunk(pos, new_chunk);
+    }
+
+    fn remove_chunk(&mut self, pos: ChunkPos) {
+        self.chunk_meshes.remove(&pos);
+        self.chunk_states.remove(&pos);
+        self.world.remove_chunk(pos);
+    }
+
+    fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
+        self.world.get_chunk(pos)
     }
 }

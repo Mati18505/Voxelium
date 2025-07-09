@@ -16,7 +16,7 @@ use cgmath::Vector3;
 use chunk_builder::*;
 use controller::ControllerPlugin;
 use bevy_types::{AppStates, GameResources};
-use shared::{entities::{init_block_names, name_to_block_id, BlockID, BlockInChunkPos, BlockPos, BlockTypeStorage, Chunk, ChunkPos}, physics::{raycast, RaycastConfig, RaycastResult}, resources::BlockTypeStorageResource};
+use shared::{entities::{init_block_names, name_to_block_id, BlockID, BlockInChunkPos, BlockPos, BlockTypeStorage, Chunk, ChunkPos, ChunkRepository}, physics::{raycast, RaycastConfig, RaycastResult}, resources::BlockTypeStorageResource};
 
 use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
 
@@ -191,6 +191,7 @@ fn update_gizmo(
     mut gizmo_data: Query<&mut GizmoData>,
     mut chunk_manager_events: EventReader<WorldChunkUpdateEvent>,
 ) {
+    
     let mut gizmo_data = match gizmo_data.single_mut() {
         Ok(gizmo_data) => gizmo_data,
         Err(_) => {

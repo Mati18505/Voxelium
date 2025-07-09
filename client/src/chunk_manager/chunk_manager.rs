@@ -1,4 +1,4 @@
-use shared::{chunk_loader::chunk_loader, entities::{Chunk, ChunkPos, CHUNK_SIZE}};
+use shared::{chunk_loader::chunk_loader, entities::{Chunk, ChunkPos, ChunkRepository, CHUNK_SIZE}};
 use std::{collections::{HashMap, HashSet}, sync::{Arc, Mutex}};
 
 use crate::chunk_builder::{ChunkMesh};
@@ -102,10 +102,6 @@ impl ChunkManager {
         &self.world
     }
 
-    pub fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
-        self.world.world.get_chunk(pos)
-    }
-
     // Returns None only if the position is outside the world scope.
     pub fn get_or_load_chunk(&mut self, pos: ChunkPos) -> Option<&Chunk> {
         if !self.is_in_world_scope(pos) {
@@ -122,22 +118,6 @@ impl ChunkManager {
         }
 
         self.get_chunk(pos)
-    }
-
-    pub fn set_chunk(&mut self, pos: ChunkPos, new_chunk: Chunk) {
-        let curr_chunk_state = self.world.get_chunk_state(pos);
-
-        if curr_chunk_state == None {
-            self.world.change_chunk_state(pos, super::ChunkState::Loaded);
-        } 
-        else if curr_chunk_state == Some(&super::ChunkState::Drawn) || curr_chunk_state == Some(&super::ChunkState::ToDraw) {
-            self.world.change_chunk_state(pos, super::ChunkState::ToDraw);
-
-            let new_mesh_version: Version = self.world.increment_chunk_mesh_version(pos);
-            self.chunk_builder.build_chunk(pos, &new_chunk, new_mesh_version);
-        }
-
-        self.change_world_chunk(pos, new_chunk);
     }
 
     fn add_drawn_chunk(&mut self, pos: ChunkPos, chunk_mesh: ChunkMesh) {
@@ -180,7 +160,7 @@ impl ChunkManager {
             if curr_chunk_state == Some(&super::ChunkState::Loaded) {
                 let new_mesh_version = self.world.increment_chunk_mesh_version(pos);
 
-                if let Some(chunk_to_build) = self.world.world.get_chunk(pos) {
+                if let Some(chunk_to_build) = self.world.get_chunk(pos) {
                     self.chunk_builder.build_chunk(pos, chunk_to_build, new_mesh_version);
                     self.world.change_chunk_state(pos, super::ChunkState::ToDraw);
                 } else {
@@ -210,7 +190,6 @@ impl ChunkManager {
 
         for pos in loaded_chunks {
             if !chunks_in_load_distance.contains(&pos) {
-                self.world.chunk_states.remove(&pos);
                 self.remove_world_chunk(pos);
             }
         }
@@ -256,7 +235,7 @@ impl ChunkManager {
     }
 
     fn change_world_chunk(&mut self, pos: ChunkPos, new_chunk: Chunk) {
-        self.world.world.add_chunk(pos, new_chunk.clone());
+        self.world.set_chunk(pos, new_chunk.clone());
 
         if let Some(callback) = &self.event_callback {
             if let Ok(mut callback) = callback.lock() {
@@ -266,7 +245,7 @@ impl ChunkManager {
     }
 
     fn remove_world_chunk(&mut self, pos: ChunkPos) {
-        if let Some(chunk) = self.world.world.get_chunk(pos) {
+        if let Some(chunk) = self.get_chunk(pos) {
             if let Some(callback) = &self.event_callback {
                 if let Ok(mut callback) = callback.lock() {
                     callback.chunk_update_callback(WorldChunkUpdate { chunk_pos: pos, chunk: chunk.clone() });
@@ -274,7 +253,7 @@ impl ChunkManager {
             }
         }
 
-        self.world.world.remove_chunk(pos);
+        self.remove_chunk(pos);
     }
 
     fn is_in_world_scope(&self, pos: ChunkPos) -> bool {
@@ -285,6 +264,33 @@ impl ChunkManager {
         }
 
         true
+    }
+}
+
+impl ChunkRepository for ChunkManager {
+    fn set_chunk(&mut self, pos: ChunkPos, new_chunk: Chunk) {
+        let curr_chunk_state = self.world.get_chunk_state(pos);
+
+        if curr_chunk_state == None {
+            self.world.change_chunk_state(pos, super::ChunkState::Loaded);
+        } 
+        else if curr_chunk_state == Some(&super::ChunkState::Drawn) || curr_chunk_state == Some(&super::ChunkState::ToDraw) {
+            self.world.change_chunk_state(pos, super::ChunkState::ToDraw);
+
+            let new_mesh_version: Version = self.world.increment_chunk_mesh_version(pos);
+            self.chunk_builder.build_chunk(pos, &new_chunk, new_mesh_version);
+        }
+
+        self.change_world_chunk(pos, new_chunk);
+    }
+
+
+    fn remove_chunk(&mut self, pos: ChunkPos) {
+        self.world.remove_chunk(pos);
+    }
+
+    fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
+        self.world.get_chunk(pos)
     }
 }
 

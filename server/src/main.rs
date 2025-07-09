@@ -1,6 +1,6 @@
 use std::fmt;
 
-use shared::entities::{world, Chunk, ChunkPos};
+use shared::entities::{world, Chunk, ChunkPos, ChunkRepository};
 
 mod chunk_loader;
 use chunk_loader::ChunkLoader;
@@ -42,7 +42,7 @@ fn main() {
     let mut world = world::World::new();
     let pos = ChunkPos::new(0, 0, 0);
 
-    world.add_chunk(pos, chunk_loader.load_chunk(pos));
+    world.set_chunk(pos, chunk_loader.load_chunk(pos));
 
     let result = world.get_chunk(pos);
 
