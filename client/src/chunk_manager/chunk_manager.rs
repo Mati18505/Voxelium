@@ -53,7 +53,7 @@ pub struct ChunkManager {
     chunk_object_callback: Option<Arc<Mutex<dyn ChunkObjectCallback>>>,
     event_callback: Option<Arc<Mutex<dyn EventCallback>>>,
     config: Config,
-    last_controller_pos: Option<ChunkPos>,
+    last_controller_pos: ChunkPos,
 }
 
 impl ChunkManager {
@@ -65,7 +65,7 @@ impl ChunkManager {
             chunk_object_callback: None,
             event_callback: None,
             config,
-            last_controller_pos: None,
+            last_controller_pos: ChunkPos::new(0, 0, 0),
         }
     }
 
@@ -78,20 +78,22 @@ impl ChunkManager {
     }
 
     pub fn update_controller_pos(&mut self, controller_pos: ChunkPos) {
-        if let Some(last_controller_pos) = self.last_controller_pos {
-            if controller_pos == last_controller_pos {
-                return;
-            }
+        if controller_pos == self.last_controller_pos {
+            return;
         }
 
         self.update_chunk_states_in_controller_range(controller_pos);
-        self.last_controller_pos = Some(controller_pos);
+        self.last_controller_pos = controller_pos;
     }
 
     pub fn check_builded_chunks(&mut self) {
         for (pos, (mesh, version)) in self.chunk_builder.get_builded_chunks() {
-            if version == self.world.get_chunk_mesh_version(pos) {
-                self.add_drawn_chunk(pos, mesh);
+            if pos.is_within_distance(self.last_controller_pos, self.config.render_distance) {
+                if version == self.world.get_chunk_mesh_version(pos) {
+                    self.add_drawn_chunk(pos, mesh);
+                }
+            } else {
+                self.world.change_chunk_state(pos, super::ChunkState::Loaded);
             }
         }
     }
@@ -212,9 +214,6 @@ impl ChunkManager {
                 self.remove_world_chunk(pos);
             }
         }
-
-        // TODO
-        // to_draw -> loaded
     }
 
     fn get_chunks_with_state<T: FromIterator<ChunkPos>>(&self, state: super::ChunkState) -> T {

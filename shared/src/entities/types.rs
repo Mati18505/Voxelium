@@ -33,6 +33,25 @@ impl ChunkPos {
 
         ChunkPos(Vector3::new(x, y, z))
     }
+
+    pub fn is_within_distance(&self, other: ChunkPos, mut dist_in_chunks: usize) -> bool {
+        dist_in_chunks *= CHUNK_SIZE;
+
+        let z_start = other.z - dist_in_chunks as isize;
+        let z_end = other.z + dist_in_chunks as isize;
+        let y_start = other.y - dist_in_chunks as isize;
+        let y_end = other.y + dist_in_chunks as isize;
+        let x_start = other.x - dist_in_chunks as isize;
+        let x_end = other.x + dist_in_chunks as isize;
+
+        if self.x >= x_start && self.x <= x_end &&
+            self.y >= y_start && self.y <= y_end &&
+            self.z >= z_start && self.z <= z_end {
+            return true;
+        }
+
+        false
+    }
 }
 
 impl Deref for ChunkPos {
@@ -232,5 +251,14 @@ mod test {
         let pos = BlockInChunkPos::new(15, 15, 15);
         let add = Vector3::new(1, 1, 1);
         assert_eq!(pos.checked_add(add), None);
+    }
+
+    #[test]
+    fn test_is_within_distance() {
+        let pos1 = ChunkPos::new(0, 0, 0);
+        let pos2 = ChunkPos::new(CHUNK_SIZE as isize * 8, 0, 0);
+        
+        assert!(!pos1.is_within_distance(pos2, 1));
+        assert!(pos1.is_within_distance(pos2, 8));
     }
 }
