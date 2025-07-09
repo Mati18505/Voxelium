@@ -6,10 +6,10 @@ use bevy::{prelude::*, tasks::Task};
 use shared::entities::{Chunk, ChunkPos};
 
 use crate::chunk_builder::{ChunkMesh, VoxelMesher};
-use crate::chunk_manager::chunk_manager;
+use crate::chunk_manager::{physical_world::Version, chunk_manager};
 
 #[derive(Resource)]
-struct ChunkBuildTask(Task<ChunkMesh>);
+struct ChunkBuildTask(Task<(ChunkMesh, Version)>);
 
 pub struct AsyncChunkBuilder {
     voxel_mesher: VoxelMesher,
@@ -30,12 +30,10 @@ impl chunk_manager::ChunkBuilder for AsyncChunkBuilder {
         &mut self,
         chunk_pos: ChunkPos,
         chunk: &Chunk,
+        version: Version,
     ) {
-        assert!(!self.tasks.contains_key(&chunk_pos), "Can't build a fragment at the same position a second time.");
-
         // TODO
         // Chunk Grouping (for each thread job give multiple chunks).
-        // What if chunk needs to be redrawn before being build? Assert will crash the application.
 
         let block_storage = chunk.get_block_storage().clone();
         let mut voxel_mesher = self.voxel_mesher.clone();
@@ -48,18 +46,18 @@ impl chunk_manager::ChunkBuilder for AsyncChunkBuilder {
                 eprintln!("{}", err);
             }
 
-            chunk_mesh
+            (chunk_mesh, version)
         });
 
         self.tasks.insert(chunk_pos, ChunkBuildTask(task));
     }
 
-    fn get_builded_chunks(&mut self) -> HashMap<ChunkPos, ChunkMesh> {
-        let mut completed: HashMap<ChunkPos, ChunkMesh> = HashMap::default();
+    fn get_builded_chunks(&mut self) -> HashMap<ChunkPos, (ChunkMesh, Version)> {
+        let mut completed: HashMap<ChunkPos, (ChunkMesh, Version)> = HashMap::default();
 
         for (chunk_pos, build_task) in self.tasks.iter_mut() {
-            if let Some(chunk_mesh) = future::block_on(future::poll_once(&mut build_task.0)) {
-                completed.insert(*chunk_pos, chunk_mesh);
+            if let Some((chunk_mesh, version)) = future::block_on(future::poll_once(&mut build_task.0)) {
+                completed.insert(*chunk_pos, (chunk_mesh, version));
             }
         }
 

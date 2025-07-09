@@ -6,11 +6,14 @@ use crate::chunk_builder::ChunkMesh;
 
 use super::ChunkState;
 
+pub type Version = u64;
+
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct PhysicalWorld {
     pub world: World,
     pub chunk_meshes: HashMap<ChunkPos, ChunkMesh>,
     pub chunk_states: HashMap<ChunkPos, ChunkState>,
+    chunk_mesh_versions: HashMap<ChunkPos, Version>,
 }
 
 impl PhysicalWorld {
@@ -28,5 +31,14 @@ impl PhysicalWorld {
     }
     pub fn get_chunk_state(&self, pos: ChunkPos) -> Option<&ChunkState> {
         self.chunk_states.get(&pos)
+    }
+
+    pub fn increment_chunk_mesh_version(&mut self, pos: ChunkPos) -> Version {
+        let incremented_version = *self.chunk_mesh_versions.entry(pos).and_modify(|e| *e = e.wrapping_add(1)).or_insert(1);
+        Version::from(incremented_version)
+    }
+
+    pub fn get_chunk_mesh_version(&self, pos: ChunkPos) -> Version {
+        self.chunk_mesh_versions.get(&pos).copied().unwrap_or(0)
     }
 }

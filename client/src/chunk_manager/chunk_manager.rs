@@ -3,7 +3,7 @@ use std::{collections::{HashMap, HashSet}, sync::{Arc, Mutex}};
 
 use crate::chunk_builder::{ChunkMesh};
 
-use super::physical_world::PhysicalWorld;
+use super::physical_world::{PhysicalWorld, Version};
 
 pub trait ChunkObjectCallback: Send + Sync {
     fn chunk_object_created(&mut self, chunk_pos: ChunkPos, chunk_mesh: &ChunkMesh);
@@ -22,8 +22,8 @@ pub trait EventCallback: Send + Sync {
 }
 
 pub trait ChunkBuilder: Send + Sync {
-    fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk);
-    fn get_builded_chunks(&mut self) -> HashMap<ChunkPos, ChunkMesh>;
+    fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk, version: Version);
+    fn get_builded_chunks(&mut self) -> HashMap<ChunkPos, (ChunkMesh, Version)>;
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -89,8 +89,10 @@ impl ChunkManager {
     }
 
     pub fn check_builded_chunks(&mut self) {
-        for (pos, mesh) in self.chunk_builder.get_builded_chunks() {
-            self.add_drawn_chunk(pos, mesh);
+        for (pos, (mesh, version)) in self.chunk_builder.get_builded_chunks() {
+            if version == self.world.get_chunk_mesh_version(pos) {
+                self.add_drawn_chunk(pos, mesh);
+            }
         }
     }
 
@@ -126,18 +128,14 @@ impl ChunkManager {
         if curr_chunk_state == None {
             self.world.change_chunk_state(pos, super::ChunkState::Loaded);
         } 
-        else if curr_chunk_state == Some(&super::ChunkState::Drawn) {
+        else if curr_chunk_state == Some(&super::ChunkState::Drawn) || curr_chunk_state == Some(&super::ChunkState::ToDraw) {
             self.world.change_chunk_state(pos, super::ChunkState::ToDraw);
-            self.chunk_builder.build_chunk(pos, &new_chunk);
+
+            let new_mesh_version: Version = self.world.increment_chunk_mesh_version(pos);
+            self.chunk_builder.build_chunk(pos, &new_chunk, new_mesh_version);
         }
 
         self.change_world_chunk(pos, new_chunk);
-
-        // Co jeśli stan był już to_draw? 
-        // Co jeśli wtedy narysowanie nowej wersji zajmie mniej czasu, niż narysowanie wersji starej? 
-        // Odp. Gra wyrenderuje mesh starej wersji chunka, ale dane będą nowej wersji. - czyli mamy problem.
-        // Wniosek: muszę jakoś anulować poprzednie tworzenie mesha, albo je zignoro
-        // uuid?
     }
 
     fn add_drawn_chunk(&mut self, pos: ChunkPos, chunk_mesh: ChunkMesh) {
@@ -178,8 +176,10 @@ impl ChunkManager {
             let curr_chunk_state = self.world.get_chunk_state(pos);
 
             if curr_chunk_state == Some(&super::ChunkState::Loaded) {
+                let new_mesh_version = self.world.increment_chunk_mesh_version(pos);
+
                 if let Some(chunk_to_build) = self.world.world.get_chunk(pos) {
-                    self.chunk_builder.build_chunk(pos, chunk_to_build);
+                    self.chunk_builder.build_chunk(pos, chunk_to_build, new_mesh_version);
                     self.world.change_chunk_state(pos, super::ChunkState::ToDraw);
                 } else {
                     eprintln!("Chunk to build don't exist in world!");
