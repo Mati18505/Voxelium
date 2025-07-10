@@ -24,7 +24,7 @@ pub trait EventCallback: Send + Sync {
 
 pub trait ChunkBuilder: Send + Sync {
     fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk, version: Version);
-    fn get_builded_chunks(&mut self) -> HashMap<ChunkPos, (ChunkMesh, Version)>;
+    fn take_builded_chunks(&mut self) -> HashMap<ChunkPos, (ChunkMesh, Version)>;
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -88,7 +88,7 @@ impl ChunkManager {
     }
 
     pub fn check_builded_chunks(&mut self) {
-        for (pos, (mesh, version)) in self.chunk_builder.get_builded_chunks() {
+        for (pos, (mesh, version)) in self.chunk_builder.take_builded_chunks() {
             if pos.is_within_distance(self.last_controller_pos, self.config.render_distance) {
                 if version == self.world.get_chunk_mesh_version(pos) {
                     self.add_drawn_chunk(pos, mesh);

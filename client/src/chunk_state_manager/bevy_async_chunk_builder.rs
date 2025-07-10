@@ -52,7 +52,7 @@ impl chunk_state_manager::ChunkBuilder for AsyncChunkBuilder {
         self.tasks.insert(chunk_pos, ChunkBuildTask(task));
     }
 
-    fn get_builded_chunks(&mut self) -> HashMap<ChunkPos, (ChunkMesh, Version)> {
+    fn take_builded_chunks(&mut self) -> HashMap<ChunkPos, (ChunkMesh, Version)> {
         let mut completed: HashMap<ChunkPos, (ChunkMesh, Version)> = HashMap::default();
 
         for (chunk_pos, build_task) in self.tasks.iter_mut() {
