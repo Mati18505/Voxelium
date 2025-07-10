@@ -113,7 +113,7 @@ impl ChunkManager {
 
         if curr_chunk_state == None {
             let chunk = self.chunk_loader.load_chunk(pos);
-            self.change_world_chunk(pos, chunk);
+            self.set_world_chunk(pos, chunk);
 
             self.world.change_chunk_state(pos, super::ChunkState::Loaded);
         }
@@ -141,7 +141,7 @@ impl ChunkManager {
 
             if curr_chunk_state == None {
                 let chunk = self.chunk_loader.load_chunk(pos);
-                self.change_world_chunk(pos, chunk);
+                self.set_world_chunk(pos, chunk);
 
                 self.world.change_chunk_state(pos, super::ChunkState::Loaded);
             }
@@ -219,7 +219,7 @@ impl ChunkManager {
         }
     }
 
-    fn change_world_chunk(&mut self, pos: ChunkPos, new_chunk: Chunk) {
+    fn set_world_chunk(&mut self, pos: ChunkPos, new_chunk: Chunk) {
         self.world.set_chunk(pos, new_chunk.clone());
 
         self.with_event_callback(|cb| cb.chunk_update_callback(WorldChunkUpdate { chunk_pos: pos, chunk: new_chunk }));
@@ -276,7 +276,7 @@ impl ChunkRepository for ChunkManager {
             self.chunk_builder.build_chunk(pos, &new_chunk, new_mesh_version);
         }
 
-        self.change_world_chunk(pos, new_chunk);
+        self.set_world_chunk(pos, new_chunk);
     }
 
 
