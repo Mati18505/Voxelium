@@ -13,7 +13,7 @@ use bevy_common_assets::json::JsonAssetPlugin;
 use bevy_render::VoxelRenderPlugin;
 use bevy_resources::{MeshBlockTypeStorageLoader, MeshBlockTypeStorageResource, TextureConfig};
 use cgmath::Vector3;
-use chunk_builder::*;
+use chunk_mesh_builder::*;
 use controller::ControllerPlugin;
 use bevy_types::{AppStates, GameResources};
 use shared::{entities::{init_block_names, name_to_block_id, BlockID, BlockInChunkPos, BlockPos, BlockTypeStorage, Chunk, ChunkPos, ChunkRepository}, physics::{raycast, RaycastConfig, RaycastResult}, resources::BlockTypeStorageResource};
@@ -24,7 +24,7 @@ use crate::{bevy_resources::BevyBlockTypeStorageResource, chunk_state_manager::{
 
 mod bevy_render;
 mod bevy_resources;
-mod chunk_builder;
+mod chunk_mesh_builder;
 mod controller;
 mod chunk_state_manager;
 mod bevy_types;

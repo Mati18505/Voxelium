@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use bevy::prelude::*;
 use shared::entities::ChunkPos;
 
-use crate::chunk_builder::ChunkMesh;
+use crate::chunk_mesh_builder::ChunkMesh;
 use crate::bevy_render::{BevyChunkEntity, BevyChunkMesh, VoxelMaterial};
 use super::chunk_state_manager;
 

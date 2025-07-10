@@ -1,7 +1,7 @@
 use shared::{chunk_loader::chunk_loader, entities::{Chunk, ChunkPos, ChunkRepository, CHUNK_SIZE}};
 use std::{collections::{HashMap, HashSet}, sync::{Arc, Mutex}};
 
-use crate::chunk_builder::{ChunkMesh};
+use crate::chunk_mesh_builder::{ChunkMesh};
 
 use super::physical_world::{PhysicalWorld, Version};
 

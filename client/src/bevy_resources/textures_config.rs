@@ -1,4 +1,4 @@
-use crate::chunk_builder::{TextureDictionary, TextureIndex, TextureName};
+use crate::chunk_mesh_builder::{TextureDictionary, TextureIndex, TextureName};
 use bevy::prelude::*;
 use std::collections::HashMap;
 

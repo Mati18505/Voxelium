@@ -5,7 +5,7 @@ use bevy::tasks::AsyncComputeTaskPool;
 use bevy::{prelude::*, tasks::Task};
 use shared::entities::{Chunk, ChunkPos};
 
-use crate::chunk_builder::{ChunkMesh, VoxelMesher};
+use crate::chunk_mesh_builder::{ChunkMesh, VoxelMesher};
 use super::{physical_world::Version, chunk_state_manager};
 
 #[derive(Resource)]
