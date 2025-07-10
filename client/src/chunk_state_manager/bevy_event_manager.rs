@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
-use super::chunk_manager;
-use super::chunk_manager::WorldChunkUpdate;
+use super::chunk_state_manager;
+use super::chunk_state_manager::WorldChunkUpdate;
 
 #[derive(Event, Debug, Clone, PartialEq)]
 pub struct WorldChunkUpdateEvent {
@@ -13,7 +13,7 @@ pub struct EventManager {
     chunk_update_events: Vec<WorldChunkUpdateEvent>,
 }
 
-impl chunk_manager::EventCallback for EventManager {
+impl chunk_state_manager::EventCallback for EventManager {
     fn chunk_update_callback(&mut self, chunk_update: WorldChunkUpdate) {
         let ev = WorldChunkUpdateEvent { chunk_update };
 

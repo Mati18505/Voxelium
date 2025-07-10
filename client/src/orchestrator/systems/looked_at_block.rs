@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use shared::entities::name_to_block_id;
 
-use crate::{bevy_types::GameResources, chunk_manager::{ChunkManagerResources, WorldChunkUpdateEvent}, controller::Controller};
+use crate::{bevy_types::GameResources, chunk_state_manager::{ChunkManagerResources, WorldChunkUpdateEvent}, controller::Controller};
 use super::{super::utils::raycast_from_controller, super::LookedAtBlockChangedEvent};
 
 #[derive(Component, Debug, Default, Clone, Copy)]

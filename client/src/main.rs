@@ -18,15 +18,15 @@ use controller::ControllerPlugin;
 use bevy_types::{AppStates, GameResources};
 use shared::{entities::{init_block_names, name_to_block_id, BlockID, BlockInChunkPos, BlockPos, BlockTypeStorage, Chunk, ChunkPos, ChunkRepository}, physics::{raycast, RaycastConfig, RaycastResult}, resources::BlockTypeStorageResource};
 
-use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
+use chunk_state_manager::{ChunkManagerPlugin, ChunkManagerResources};
 
-use crate::{bevy_resources::BevyBlockTypeStorageResource, chunk_manager::{ChunkManager, WorldChunkUpdateEvent}, controller::ActionType, gui::GUIPlugin, orchestrator::{utils::raycast_from_controller, OrchestratorPlugin}};
+use crate::{bevy_resources::BevyBlockTypeStorageResource, chunk_state_manager::{ChunkManager, WorldChunkUpdateEvent}, controller::ActionType, gui::GUIPlugin, orchestrator::{utils::raycast_from_controller, OrchestratorPlugin}};
 
 mod bevy_render;
 mod bevy_resources;
 mod chunk_builder;
 mod controller;
-mod chunk_manager;
+mod chunk_state_manager;
 mod bevy_types;
 mod voxel_edits;
 mod gui;

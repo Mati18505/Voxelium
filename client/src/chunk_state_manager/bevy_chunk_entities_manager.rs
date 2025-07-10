@@ -5,7 +5,7 @@ use shared::entities::ChunkPos;
 
 use crate::chunk_builder::ChunkMesh;
 use crate::bevy_render::{BevyChunkEntity, BevyChunkMesh, VoxelMaterial};
-use super::chunk_manager;
+use super::chunk_state_manager;
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct ChunkEntitiesManager {
@@ -14,7 +14,7 @@ pub struct ChunkEntitiesManager {
     chunk_entities: HashMap<ChunkPos, BevyChunkEntity>,
 }
 
-impl chunk_manager::ChunkObjectCallback for ChunkEntitiesManager {
+impl chunk_state_manager::ChunkObjectCallback for ChunkEntitiesManager {
     fn chunk_object_created(&mut self, chunk_pos: ChunkPos, chunk_mesh: &ChunkMesh) {
         self.pending_to_create.insert(chunk_pos, chunk_mesh.clone());
     }

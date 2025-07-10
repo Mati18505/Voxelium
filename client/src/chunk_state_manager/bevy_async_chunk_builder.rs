@@ -6,7 +6,7 @@ use bevy::{prelude::*, tasks::Task};
 use shared::entities::{Chunk, ChunkPos};
 
 use crate::chunk_builder::{ChunkMesh, VoxelMesher};
-use crate::chunk_manager::{physical_world::Version, chunk_manager};
+use super::{physical_world::Version, chunk_state_manager};
 
 #[derive(Resource)]
 struct ChunkBuildTask(Task<(ChunkMesh, Version)>);
@@ -25,7 +25,7 @@ impl AsyncChunkBuilder {
     }
 }
 
-impl chunk_manager::ChunkBuilder for AsyncChunkBuilder {
+impl chunk_state_manager::ChunkBuilder for AsyncChunkBuilder {
     fn build_chunk(
         &mut self,
         chunk_pos: ChunkPos,
