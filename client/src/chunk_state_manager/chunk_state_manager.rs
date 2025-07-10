@@ -189,7 +189,7 @@ impl ChunkManager {
     }
 
     fn visit_chunks_in_distance<F: FnMut(ChunkPos)>(controller_pos: ChunkPos, dist: usize, vertical: bool, mut func: F) {
-        let controller_pos = *controller_pos / 16;
+        let controller_pos = *controller_pos / CHUNK_SIZE as isize;
 
         let z_start = controller_pos.z - dist as isize;
         let z_end = controller_pos.z + dist as isize;
