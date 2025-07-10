@@ -14,7 +14,7 @@ pub trait ChunkRepository {
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct World {
-    chunks: HashMap<ChunkPos, Chunk>,
+    pub chunks: HashMap<ChunkPos, Chunk>,
 }
 
 impl World {
