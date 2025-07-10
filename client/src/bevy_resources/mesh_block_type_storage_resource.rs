@@ -5,7 +5,7 @@ use thiserror::Error;
 
 use bevy::asset::{io::Reader, AssetLoader, LoadContext};
 
-use crate::chunk_builder::{MeshBlockTypeStorage, MeshBlockType, MeshBlockTypeBuilder};
+use crate::chunk_mesh_builder::{MeshBlockTypeStorage, MeshBlockType, MeshBlockTypeBuilder};
 
 #[derive(bevy::asset::Asset, bevy::reflect::TypePath, Debug, Clone, PartialEq)]
 pub struct MeshBlockTypeStorageResource {

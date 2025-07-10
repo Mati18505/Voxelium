@@ -4,7 +4,7 @@ use bevy::{
     asset::RenderAssetUsages, math::{Quat, Vec3}, reflect::PartialReflect, render::mesh::{Indices, Mesh, PrimitiveTopology}, transform::components::Transform
 };
 
-use crate::chunk_builder::{ChunkMesh, MaterialName};
+use crate::chunk_mesh_builder::{ChunkMesh, MaterialName};
 
 #[derive(Debug, Default, Clone)]
 pub struct BevyChunkMesh {

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use shared::entities::{world::World, Chunk, ChunkPos, ChunkRepository};
 
-use crate::chunk_builder::ChunkMesh;
+use crate::chunk_mesh_builder::ChunkMesh;
 
 use super::ChunkState;
 

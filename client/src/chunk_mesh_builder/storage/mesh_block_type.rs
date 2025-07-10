@@ -1,6 +1,6 @@
 use shared::entities::BlockSide;
 
-use crate::chunk_builder::MaterialName;
+use crate::chunk_mesh_builder::MaterialName;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct MeshBlockType {

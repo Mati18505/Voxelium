@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use bevy::prelude::*;
 use shared::{chunk_loader::ChunkLoader, entities::{BlockPos, ChunkPos}};
 
-use crate::{bevy_render::VoxelMaterial, bevy_types::{AppStates, GameResources}, chunk_builder::VoxelMesher, controller};
+use crate::{bevy_render::VoxelMaterial, bevy_types::{AppStates, GameResources}, chunk_mesh_builder::VoxelMesher, controller};
 
 use super::{bevy_event_manager::WorldChunkUpdateEvent, AsyncChunkBuilder, ChunkEntitiesManager, ChunkManager, Config, EventManager};
 
