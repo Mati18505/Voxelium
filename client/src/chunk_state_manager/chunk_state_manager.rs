@@ -1,3 +1,4 @@
+use bevy::ecs::event::Event;
 use shared::{chunk_loader::chunk_loader, entities::{Chunk, ChunkPos, ChunkRepository, CHUNK_SIZE}};
 use std::{collections::{HashMap, HashSet}, sync::{Arc, Mutex}};
 
@@ -127,11 +128,7 @@ impl ChunkManager {
         self.world.add_chunk_mesh(pos, chunk_mesh.clone());
         self.world.change_chunk_state(pos, super::ChunkState::Drawn);
 
-        if let Some(callback) = &self.chunk_object_callback {
-            if let Ok(mut callback) = callback.lock() {
-                callback.chunk_object_created(pos, &chunk_mesh);
-            }
-        }
+        self.with_chunk_object_callback(|cb| cb.chunk_object_created(pos, &chunk_mesh));
     }
 
     fn update_chunk_states_in_controller_range(&mut self, controller_pos: ChunkPos) {
@@ -177,11 +174,7 @@ impl ChunkManager {
                 self.world.chunk_meshes.remove(&pos);
                 self.world.change_chunk_state(pos, super::ChunkState::Loaded);
 
-                if let Some(callback) = &self.chunk_object_callback {
-                    if let Ok(mut callback) = callback.lock() {
-                        callback.chunk_object_removed(pos);
-                    }
-                }
+                self.with_chunk_object_callback(|cb| cb.chunk_object_removed(pos));
             }
         }
 
@@ -229,20 +222,12 @@ impl ChunkManager {
     fn change_world_chunk(&mut self, pos: ChunkPos, new_chunk: Chunk) {
         self.world.set_chunk(pos, new_chunk.clone());
 
-        if let Some(callback) = &self.event_callback {
-            if let Ok(mut callback) = callback.lock() {
-                callback.chunk_update_callback(WorldChunkUpdate { chunk_pos: pos, chunk: new_chunk });
-            }
-        }
+        self.with_event_callback(|cb| cb.chunk_update_callback(WorldChunkUpdate { chunk_pos: pos, chunk: new_chunk }));
     }
 
     fn remove_world_chunk(&mut self, pos: ChunkPos) {
         if let Some(chunk) = self.get_chunk(pos) {
-            if let Some(callback) = &self.event_callback {
-                if let Ok(mut callback) = callback.lock() {
-                    callback.chunk_update_callback(WorldChunkUpdate { chunk_pos: pos, chunk: chunk.clone() });
-                }
-            }
+            self.with_event_callback(|cb| cb.chunk_update_callback(WorldChunkUpdate { chunk_pos: pos, chunk: chunk.clone() }));
         }
 
         self.remove_chunk(pos);
@@ -256,6 +241,24 @@ impl ChunkManager {
         }
 
         true
+    }
+
+    fn with_chunk_object_callback<F: FnOnce(&mut dyn ChunkObjectCallback)>(&self, f: F)
+    {
+        if let Some(cb) = &self.chunk_object_callback {
+            if let Ok(mut cb) = cb.lock() {
+                f(&mut *cb);
+            }
+        }
+    }
+
+    fn with_event_callback<F: FnOnce(&mut dyn EventCallback)>(&self, f: F)
+    {
+        if let Some(cb) = &self.event_callback {
+            if let Ok(mut cb) = cb.lock() {
+                f(&mut *cb);
+            }
+        }
     }
 }
 
