@@ -14,6 +14,7 @@ struct ChunkBuildTask(Task<(ChunkMesh, Version)>);
 pub struct AsyncChunkBuilder {
     voxel_mesher: VoxelMesher,
     tasks: HashMap<ChunkPos, ChunkBuildTask>,
+    completed: HashMap<ChunkPos, (ChunkMesh, Version)>,
 }
 
 impl AsyncChunkBuilder {
@@ -21,6 +22,7 @@ impl AsyncChunkBuilder {
         Self {
             voxel_mesher,
             tasks: HashMap::default(),
+            completed: HashMap::default(),
         }
     }
 }
@@ -51,8 +53,8 @@ impl chunk_state_manager::ChunkBuilder for AsyncChunkBuilder {
 
         self.tasks.insert(chunk_pos, ChunkBuildTask(task));
     }
-
-    fn take_builded_chunks(&mut self) -> HashMap<ChunkPos, (ChunkMesh, Version)> {
+    
+    fn collect_finished_results(&mut self) {
         let mut completed: HashMap<ChunkPos, (ChunkMesh, Version)> = HashMap::default();
 
         for (chunk_pos, build_task) in self.tasks.iter_mut() {
@@ -65,6 +67,10 @@ impl chunk_state_manager::ChunkBuilder for AsyncChunkBuilder {
             self.tasks.remove(chunk_pos);
         }
 
-        completed
+        self.completed.extend(completed);
+    }
+
+    fn take_builded_chunk_mesh(&mut self, chunk_pos: ChunkPos) -> Option<(ChunkMesh, Version)> {
+        self.completed.remove(&chunk_pos)
     }
 }

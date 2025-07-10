@@ -24,7 +24,8 @@ pub trait EventCallback: Send + Sync {
 
 pub trait ChunkBuilder: Send + Sync {
     fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk, version: Version);
-    fn take_builded_chunks(&mut self) -> HashMap<ChunkPos, (ChunkMesh, Version)>;
+    fn collect_finished_results(&mut self);
+    fn take_builded_chunk_mesh(&mut self, chunk_pos: ChunkPos) -> Option<(ChunkMesh, Version)>;
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -88,13 +89,19 @@ impl ChunkManager {
     }
 
     pub fn check_builded_chunks(&mut self) {
-        for (pos, (mesh, version)) in self.chunk_builder.take_builded_chunks() {
-            if pos.is_within_distance(self.last_controller_pos, self.config.render_distance) {
-                if version == self.world.get_chunk_mesh_version(pos) {
-                    self.add_drawn_chunk(pos, mesh);
+        self.chunk_builder.collect_finished_results();
+
+        let chunks_to_draw: Vec<ChunkPos> = self.world.get_chunks_with_state(super::ChunkState::ToDraw);
+
+        for pos in chunks_to_draw {
+            if let Some((mesh, version)) = self.chunk_builder.take_builded_chunk_mesh(pos) {
+                if pos.is_within_distance(self.last_controller_pos, self.config.render_distance) {
+                    if version == self.world.get_chunk_mesh_version(pos) {
+                        self.add_drawn_chunk(pos, mesh);
+                    }
+                } else {
+                    self.world.change_chunk_state(pos, super::ChunkState::Loaded);
                 }
-            } else {
-                self.world.change_chunk_state(pos, super::ChunkState::Loaded);
             }
         }
     }
