@@ -33,8 +33,8 @@ fn init_chunk_manager(
     );
 
     let chunk_builder = Box::new(AsyncChunkBuilder::new(voxel_mesher));
-    let mut config = Config::new(5, 4);
-    config.dynamic_vertical_loading = true;
+    let mut config = Config::new(10, 9);
+    config.dynamic_vertical_loading = false;
 
     let chunk_entities_manager = Arc::new(Mutex::new(ChunkEntitiesManager::default()));
     let event_manager = Arc::new(Mutex::new(EventManager::default()));
@@ -67,6 +67,7 @@ fn update(
         let new_chunk_pos = ChunkPos::from(new_block_pos);
 
         chunk_manager_resources.chunk_manager.update_controller_pos(new_chunk_pos);
+        dbg!(&chunk_manager_resources.chunk_manager);
     }
 
     chunk_manager_resources.chunk_manager.check_builded_chunks();

@@ -1,9 +1,9 @@
 use shared::{chunk_loader::chunk_loader, entities::{Chunk, ChunkPos, ChunkRepository, CHUNK_SIZE}};
-use std::{collections::{HashMap, HashSet}, sync::{Arc, Mutex}};
+use std::{fmt, sync::{Arc, Mutex}};
 
-use crate::{chunk_mesh_builder::ChunkMesh, chunk_state_manager::chunk_state_to_behavior};
+use crate::{chunk_mesh_builder::ChunkMesh, chunk_state_manager::{bevy_async_chunk_builder::AsyncChunkBuilder, ChunkState}};
 
-use super::{physical_world::{PhysicalWorld, Version}, ChunkManagerContext};
+use super::{physical_world::{PhysicalWorld, Version}};
 
 pub trait ChunkObjectCallback: Send + Sync {
     fn chunk_object_created(&mut self, chunk_pos: ChunkPos, chunk_mesh: &ChunkMesh);
@@ -20,10 +20,11 @@ pub trait EventCallback: Send + Sync {
     fn chunk_update_callback(&mut self, ev: WorldChunkUpdate);
 }
 
-pub trait ChunkBuilder: Send + Sync {
+pub trait ChunkBuilder: Send + Sync + fmt::Debug {
     fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk, version: Version);
     fn collect_finished_results(&mut self);
-    fn take_builded_chunk_mesh(&mut self, chunk_pos: ChunkPos) -> Option<(ChunkMesh, Version)>;
+    fn take_built_chunk_mesh_by_version(&mut self, chunk_pos: ChunkPos, version: Version) -> Option<ChunkMesh>;
+    fn is_chunk_mesh_built_with_version(&mut self, chunk_pos: ChunkPos, version: Version) -> bool;
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -53,7 +54,7 @@ pub struct ChunkManager {
     chunk_object_callback: Option<Arc<Mutex<dyn ChunkObjectCallback>>>,
     event_callback: Option<Arc<Mutex<dyn EventCallback>>>,
     config: Config,
-    last_controller_pos: ChunkPos,
+    controller_pos: ChunkPos,
 }
 
 impl ChunkManager {
@@ -65,7 +66,7 @@ impl ChunkManager {
             chunk_object_callback: None,
             event_callback: None,
             config,
-            last_controller_pos: ChunkPos::new(0, 0, 0),
+            controller_pos: ChunkPos::new(0, 0, 0),
         }
     }
 
@@ -77,17 +78,21 @@ impl ChunkManager {
         self.event_callback = Some(callback);
     }
 
-    pub fn update_controller_pos(&mut self, controller_pos: ChunkPos) {
-        if controller_pos == self.last_controller_pos {
-            return;
+    pub fn update_controller_pos(&mut self, new_controller_pos: ChunkPos) {
+        if new_controller_pos != self.controller_pos {
+            self.controller_pos = new_controller_pos;
+            self.update_chunk_states_in_world();
         }
-
-        self.update_chunk_states_in_world(controller_pos);
-        self.last_controller_pos = controller_pos;
     }
 
     pub fn check_builded_chunks(&mut self) {
         self.chunk_builder.collect_finished_results();
+
+        let chunks_to_draw: Vec<ChunkPos> = self.world.get_chunks_with_state(ChunkState::ToDraw);
+
+        for chunk_pos in chunks_to_draw {
+            self.update_chunk_state(chunk_pos);
+        }
     }
 
     pub fn get_world(&self) -> &PhysicalWorld {
@@ -105,17 +110,20 @@ impl ChunkManager {
         self.get_chunk(pos)
     }
 
-    fn update_chunk_states_in_world(&mut self, controller_pos: ChunkPos) {
-        Self::visit_chunks_in_distance(controller_pos, self.config.load_distance, self.config.dynamic_vertical_loading, |pos| {
-            self.load_chunk_if_is_empty(pos);
-            self.update_chunk_state(&pos);
+    fn update_chunk_states_in_world(&mut self) {
+        Self::visit_chunks_in_distance(self.controller_pos, self.config.load_distance, self.config.dynamic_vertical_loading, |pos| {
+            if self.world.get_chunk_state(pos).is_none() {
+                self.change_chunk_state(pos, ChunkState::Empty);
+            } 
         });
 
-        let chunks_in_world: Vec<ChunkPos> = self.world.world.chunks.keys().copied().collect();
+        let chunks_in_world: Vec<ChunkPos> = self.world.chunk_states.keys().copied().collect();
 
         for pos in chunks_in_world {
-            if !pos.is_within_distance(controller_pos, self.config.load_distance) {
-                self.remove_chunk(pos);
+            self.update_chunk_state(pos);
+
+            if self.world.get_chunk_state(pos) == Some(&ChunkState::Empty) {
+                self.world.remove_chunk(pos);
             }
         }
     }
@@ -161,32 +169,111 @@ impl ChunkManager {
         true
     }
 
-    fn change_chunk_state(&mut self, pos: ChunkPos, new_state: super::ChunkState) {
-        if let Some(state) = self.world.get_chunk_state(pos).copied() {
-            let mut ctx = self.create_chunk_manager_context();
-            let state_behavior = chunk_state_to_behavior(state);
-
-            state_behavior.on_exit(&mut ctx, pos);
+    fn change_chunk_state(&mut self, pos: ChunkPos, new_state: ChunkState) {
+        if let Some(prev_state) = self.world.get_chunk_state(pos).copied() {
+            if prev_state != new_state {
+                self.on_state_transition(pos, prev_state, new_state);
+            }
+        } else if new_state != ChunkState::Empty {
+            self.on_state_transition(pos, ChunkState::Empty, new_state);
         }
-        let mut ctx = self.create_chunk_manager_context();
-        let new_state_behavior = chunk_state_to_behavior(new_state);
+        
+        self.world.set_chunk_state(pos, new_state);
+    }
+    
+    fn update_chunk_state(&mut self, pos: ChunkPos) {
+        use ChunkState::*;
 
-        new_state_behavior.on_enter(&mut ctx, pos);
-        self.world.change_chunk_state(pos, new_state);
+        let mut state = self.world.chunk_states.get(&pos).copied().unwrap_or(Empty);
+
+        loop {
+            let new_state: ChunkState = match state {
+                Empty => {
+                    if self.is_within_distance(pos, self.config.load_distance) { Loaded } else { Empty }
+                }
+                Loaded => {
+                    if self.is_within_distance(pos, self.config.render_distance) { ToDraw } 
+                    else { 
+                        if self.is_within_distance(pos, self.config.load_distance) { state } else { Empty }
+                    }
+                },
+                ToDraw => {
+                    let mesh_version = self.world.get_chunk_mesh_version(pos);
+
+                    if self.is_within_distance(pos, self.config.render_distance) { 
+                        if self.chunk_builder.is_chunk_mesh_built_with_version(pos, mesh_version) { Drawn } else { state }
+                    } else {
+                        Loaded
+                    }
+                },
+                Drawn => {
+                    if self.is_within_distance(pos, self.config.render_distance) { state } else { Loaded }
+                },
+            };
+
+            if new_state == state {
+                break;
+            }
+
+            self.change_chunk_state(pos, new_state);
+            state = new_state;
+        }
     }
 
-    fn update_chunk_state(&mut self, pos: &ChunkPos) {
-        let controller_pos = self.last_controller_pos.clone();
-
-        if let Some(state) = self.world.chunk_states.get(pos).copied() {
-            let state_behavior = chunk_state_to_behavior(state);
-            let mut ctx: ChunkManagerContext = self.create_chunk_manager_context();
-            let new_state = state_behavior.update(&mut ctx, *pos, controller_pos);
-
-            if new_state != state {
-                self.change_chunk_state(*pos, new_state);
-            }
+    fn is_within_distance(&self, pos: ChunkPos, distance_in_chunks: usize) -> bool {
+        match self.config.dynamic_vertical_loading {
+            true => pos.is_within_distance(self.controller_pos, distance_in_chunks),
+            false => pos.is_within_distance_2d(self.controller_pos, distance_in_chunks),
         }
+    }
+
+    fn on_state_transition(&mut self, pos: ChunkPos, old_state: ChunkState, new_state: ChunkState) {
+        assert_ne!(old_state, new_state);
+
+        use ChunkState::*;
+
+        match (old_state, new_state) {
+            (Empty, Loaded) => {
+                let chunk = self.chunk_loader.load_chunk(pos);
+
+                self.world.set_chunk(pos, chunk);
+            },
+            (Loaded, Empty) => {
+                self.world.world.remove_chunk(pos);
+            },
+            (Loaded, ToDraw) => {
+                self.pass_chunk_to_builder(pos);
+            },
+            (ToDraw, Loaded) => {
+                // remove mesh from chunk builder???
+            }
+            (ToDraw, Drawn) => {
+                let version = self.world.get_chunk_mesh_version(pos);
+                let mesh = self.chunk_builder.take_built_chunk_mesh_by_version(pos, version).expect("ChunkState is drawn, but mesh is not built.");
+
+                self.world.add_chunk_mesh(pos, mesh.clone());
+
+                self.with_chunk_object_callback(|cb| cb.chunk_object_created(pos, &mesh));
+            },
+            (Drawn, ToDraw) => {
+                self.pass_chunk_to_builder(pos);
+            },
+            (Drawn, Loaded) => {
+                self.world.chunk_meshes.remove(&pos);
+                self.with_chunk_object_callback(|cb| cb.chunk_object_removed(pos));
+            },
+            _ => unreachable!(),
+        }
+    }
+
+    fn pass_chunk_to_builder(&mut self, pos: ChunkPos) {
+        let new_mesh_version = self.world.increment_chunk_mesh_version(pos);
+        //println!("Passing chunk to builder: {:?}, version: {}", pos, new_mesh_version);
+
+        let chunk = self.world.get_chunk(pos)
+            .expect("Chunk is passed to builder, but it is not loaded.");
+
+        self.chunk_builder.build_chunk(pos, chunk, new_mesh_version);
     }
 
     fn with_event_callback<F: FnOnce(&mut dyn EventCallback)>(&self, f: F)
@@ -198,43 +285,81 @@ impl ChunkManager {
         }
     }
 
+    fn with_chunk_object_callback<F: FnOnce(&mut dyn ChunkObjectCallback)>(&self, f: F)
+    {
+        if let Some(cb) = &self.chunk_object_callback {
+            if let Ok(mut cb) = cb.lock() {
+                f(&mut *cb);
+            }
+        }
+    }
+
     fn load_chunk_if_is_empty(&mut self, pos: ChunkPos) {
         let curr_chunk_state = self.world.get_chunk_state(pos);
 
-        if curr_chunk_state == None {
-            self.change_chunk_state(pos, super::ChunkState::Loaded);
-        } 
-    }
-    fn create_chunk_manager_context(&mut self) -> ChunkManagerContext {
-        ChunkManagerContext {
-            chunk_loader: &mut self.chunk_loader,
-            chunk_builder: &mut *self.chunk_builder,
-            world: &mut self.world,
-            chunk_object_callback: &self.chunk_object_callback,
-            config: &self.config,
+        match curr_chunk_state {
+            None => {
+                self.change_chunk_state(pos, ChunkState::Empty);
+                self.change_chunk_state(pos, ChunkState::Loaded);
+
+            }
+            Some(ChunkState::Empty) => {
+                self.change_chunk_state(pos, ChunkState::Loaded);
+            }
+            _ => (),
         }
+    }
+
+    // Redraws chunk only if it was drawn or to draw.
+    fn redraw_chunk(&mut self, pos: ChunkPos) {
+        let curr_chunk_state: ChunkState = self.world.get_chunk_state(pos).copied().unwrap_or(ChunkState::Empty);
+
+        match curr_chunk_state {
+            ChunkState::ToDraw => {
+                self.pass_chunk_to_builder(pos);
+            },
+            ChunkState::Drawn => {
+                self.change_chunk_state(pos, ChunkState::ToDraw);
+            },
+            _ => (),
+        }   
     }
 }
 
+// public API
 impl ChunkRepository for ChunkManager {
+    // Sets and redraws chunk without loading it.
     fn set_chunk(&mut self, pos: ChunkPos, new_chunk: Chunk) {
-        if let Some(curr_chunk_state) = self.world.get_chunk_state(pos).copied() {
-            let state_behavior = chunk_state_to_behavior(curr_chunk_state);
+        self.world.set_chunk(pos, new_chunk.clone());
 
-            state_behavior.notify_chunk_modified(&mut self.create_chunk_manager_context(), pos);
+        let curr_chunk_state: ChunkState = self.world.get_chunk_state(pos).copied().unwrap_or_else(|| {
+            ChunkState::Empty
+        });
 
-            self.world.set_chunk(pos, new_chunk.clone());
-            self.with_event_callback(|cb| cb.chunk_update_callback(WorldChunkUpdate { chunk_pos: pos, chunk: new_chunk }));
-        } else {
-            assert!(true, "set chunk needs chunk to be loaded");
+        if curr_chunk_state == ChunkState::Empty {
+            self.world.set_chunk_state(pos, ChunkState::Loaded);
         }
+
+        self.redraw_chunk(pos);
+
+        self.with_event_callback(|cb| cb.chunk_update_callback(WorldChunkUpdate { chunk_pos: pos, chunk: new_chunk }));
     }
 
+    // Unloads chunk and removes it from world.
     fn remove_chunk(&mut self, pos: ChunkPos) {
         if let Some(chunk) = self.world.get_chunk(pos) {
-            self.with_event_callback(|cb| cb.chunk_update_callback(super::WorldChunkUpdate { chunk_pos: pos, chunk: chunk.clone() }));
-            self.world.remove_chunk(pos);
+            self.with_event_callback(|cb| cb.chunk_update_callback(WorldChunkUpdate { chunk_pos: pos, chunk: chunk.clone() }));
+
+            if let Some(chunk_state) = self.world.get_chunk_state(pos) {
+                if *chunk_state == ChunkState::Drawn || *chunk_state == ChunkState::ToDraw {
+                    self.change_chunk_state(pos, ChunkState::Loaded);
+                }
+            }
+
+            self.change_chunk_state(pos, ChunkState::Empty);
         }
+
+        self.world.remove_chunk(pos);
     }
 
     fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
@@ -242,9 +367,20 @@ impl ChunkRepository for ChunkManager {
     }
 }
 
+impl fmt::Debug for ChunkManager {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ChunkStateManager")
+            .field("world", &self.world)
+            .field("chunk_builder", &self.chunk_builder)
+            .finish()
+    }
+}
+
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashSet;
+
     use super::*;
 
     #[test]

@@ -6,7 +6,7 @@ pub struct ControllerPlugin;
 impl Plugin for ControllerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(NoCameraPlayerPlugin)
-            .insert_resource(MovementSettings { speed: 6.0, ..default() })
+            .insert_resource(MovementSettings { speed: 20.0, ..default() })
             .add_event::<PositionChangeEvent>()
             .add_event::<ActionEvent>()
             .add_systems(Startup, setup_controller)

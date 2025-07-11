@@ -52,6 +52,22 @@ impl ChunkPos {
 
         false
     }
+
+    pub fn is_within_distance_2d(&self, other: ChunkPos, mut dist_in_chunks: usize) -> bool {
+        dist_in_chunks *= CHUNK_SIZE;
+
+        let y_start = other.y - dist_in_chunks as isize;
+        let y_end = other.y + dist_in_chunks as isize;
+        let x_start = other.x - dist_in_chunks as isize;
+        let x_end = other.x + dist_in_chunks as isize;
+
+        if self.x >= x_start && self.x <= x_end &&
+            self.y >= y_start && self.y <= y_end {
+            return true;
+        }
+
+        false
+    }
 }
 
 impl Deref for ChunkPos {

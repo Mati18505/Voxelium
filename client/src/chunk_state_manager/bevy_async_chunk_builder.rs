@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt;
 
 use bevy::tasks::futures_lite::future;
 use bevy::tasks::AsyncComputeTaskPool;
@@ -9,12 +10,12 @@ use crate::chunk_mesh_builder::{ChunkMesh, VoxelMesher};
 use super::{physical_world::Version, chunk_state_manager};
 
 #[derive(Resource)]
-struct ChunkBuildTask(Task<(ChunkMesh, Version)>);
+struct ChunkBuildTask(Task<ChunkMesh>);
 
 pub struct AsyncChunkBuilder {
     voxel_mesher: VoxelMesher,
-    tasks: HashMap<ChunkPos, ChunkBuildTask>,
-    completed: HashMap<ChunkPos, (ChunkMesh, Version)>,
+    tasks: HashMap<(ChunkPos, Version), ChunkBuildTask>,
+    completed: HashMap<(ChunkPos, Version), ChunkMesh>,
 }
 
 impl AsyncChunkBuilder {
@@ -48,29 +49,42 @@ impl chunk_state_manager::ChunkBuilder for AsyncChunkBuilder {
                 eprintln!("{}", err);
             }
 
-            (chunk_mesh, version)
+            chunk_mesh
         });
 
-        self.tasks.insert(chunk_pos, ChunkBuildTask(task));
+        self.tasks.insert((chunk_pos, version), ChunkBuildTask(task));
     }
     
     fn collect_finished_results(&mut self) {
-        let mut completed: HashMap<ChunkPos, (ChunkMesh, Version)> = HashMap::default();
+        let mut completed: HashMap<(ChunkPos, Version), ChunkMesh> = HashMap::default();
 
-        for (chunk_pos, build_task) in self.tasks.iter_mut() {
-            if let Some((chunk_mesh, version)) = future::block_on(future::poll_once(&mut build_task.0)) {
-                completed.insert(*chunk_pos, (chunk_mesh, version));
+        for ((chunk_pos, version), build_task) in self.tasks.iter_mut() {
+            if let Some(chunk_mesh) = future::block_on(future::poll_once(&mut build_task.0)) {
+                completed.insert((*chunk_pos, *version), chunk_mesh);
             }
         }
 
-        for chunk_pos in completed.keys() {
-            self.tasks.remove(chunk_pos);
+        for (chunk_pos, version) in completed.keys() {
+            self.tasks.remove(&(*chunk_pos, *version));
         }
 
         self.completed.extend(completed);
     }
 
-    fn take_builded_chunk_mesh(&mut self, chunk_pos: ChunkPos) -> Option<(ChunkMesh, Version)> {
-        self.completed.remove(&chunk_pos)
+    fn take_built_chunk_mesh_by_version(&mut self, chunk_pos: ChunkPos, version: Version) -> Option<ChunkMesh> {
+        self.completed.remove(&(chunk_pos, version))
+    }
+
+    fn is_chunk_mesh_built_with_version(&mut self, chunk_pos: ChunkPos, version: Version) -> bool {
+        self.completed.contains_key(&(chunk_pos, version))
+    }
+}
+
+impl fmt::Debug for AsyncChunkBuilder {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AsyncChunkBuilder")
+            .field("tasks", &self.tasks.len())
+            .field("completed", &self.completed.len())
+            .finish()
     }
 }

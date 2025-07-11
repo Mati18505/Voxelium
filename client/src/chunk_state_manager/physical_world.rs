@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt};
 
 use shared::entities::{world::World, Chunk, ChunkPos, ChunkRepository};
 
@@ -8,7 +8,7 @@ use super::ChunkState;
 
 pub type Version = u64;
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Default, Clone, PartialEq)]
 pub struct PhysicalWorld {
     pub world: World,
     pub chunk_meshes: HashMap<ChunkPos, ChunkMesh>,
@@ -24,9 +24,7 @@ impl PhysicalWorld {
         self.chunk_meshes.get(&pos)
     }
 
-    pub fn change_chunk_state(&mut self, pos: ChunkPos, state: ChunkState) {
-        assert!(self.world.get_chunk(pos) != None, "Cannot change state of nonexistent chunk.");
-
+    pub fn set_chunk_state(&mut self, pos: ChunkPos, state: ChunkState) {
         self.chunk_states.insert(pos, state);
     }
     pub fn get_chunk_state(&self, pos: ChunkPos) -> Option<&ChunkState> {
@@ -59,10 +57,31 @@ impl ChunkRepository for PhysicalWorld {
     fn remove_chunk(&mut self, pos: ChunkPos) {
         self.chunk_meshes.remove(&pos);
         self.chunk_states.remove(&pos);
+        self.chunk_mesh_versions.remove(&pos);
         self.world.remove_chunk(pos);
     }
 
     fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
         self.world.get_chunk(pos)
+    }
+}
+
+impl fmt::Debug for PhysicalWorld {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let empty = self.get_chunks_with_state::<Vec<ChunkPos>>(ChunkState::Empty).len();
+        let loaded = self.get_chunks_with_state::<Vec<ChunkPos>>(ChunkState::Loaded).len();
+        let to_draw = self.get_chunks_with_state::<Vec<ChunkPos>>(ChunkState::ToDraw).len();
+        let drawn = self.get_chunks_with_state::<Vec<ChunkPos>>(ChunkState::Drawn).len();
+
+        f.debug_struct("PhysicalWorld")
+            .field("chunks", &self.world.chunks.len())
+            .field("chunk_meshes", &self.chunk_meshes.len())
+            .field("chunk_states", &self.chunk_states.len())
+            .field("chunk_mesh_versions", &self.chunk_mesh_versions.len())
+            .field("empty", &empty)
+            .field("loaded", &loaded)
+            .field("to_draw", &to_draw)
+            .field("drawn", &drawn)
+            .finish()
     }
 }
