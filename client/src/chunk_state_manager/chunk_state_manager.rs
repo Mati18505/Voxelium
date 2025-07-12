@@ -170,6 +170,7 @@ impl ChunkManager {
         true
     }
 
+    /// Always use this instead of set_chunk_state directly – handles transitions.
     fn change_chunk_state(&mut self, pos: ChunkPos, new_state: ChunkState) {
         if let Some(prev_state) = self.world.get_chunk_state(pos).copied() {
             if prev_state != new_state {
