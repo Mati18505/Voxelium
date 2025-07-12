@@ -184,7 +184,7 @@ impl ChunkManager {
 
     fn update_chunk_state(&mut self, pos: ChunkPos) {
         const MAX_ITERATIONS: u32 = 16;
-        let mut iterations = 0;
+        let mut iterations = 1;
         let mut prev_state = self.world.chunk_states.get(&pos).copied().unwrap_or(ChunkState::Empty);
 
         loop {
