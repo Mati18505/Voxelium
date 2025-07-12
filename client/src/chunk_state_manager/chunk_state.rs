@@ -37,6 +37,7 @@ pub fn get_next_chunk_state(
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ChunkTransition {
 	EmptyToLoaded,
     LoadedToEmpty,
