@@ -30,8 +30,11 @@ pub trait ChunkBuilder: Send + Sync + fmt::Debug {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Config {
+    /// Horizontal radius (in chunks) within which chunks are loaded.
     pub load_distance: usize,
+    /// Horizontal radius (in chunks) within which chunks are rendered.
     pub render_distance: usize,
+    /// If true, the engine dynamically loads chunks above and below the player based on vertical position.
     pub dynamic_vertical_loading: bool,
 }
 
@@ -47,7 +50,7 @@ impl Config {
     }
 }
 
-// Manage chunks dependent on controller position.
+/// Manage chunks dependent on controller position.
 pub struct ChunkManager {
     world: PhysicalWorld,
     chunk_loader: chunk_loader::ChunkLoader,
@@ -71,14 +74,17 @@ impl ChunkManager {
         }
     }
 
+    /// Sets the callback used when a chunk is drawn or mesh is removed.
     pub fn set_chunk_object_callback(&mut self, callback: Arc<Mutex<dyn ChunkObjectCallback>>) {
         self.chunk_object_callback = Some(callback);
     }
 
+    /// Sets the callback used after chunk has been modified.
     pub fn set_event_callback(&mut self, callback: Arc<Mutex<dyn EventCallback>>) {
         self.event_callback = Some(callback);
     }
 
+    /// Updates the controller position and triggers chunk state updates if position has changed.
     pub fn update_controller_pos(&mut self, new_controller_pos: ChunkPos) {
         if new_controller_pos != self.controller_pos {
             self.controller_pos = new_controller_pos;
@@ -86,6 +92,8 @@ impl ChunkManager {
         }
     }
 
+    /// Checks and processes chunks ready to be drawn.
+    /// Should be called once per frame.
     pub fn check_built_chunks(&mut self) {
         self.chunk_builder.collect_finished_results();
 
@@ -100,7 +108,8 @@ impl ChunkManager {
         &self.world
     }
 
-    // Returns None only if the position is outside the world scope.
+    /// Gets chunk from the world or loads it if it is not loaded yet.
+    /// Returns None only if the position is outside the world scope.
     pub fn get_or_load_chunk(&mut self, pos: ChunkPos) -> Option<&Chunk> {
         if !self.is_in_world_scope(pos) {
             return None;
@@ -170,6 +179,7 @@ impl ChunkManager {
         true
     }
 
+    /// Always use this instead of set_chunk_state directly – handles transitions.
     fn change_chunk_state(&mut self, pos: ChunkPos, new_state: ChunkState) {
         if let Some(prev_state) = self.world.get_chunk_state(pos).copied() {
             if prev_state != new_state {
@@ -351,7 +361,7 @@ impl ChunkManager {
 
 // public API
 impl ChunkRepository for ChunkManager {
-    // Sets and redraws chunk without loading it.
+    /// Sets and redraws chunk without loading it.
     fn set_chunk(&mut self, pos: ChunkPos, new_chunk: Chunk) {
         self.world.set_chunk(pos, new_chunk.clone());
 
@@ -368,7 +378,7 @@ impl ChunkRepository for ChunkManager {
         self.emit_event(WorldChunkUpdate { chunk_pos: pos, chunk: new_chunk });
     }
 
-    // Unloads chunk and removes it from world.
+    /// Unloads chunk and removes it from world.
     fn remove_chunk(&mut self, pos: ChunkPos) {
         if let Some(chunk) = self.world.get_chunk(pos) {
             self.emit_event(WorldChunkUpdate { chunk_pos: pos, chunk: chunk.clone() });
