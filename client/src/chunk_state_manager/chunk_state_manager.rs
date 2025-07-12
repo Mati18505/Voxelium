@@ -122,19 +122,13 @@ impl ChunkManager {
 
     fn update_chunk_states_in_world(&mut self) {
         Self::visit_chunks_in_distance(self.controller_pos, self.config.load_distance, self.config.dynamic_vertical_loading, |pos| {
-            if self.world.get_chunk(pos).is_none() {
-                self.change_chunk_state(pos, ChunkState::Empty);
-            }
+            self.update_chunk_state(pos);
         });
 
-        let chunks_in_world: Vec<ChunkPos> = self.world.chunk_states.keys().copied().collect();
+        let chunks_in_world: Vec<ChunkPos> = self.world.get_chunks_with_state(ChunkState::Empty);
 
         for pos in chunks_in_world {
-            self.update_chunk_state(pos);
-
-            if self.world.get_chunk_state(pos) == ChunkState::Empty {
-                self.world.remove_chunk(pos);
-            }
+            self.world.remove_chunk(pos);
         }
     }
 
@@ -187,9 +181,8 @@ impl ChunkManager {
             let transition = chunk_state::get_chunk_transition(prev_state, new_state);
 
             self.apply_transition(pos, transition);
+            self.world.set_chunk_state(pos, new_state);
         }
-
-        self.world.set_chunk_state(pos, new_state);
     }
 
     fn update_chunk_state(&mut self, pos: ChunkPos) {
