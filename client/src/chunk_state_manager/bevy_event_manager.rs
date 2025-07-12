@@ -1,35 +1,30 @@
 use bevy::prelude::*;
 
-use super::chunk_state_manager;
 use super::chunk_state_manager::WorldChunkUpdate;
 
+/// Bevy event.
 #[derive(Event, Debug, Clone, PartialEq)]
 pub struct WorldChunkUpdateEvent {
     pub chunk_update: WorldChunkUpdate,
 }
 
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone)]
 pub struct EventManager {
-    chunk_update_events: Vec<WorldChunkUpdateEvent>,
-}
-
-impl chunk_state_manager::EventCallback for EventManager {
-    fn chunk_update_callback(&mut self, chunk_update: WorldChunkUpdate) {
-        let ev = WorldChunkUpdateEvent { chunk_update };
-
-        self.chunk_update_events.push(ev);
-    }
+    chunk_update_rx: crossbeam_channel::Receiver<WorldChunkUpdate>,
 }
 
 impl EventManager {
+    pub fn new(chunk_update_rx: crossbeam_channel::Receiver<WorldChunkUpdate>) -> Self {
+        Self {
+            chunk_update_rx,
+        }
+    }
     pub fn process_pending(
         &mut self,
         mut events: EventWriter<WorldChunkUpdateEvent>,
     ) {
-        for ev in std::mem::take(&mut self.chunk_update_events) {
-            events.write(ev);
+        for ev in self.chunk_update_rx.try_iter() {
+            events.write(WorldChunkUpdateEvent { chunk_update: ev });
         }
-
-        assert!(self.chunk_update_events.len() == 0);
     }
 }

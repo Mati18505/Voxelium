@@ -1,15 +1,10 @@
 use bevy::log;
 use shared::{chunk_loader::chunk_loader, entities::{Chunk, ChunkPos, ChunkRepository, CHUNK_SIZE}};
-use std::{fmt, sync::{Arc, Mutex}};
+use std::fmt;
 
 use crate::{chunk_mesh_builder::ChunkMesh, chunk_state_manager::{chunk_state, ChunkState, ChunkTransition}};
 
 use super::{physical_world::{PhysicalWorld, Version}};
-
-pub trait ChunkObjectCallback: Send + Sync {
-    fn chunk_object_created(&mut self, chunk_pos: ChunkPos, chunk_mesh: &ChunkMesh);
-    fn chunk_object_removed(&mut self, chunk_pos: ChunkPos);
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WorldChunkUpdate {
@@ -17,8 +12,10 @@ pub struct WorldChunkUpdate {
     pub chunk: Chunk,
 }
 
-pub trait EventCallback: Send + Sync {
-    fn chunk_update_callback(&mut self, ev: WorldChunkUpdate);
+#[derive(Debug, Clone, PartialEq)]
+pub enum ChunkObjectEvent {
+    Created(ChunkPos, ChunkMesh),
+    Removed(ChunkPos),
 }
 
 pub trait ChunkBuilder: Send + Sync + fmt::Debug {
@@ -55,8 +52,8 @@ pub struct ChunkManager {
     world: PhysicalWorld,
     chunk_loader: chunk_loader::ChunkLoader,
     chunk_builder: Box<dyn ChunkBuilder>,
-    chunk_object_callback: Option<Arc<Mutex<dyn ChunkObjectCallback>>>,
-    event_callback: Option<Arc<Mutex<dyn EventCallback>>>,
+    chunk_object_tx: Option<crossbeam_channel::Sender<ChunkObjectEvent>>,
+    event_tx: Option<crossbeam_channel::Sender<WorldChunkUpdate>>,
     config: Config,
     controller_pos: ChunkPos,
 }
@@ -67,21 +64,21 @@ impl ChunkManager {
             world: PhysicalWorld::default(),
             chunk_loader,
             chunk_builder,
-            chunk_object_callback: None,
-            event_callback: None,
+            chunk_object_tx: None,
+            event_tx: None,
             config,
             controller_pos: ChunkPos::new(0, 0, 0),
         }
     }
 
     /// Sets the callback used when a chunk is drawn or mesh is removed.
-    pub fn set_chunk_object_callback(&mut self, callback: Arc<Mutex<dyn ChunkObjectCallback>>) {
-        self.chunk_object_callback = Some(callback);
+    pub fn set_chunk_object_tx(&mut self, callback: Option<crossbeam_channel::Sender<ChunkObjectEvent>>) {
+        self.chunk_object_tx = callback;
     }
 
     /// Sets the callback used after chunk has been modified.
-    pub fn set_event_callback(&mut self, callback: Arc<Mutex<dyn EventCallback>>) {
-        self.event_callback = Some(callback);
+    pub fn set_event_tx(&mut self, callback: Option<crossbeam_channel::Sender<WorldChunkUpdate>>) {
+        self.event_tx = callback;
     }
 
     /// Updates the controller position and triggers chunk state updates if position has changed.
@@ -277,26 +274,20 @@ impl ChunkManager {
     }
 
     fn emit_event(&self, ev: WorldChunkUpdate) {
-        if let Some(cb) = &self.event_callback {
-            if let Ok(mut cb) = cb.lock() {
-                cb.chunk_update_callback(ev);
-            }
+        if let Some(event_tx) = &self.event_tx {
+            let _ = event_tx.send(ev);
         }
     }
 
     fn create_chunk_object(&self, pos: ChunkPos, mesh: &ChunkMesh) {
-        if let Some(cb) = &self.chunk_object_callback {
-            if let Ok(mut cb) = cb.lock() {
-                cb.chunk_object_created(pos, mesh);
-            }
+        if let Some(chunk_object_tx) = &self.chunk_object_tx {
+            let _ = chunk_object_tx.send(ChunkObjectEvent::Created(pos, mesh.clone()));
         }
     }
 
     fn remove_chunk_object(&self, pos: ChunkPos) {
-        if let Some(cb) = &self.chunk_object_callback {
-            if let Ok(mut cb) = cb.lock() {
-                cb.chunk_object_removed(pos);
-            }
+        if let Some(chunk_object_tx) = &self.chunk_object_tx {
+            let _ = chunk_object_tx.send(ChunkObjectEvent::Removed(pos));
         }
     }
 

@@ -5,25 +5,21 @@ use shared::entities::ChunkPos;
 
 use crate::chunk_mesh_builder::ChunkMesh;
 use crate::bevy_render::{BevyChunkEntity, BevyChunkMesh, VoxelMaterial};
-use super::chunk_state_manager;
+use super::ChunkObjectEvent;
 
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone)]
 pub struct ChunkEntitiesManager {
-    pending_to_create: HashMap<ChunkPos, ChunkMesh>,
-    pending_to_remove: Vec<ChunkPos>,
+    rx: crossbeam_channel::Receiver<ChunkObjectEvent>,
     chunk_entities: HashMap<ChunkPos, BevyChunkEntity>,
 }
 
-impl chunk_state_manager::ChunkObjectCallback for ChunkEntitiesManager {
-    fn chunk_object_created(&mut self, chunk_pos: ChunkPos, chunk_mesh: &ChunkMesh) {
-        self.pending_to_create.insert(chunk_pos, chunk_mesh.clone());
-    }
-    fn chunk_object_removed(&mut self, chunk_pos: ChunkPos) {
-        self.pending_to_remove.push(chunk_pos);
-    }
-}
-
 impl ChunkEntitiesManager {
+    pub fn new(rx: crossbeam_channel::Receiver<ChunkObjectEvent>) -> Self {
+        Self {
+            rx,
+            chunk_entities: HashMap::new(),
+        }
+    }
     pub fn process_pending(
         &mut self,
         commands: &mut Commands,
@@ -31,17 +27,17 @@ impl ChunkEntitiesManager {
         opaque_texture: Handle<Image>,
         voxel_materials: &mut ResMut<Assets<VoxelMaterial>>,
     ) {
-        for (pos, mesh) in std::mem::take(&mut self.pending_to_create) {
-            self.remove_chunk_entity(&pos, commands);
-            self.create_chunk_entity(pos, mesh, commands, meshes, opaque_texture.clone(), voxel_materials);
+        while let Ok(chunk_obj_ev) = self.rx.try_recv() {
+            match chunk_obj_ev {
+                ChunkObjectEvent::Created(chunk_pos, chunk_mesh) => {
+                    self.remove_chunk_entity(&chunk_pos, commands);
+                    self.create_chunk_entity(chunk_pos, chunk_mesh, commands, meshes, opaque_texture.clone(), voxel_materials);
+                }
+                ChunkObjectEvent::Removed(chunk_pos) => {
+                    self.remove_chunk_entity(&chunk_pos, commands);
+                }
+            }
         }
-
-        for pos in std::mem::take(&mut self.pending_to_remove) {
-            self.remove_chunk_entity(&pos, commands);
-        }
-
-        assert!(self.pending_to_create.len() == 0);
-        assert!(self.pending_to_remove.len() == 0);
     }
 
     fn create_chunk_entity(

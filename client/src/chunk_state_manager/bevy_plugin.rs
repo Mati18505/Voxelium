@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use bevy::prelude::*;
 use shared::{chunk_loader::ChunkLoader, entities::{BlockPos, ChunkPos}};
 
-use crate::{bevy_render::VoxelMaterial, bevy_types::{AppStates, GameResources}, chunk_mesh_builder::VoxelMesher, controller};
+use crate::{bevy_render::VoxelMaterial, bevy_types::{AppStates, GameResources}, chunk_mesh_builder::VoxelMesher, chunk_state_manager::{ChunkObjectEvent, WorldChunkUpdate}, controller};
 
 use super::{bevy_event_manager::WorldChunkUpdateEvent, AsyncChunkBuilder, ChunkEntitiesManager, ChunkManager, Config, EventManager};
 
@@ -19,8 +19,8 @@ impl Plugin for ChunkManagerPlugin {
 #[derive(Resource)]
 pub struct ChunkManagerResources {
     pub chunk_manager: ChunkManager,
-    chunk_entities_manager: Arc<Mutex<ChunkEntitiesManager>>,
-    event_manager: Arc<Mutex<EventManager>>,
+    chunk_entities_manager: ChunkEntitiesManager,
+    event_manager: EventManager,
 }
 
 fn init_chunk_manager(
@@ -36,17 +36,18 @@ fn init_chunk_manager(
     let mut config = Config::new(10, 9);
     config.dynamic_vertical_loading = false;
 
-    let chunk_entities_manager = Arc::new(Mutex::new(ChunkEntitiesManager::default()));
-    let event_manager = Arc::new(Mutex::new(EventManager::default()));
+    let (chunk_object_tx, chunk_object_rx) = crossbeam_channel::unbounded::<ChunkObjectEvent>();
+    let (event_tx, event_rx) = crossbeam_channel::unbounded::<WorldChunkUpdate>();
+
     let mut chunk_manager = ChunkManager::new(ChunkLoader::default(), chunk_builder, config);
 
-    chunk_manager.set_chunk_object_callback(chunk_entities_manager.clone());
-    chunk_manager.set_event_callback(event_manager.clone());
+    chunk_manager.set_chunk_object_tx(Some(chunk_object_tx));
+    chunk_manager.set_event_tx(Some(event_tx));
 
     let chunk_manager_resources = ChunkManagerResources {
         chunk_manager,
-        chunk_entities_manager,
-        event_manager,
+        chunk_entities_manager: ChunkEntitiesManager::new(chunk_object_rx),
+        event_manager: EventManager::new(event_rx),
     };
     commands.insert_resource(chunk_manager_resources);
 }
@@ -71,12 +72,6 @@ fn update(
     }
 
     chunk_manager_resources.chunk_manager.check_built_chunks();
-
-    if let Ok(mut manager) = chunk_manager_resources.chunk_entities_manager.lock() {
-        manager.process_pending(&mut commands, &mut meshes, game_resources.opaque_texture.clone(), &mut voxel_materials);
-    }
-
-    if let Ok(mut event_manager) = chunk_manager_resources.event_manager.lock() {
-        event_manager.process_pending(chunk_manager_events);
-    }
+    chunk_manager_resources.chunk_entities_manager.process_pending(&mut commands, &mut meshes, game_resources.opaque_texture.clone(), &mut voxel_materials);
+    chunk_manager_resources.event_manager.process_pending(chunk_manager_events);
 }
