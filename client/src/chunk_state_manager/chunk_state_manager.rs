@@ -188,21 +188,21 @@ impl ChunkManager {
         let mut prev_state = self.world.chunk_states.get(&pos).copied().unwrap_or(ChunkState::Empty);
 
         loop {
-            let curr_state = self.next_chunk_state(pos, prev_state);
+            let next_state = self.next_chunk_state(pos, prev_state);
 
-            if curr_state == prev_state {
+            if next_state == prev_state {
                 break;
             }
 
-            self.change_chunk_state(pos, curr_state);
-            log::trace!("Chunk {:?}: {:?} -> {:?}", pos, prev_state, curr_state);
+            self.change_chunk_state(pos, next_state);
+            log::trace!("Chunk {:?}: {:?} -> {:?}", pos, prev_state, next_state);
 
             if iterations >= MAX_ITERATIONS {
                 log::warn!("Chunk {:?} failed to stabilize state after {} iterations", pos, MAX_ITERATIONS);
                 break;
             }
 
-            prev_state = curr_state;
+            prev_state = next_state;
             iterations += 1;
         } 
     }
