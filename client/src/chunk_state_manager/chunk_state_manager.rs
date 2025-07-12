@@ -2,7 +2,7 @@ use bevy::log;
 use shared::{chunk_loader::chunk_loader, entities::{Chunk, ChunkPos, ChunkRepository, CHUNK_SIZE}};
 use std::{fmt, sync::{Arc, Mutex}};
 
-use crate::{chunk_mesh_builder::ChunkMesh, chunk_state_manager::{chunk_state, ChunkState}};
+use crate::{chunk_mesh_builder::ChunkMesh, chunk_state_manager::{chunk_state, ChunkState, ChunkTransition}};
 
 use super::{physical_world::{PhysicalWorld, Version}};
 
@@ -184,7 +184,9 @@ impl ChunkManager {
         let prev_state = self.world.get_chunk_state(pos);
 
         if prev_state != new_state {
-            self.on_state_transition(pos, prev_state, new_state);
+            let transition = chunk_state::get_chunk_transition(prev_state, new_state);
+
+            self.apply_transition(pos, transition);
         }
 
         self.world.set_chunk_state(pos, new_state);
@@ -232,27 +234,25 @@ impl ChunkManager {
         }
     }
 
-    fn on_state_transition(&mut self, pos: ChunkPos, old_state: ChunkState, new_state: ChunkState) {
-        assert_ne!(old_state, new_state);
+    fn apply_transition(&mut self, pos: ChunkPos, transition: ChunkTransition) {
+        use ChunkTransition::*;
 
-        use ChunkState::*;
-
-        match (old_state, new_state) {
-            (Empty, Loaded) => {
+        match transition {
+            EmptyToLoaded => {
                 let chunk = self.chunk_loader.load_chunk(pos);
 
                 self.world.set_chunk(pos, chunk);
             },
-            (Loaded, Empty) => {
+            LoadedToEmpty => {
                 self.world.world.remove_chunk(pos);
             },
-            (Loaded, ToDraw) => {
+            LoadedToToDraw => {
                 self.pass_chunk_to_builder(pos);
             },
-            (ToDraw, Loaded) => {
+            ToDrawToLoaded => {
                 // TODO: Remove mesh from chunk builder.
             }
-            (ToDraw, Drawn) => {
+            ToDrawToDrawn => {
                 let version = self.world.get_chunk_mesh_version(pos);
                 let mesh = self.chunk_builder.take_built_chunk_mesh_by_version(pos, version).expect("ChunkState is drawn, but mesh is not built.");
 
@@ -260,14 +260,13 @@ impl ChunkManager {
 
                 self.create_chunk_object(pos, &mesh);
             },
-            (Drawn, ToDraw) => {
+            DrawnToToDraw => {
                 self.pass_chunk_to_builder(pos);
             },
-            (Drawn, Loaded) => {
+            DrawnToLoaded => {
                 self.world.chunk_meshes.remove(&pos);
                 self.remove_chunk_object(pos);
             },
-            _ => unreachable!(),
         }
     }
 
