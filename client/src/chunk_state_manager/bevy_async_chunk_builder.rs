@@ -75,7 +75,7 @@ impl chunk_state_manager::ChunkBuilder for AsyncChunkBuilder {
         self.completed.remove(&(chunk_pos, version))
     }
 
-    fn is_chunk_mesh_built_with_version(&mut self, chunk_pos: ChunkPos, version: Version) -> bool {
+    fn is_chunk_mesh_built_with_version(&self, chunk_pos: ChunkPos, version: Version) -> bool {
         self.completed.contains_key(&(chunk_pos, version))
     }
 }

@@ -24,7 +24,7 @@ pub trait ChunkBuilder: Send + Sync + fmt::Debug {
     fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk, version: Version);
     fn collect_finished_results(&mut self);
     fn take_built_chunk_mesh_by_version(&mut self, chunk_pos: ChunkPos, version: Version) -> Option<ChunkMesh>;
-    fn is_chunk_mesh_built_with_version(&mut self, chunk_pos: ChunkPos, version: Version) -> bool;
+    fn is_chunk_mesh_built_with_version(&self, chunk_pos: ChunkPos, version: Version) -> bool;
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -180,43 +180,47 @@ impl ChunkManager {
         
         self.world.set_chunk_state(pos, new_state);
     }
-    
-    fn update_chunk_state(&mut self, pos: ChunkPos) {
-        use ChunkState::*;
 
-        let mut state = self.world.chunk_states.get(&pos).copied().unwrap_or(Empty);
+    fn update_chunk_state(&mut self, pos: ChunkPos) {
+        let mut prev_state = self.world.chunk_states.get(&pos).copied().unwrap_or(ChunkState::Empty);
 
         loop {
-            let new_state: ChunkState = match state {
-                Empty => {
-                    if self.is_within_distance(pos, self.config.load_distance) { Loaded } else { Empty }
-                }
-                Loaded => {
-                    if self.is_within_distance(pos, self.config.render_distance) { ToDraw } 
-                    else { 
-                        if self.is_within_distance(pos, self.config.load_distance) { state } else { Empty }
-                    }
-                },
-                ToDraw => {
-                    let mesh_version = self.world.get_chunk_mesh_version(pos);
+            let curr_state = self.next_chunk_state(pos, prev_state);
 
-                    if self.is_within_distance(pos, self.config.render_distance) { 
-                        if self.chunk_builder.is_chunk_mesh_built_with_version(pos, mesh_version) { Drawn } else { state }
-                    } else {
-                        Loaded
-                    }
-                },
-                Drawn => {
-                    if self.is_within_distance(pos, self.config.render_distance) { state } else { Loaded }
-                },
-            };
-
-            if new_state == state {
+            if curr_state == prev_state {
                 break;
             }
 
-            self.change_chunk_state(pos, new_state);
-            state = new_state;
+            self.change_chunk_state(pos, curr_state);
+            prev_state = curr_state;
+        } 
+    }
+
+    fn next_chunk_state(&self, pos: ChunkPos, curr_state: ChunkState) -> ChunkState {
+        use ChunkState::*;
+
+        match curr_state {
+            Empty => {
+                if self.is_within_distance(pos, self.config.load_distance) { Loaded } else { Empty }
+            }
+            Loaded => {
+                if self.is_within_distance(pos, self.config.render_distance) { ToDraw } 
+                else { 
+                    if self.is_within_distance(pos, self.config.load_distance) { curr_state } else { Empty }
+                }
+            },
+            ToDraw => {
+                let mesh_version = self.world.get_chunk_mesh_version(pos);
+
+                if self.is_within_distance(pos, self.config.render_distance) { 
+                    if self.chunk_builder.is_chunk_mesh_built_with_version(pos, mesh_version) { Drawn } else { curr_state }
+                } else {
+                    Loaded
+                }
+            },
+            Drawn => {
+                if self.is_within_distance(pos, self.config.render_distance) { curr_state } else { Loaded }
+            },
         }
     }
 
