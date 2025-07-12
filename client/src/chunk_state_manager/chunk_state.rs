@@ -47,20 +47,19 @@ pub enum ChunkTransition {
     DrawnToLoaded,
 }
 
-pub fn get_chunk_transition(from: ChunkState, to: ChunkState) -> ChunkTransition {
-    assert_ne!(from, to);
-
+pub fn get_chunk_transition(from: ChunkState, to: ChunkState) -> Option<ChunkTransition> {
     use ChunkState::*;
     use ChunkTransition::*;
 
     match (from, to) {
-        (Empty, Loaded) => EmptyToLoaded,
-        (Loaded, Empty) => LoadedToEmpty,
-        (Loaded, ToDraw) => LoadedToToDraw,
-        (ToDraw, Loaded) => ToDrawToLoaded,
-        (ToDraw, Drawn) => ToDrawToDrawn,
-        (Drawn, ToDraw) => DrawnToToDraw,
-        (Drawn, Loaded) => DrawnToLoaded,
-        _ => unreachable!(),
+        (Empty, Loaded) => Some(EmptyToLoaded),
+        (Loaded, Empty) => Some(LoadedToEmpty),
+        (Loaded, ToDraw) => Some(LoadedToToDraw),
+        (ToDraw, Loaded) => Some(ToDrawToLoaded),
+        (ToDraw, Drawn) => Some(ToDrawToDrawn),
+        (Drawn, ToDraw) => Some(DrawnToToDraw),
+        (Drawn, Loaded) => Some(DrawnToLoaded),
+        _ => None,
     }
 }
+

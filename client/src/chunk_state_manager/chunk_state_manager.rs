@@ -178,9 +178,12 @@ impl ChunkManager {
         let prev_state = self.world.get_chunk_state(pos);
 
         if prev_state != new_state {
-            let transition = chunk_state::get_chunk_transition(prev_state, new_state);
+            let maybe_transition = chunk_state::get_chunk_transition(prev_state, new_state);
 
-            self.apply_transition(pos, transition);
+            if let Some(transition) = maybe_transition {
+                self.apply_transition(pos, transition);
+            }
+
             self.world.set_chunk_state(pos, new_state);
         }
     }
