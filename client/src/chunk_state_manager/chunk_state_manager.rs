@@ -1,4 +1,4 @@
-use bevy::log::warn;
+use bevy::log;
 use shared::{chunk_loader::chunk_loader, entities::{Chunk, ChunkPos, ChunkRepository, CHUNK_SIZE}};
 use std::{fmt, sync::{Arc, Mutex}};
 
@@ -195,12 +195,14 @@ impl ChunkManager {
             }
 
             self.change_chunk_state(pos, curr_state);
-            prev_state = curr_state;
+            log::trace!("Chunk {:?}: {:?} -> {:?}", pos, prev_state, curr_state);
 
             if iterations >= MAX_ITERATIONS {
-                warn!("Chunk {:?} failed to stabilize state after {} iterations", pos, Self::MAX_ITERATIONS);
+                log::warn!("Chunk {:?} failed to stabilize state after {} iterations", pos, MAX_ITERATIONS);
                 break;
             }
+
+            prev_state = curr_state;
             iterations += 1;
         } 
     }

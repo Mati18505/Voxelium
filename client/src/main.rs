@@ -43,6 +43,10 @@ fn main() {
                         ..default()
                     }),
                     ..default()
+                })
+                .set(bevy::log::LogPlugin {
+                    // level: bevy::log::Level::TRACE,
+                    ..default()
                 }),
             WireframePlugin::default(),
             YamlAssetPlugin::<TextureConfig>::new(&["config.yaml"]),
