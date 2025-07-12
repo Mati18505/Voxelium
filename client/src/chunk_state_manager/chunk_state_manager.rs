@@ -207,28 +207,30 @@ impl ChunkManager {
 
     fn next_chunk_state(&self, pos: ChunkPos, curr_state: ChunkState) -> ChunkState {
         use ChunkState::*;
+        let is_within_render = self.is_within_distance(pos, self.config.render_distance);
+        let is_within_load = self.is_within_distance(pos, self.config.load_distance);
 
         match curr_state {
             Empty => {
-                if self.is_within_distance(pos, self.config.load_distance) { Loaded } else { Empty }
+                if is_within_load { Loaded } else { Empty }
             }
             Loaded => {
-                if self.is_within_distance(pos, self.config.render_distance) { ToDraw } 
+                if is_within_render { ToDraw } 
                 else { 
-                    if self.is_within_distance(pos, self.config.load_distance) { curr_state } else { Empty }
+                    if is_within_load { curr_state } else { Empty }
                 }
             },
             ToDraw => {
                 let mesh_version = self.world.get_chunk_mesh_version(pos);
 
-                if self.is_within_distance(pos, self.config.render_distance) { 
+                if is_within_render { 
                     if self.chunk_builder.is_chunk_mesh_built_with_version(pos, mesh_version) { Drawn } else { curr_state }
                 } else {
                     Loaded
                 }
             },
             Drawn => {
-                if self.is_within_distance(pos, self.config.render_distance) { curr_state } else { Loaded }
+                if is_within_render { curr_state } else { Loaded }
             },
         }
     }
