@@ -36,3 +36,31 @@ pub fn get_next_chunk_state(
         },
     }
 }
+
+pub enum ChunkTransition {
+	EmptyToLoaded,
+    LoadedToEmpty,
+    LoadedToToDraw,
+    ToDrawToLoaded,
+    ToDrawToDrawn,
+    DrawnToToDraw,
+    DrawnToLoaded,
+}
+
+pub fn get_chunk_transition(from: ChunkState, to: ChunkState) -> ChunkTransition {
+    assert_ne!(from, to);
+
+    use ChunkState::*;
+    use ChunkTransition::*;
+
+    match (from, to) {
+        (Empty, Loaded) => EmptyToLoaded,
+        (Loaded, Empty) => LoadedToEmpty,
+        (Loaded, ToDraw) => LoadedToToDraw,
+        (ToDraw, Loaded) => ToDrawToLoaded,
+        (ToDraw, Drawn) => ToDrawToDrawn,
+        (Drawn, ToDraw) => DrawnToToDraw,
+        (Drawn, Loaded) => DrawnToLoaded,
+        _ => unreachable!(),
+    }
+}
