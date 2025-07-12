@@ -2,7 +2,7 @@ use bevy::log;
 use shared::{chunk_loader::chunk_loader, entities::{Chunk, ChunkPos, ChunkRepository, CHUNK_SIZE}};
 use std::{fmt, sync::{Arc, Mutex}};
 
-use crate::{chunk_mesh_builder::ChunkMesh, chunk_state_manager::ChunkState};
+use crate::{chunk_mesh_builder::ChunkMesh, chunk_state_manager::{chunk_state, ChunkState}};
 
 use super::{physical_world::{PhysicalWorld, Version}};
 
@@ -196,7 +196,7 @@ impl ChunkManager {
         let mut prev_state = self.world.get_chunk_state(pos);
 
         loop {
-            let next_state = self.next_chunk_state(pos, prev_state);
+            let next_state = self.get_next_chunk_state(pos, prev_state);
 
             if next_state == prev_state {
                 break;
@@ -215,35 +215,15 @@ impl ChunkManager {
         } 
     }
 
-    fn next_chunk_state(&self, pos: ChunkPos, curr_state: ChunkState) -> ChunkState {
-        use ChunkState::*;
+    fn get_next_chunk_state(&self, pos: ChunkPos, prev_state: ChunkState) -> ChunkState {
         let is_within_render = self.is_within_distance(pos, self.config.render_distance);
         let is_within_load = self.is_within_distance(pos, self.config.load_distance);
+        let mesh_version = self.world.get_chunk_mesh_version(pos);
+        let mesh_built = self.chunk_builder.is_chunk_mesh_built_with_version(pos, mesh_version);
 
-        match curr_state {
-            Empty => {
-                if is_within_load { Loaded } else { Empty }
-            }
-            Loaded => {
-                if is_within_render { ToDraw } 
-                else { 
-                    if is_within_load { curr_state } else { Empty }
-                }
-            },
-            ToDraw => {
-                let mesh_version = self.world.get_chunk_mesh_version(pos);
-
-                if is_within_render { 
-                    if self.chunk_builder.is_chunk_mesh_built_with_version(pos, mesh_version) { Drawn } else { curr_state }
-                } else {
-                    Loaded
-                }
-            },
-            Drawn => {
-                if is_within_render { curr_state } else { Loaded }
-            },
-        }
+        chunk_state::get_next_chunk_state(prev_state, is_within_render, is_within_load, mesh_built)
     }
+
 
     fn is_within_distance(&self, pos: ChunkPos, distance_in_chunks: usize) -> bool {
         match self.config.dynamic_vertical_loading {
