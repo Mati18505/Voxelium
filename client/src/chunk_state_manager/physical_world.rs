@@ -27,8 +27,8 @@ impl PhysicalWorld {
     pub fn set_chunk_state(&mut self, pos: ChunkPos, state: ChunkState) {
         self.chunk_states.insert(pos, state);
     }
-    pub fn get_chunk_state(&self, pos: ChunkPos) -> Option<&ChunkState> {
-        self.chunk_states.get(&pos)
+    pub fn get_chunk_state(&self, pos: ChunkPos) -> ChunkState {
+        self.chunk_states.get(&pos).copied().unwrap_or(ChunkState::Empty)
     }
 
     pub fn increment_chunk_mesh_version(&mut self, pos: ChunkPos) -> Version {

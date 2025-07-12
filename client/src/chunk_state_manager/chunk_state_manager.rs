@@ -122,9 +122,9 @@ impl ChunkManager {
 
     fn update_chunk_states_in_world(&mut self) {
         Self::visit_chunks_in_distance(self.controller_pos, self.config.load_distance, self.config.dynamic_vertical_loading, |pos| {
-            if self.world.get_chunk_state(pos).is_none() {
+            if self.world.get_chunk(pos).is_none() {
                 self.change_chunk_state(pos, ChunkState::Empty);
-            } 
+            }
         });
 
         let chunks_in_world: Vec<ChunkPos> = self.world.chunk_states.keys().copied().collect();
@@ -132,7 +132,7 @@ impl ChunkManager {
         for pos in chunks_in_world {
             self.update_chunk_state(pos);
 
-            if self.world.get_chunk_state(pos) == Some(&ChunkState::Empty) {
+            if self.world.get_chunk_state(pos) == ChunkState::Empty {
                 self.world.remove_chunk(pos);
             }
         }
@@ -181,21 +181,19 @@ impl ChunkManager {
 
     /// Always use this instead of set_chunk_state directly – handles transitions.
     fn change_chunk_state(&mut self, pos: ChunkPos, new_state: ChunkState) {
-        if let Some(prev_state) = self.world.get_chunk_state(pos).copied() {
-            if prev_state != new_state {
-                self.on_state_transition(pos, prev_state, new_state);
-            }
-        } else if new_state != ChunkState::Empty {
-            self.on_state_transition(pos, ChunkState::Empty, new_state);
+        let prev_state = self.world.get_chunk_state(pos);
+
+        if prev_state != new_state {
+            self.on_state_transition(pos, prev_state, new_state);
         }
-        
+
         self.world.set_chunk_state(pos, new_state);
     }
 
     fn update_chunk_state(&mut self, pos: ChunkPos) {
         const MAX_ITERATIONS: u32 = 16;
         let mut iterations = 1;
-        let mut prev_state = self.world.chunk_states.get(&pos).copied().unwrap_or(ChunkState::Empty);
+        let mut prev_state = self.world.get_chunk_state(pos);
 
         loop {
             let next_state = self.next_chunk_state(pos, prev_state);
@@ -330,22 +328,14 @@ impl ChunkManager {
     fn load_chunk_if_is_empty(&mut self, pos: ChunkPos) {
         let curr_chunk_state = self.world.get_chunk_state(pos);
 
-        match curr_chunk_state {
-            None => {
-                self.change_chunk_state(pos, ChunkState::Empty);
-                self.change_chunk_state(pos, ChunkState::Loaded);
-
-            }
-            Some(ChunkState::Empty) => {
-                self.change_chunk_state(pos, ChunkState::Loaded);
-            }
-            _ => (),
+        if curr_chunk_state == ChunkState::Empty {
+            self.change_chunk_state(pos, ChunkState::Loaded);
         }
     }
 
     // Redraws chunk only if it was drawn or to draw.
     fn redraw_chunk(&mut self, pos: ChunkPos) {
-        let curr_chunk_state: ChunkState = self.world.get_chunk_state(pos).copied().unwrap_or(ChunkState::Empty);
+        let curr_chunk_state: ChunkState = self.world.get_chunk_state(pos);
 
         match curr_chunk_state {
             ChunkState::ToDraw => {
@@ -365,9 +355,7 @@ impl ChunkRepository for ChunkManager {
     fn set_chunk(&mut self, pos: ChunkPos, new_chunk: Chunk) {
         self.world.set_chunk(pos, new_chunk.clone());
 
-        let curr_chunk_state: ChunkState = self.world.get_chunk_state(pos).copied().unwrap_or_else(|| {
-            ChunkState::Empty
-        });
+        let curr_chunk_state: ChunkState = self.world.get_chunk_state(pos);
 
         if curr_chunk_state == ChunkState::Empty {
             self.world.set_chunk_state(pos, ChunkState::Loaded);
@@ -383,10 +371,10 @@ impl ChunkRepository for ChunkManager {
         if let Some(chunk) = self.world.get_chunk(pos) {
             self.emit_event(WorldChunkUpdate { chunk_pos: pos, chunk: chunk.clone() });
 
-            if let Some(chunk_state) = self.world.get_chunk_state(pos) {
-                if *chunk_state == ChunkState::Drawn || *chunk_state == ChunkState::ToDraw {
-                    self.change_chunk_state(pos, ChunkState::Loaded);
-                }
+            let chunk_state = self.world.get_chunk_state(pos);
+
+            if chunk_state == ChunkState::Drawn || chunk_state == ChunkState::ToDraw {
+                self.change_chunk_state(pos, ChunkState::Loaded);
             }
 
             self.change_chunk_state(pos, ChunkState::Empty);
