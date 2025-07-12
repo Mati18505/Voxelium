@@ -70,7 +70,7 @@ fn update(
         dbg!(&chunk_manager_resources.chunk_manager);
     }
 
-    chunk_manager_resources.chunk_manager.check_builded_chunks();
+    chunk_manager_resources.chunk_manager.check_built_chunks();
 
     if let Ok(mut manager) = chunk_manager_resources.chunk_entities_manager.lock() {
         manager.process_pending(&mut commands, &mut meshes, game_resources.opaque_texture.clone(), &mut voxel_materials);

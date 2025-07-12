@@ -1,7 +1,7 @@
 use shared::{chunk_loader::chunk_loader, entities::{Chunk, ChunkPos, ChunkRepository, CHUNK_SIZE}};
 use std::{fmt, sync::{Arc, Mutex}};
 
-use crate::{chunk_mesh_builder::ChunkMesh, chunk_state_manager::{bevy_async_chunk_builder::AsyncChunkBuilder, ChunkState}};
+use crate::{chunk_mesh_builder::ChunkMesh, chunk_state_manager::ChunkState};
 
 use super::{physical_world::{PhysicalWorld, Version}};
 
@@ -85,7 +85,7 @@ impl ChunkManager {
         }
     }
 
-    pub fn check_builded_chunks(&mut self) {
+    pub fn check_built_chunks(&mut self) {
         self.chunk_builder.collect_finished_results();
 
         let chunks_to_draw: Vec<ChunkPos> = self.world.get_chunks_with_state(ChunkState::ToDraw);
@@ -245,7 +245,7 @@ impl ChunkManager {
                 self.pass_chunk_to_builder(pos);
             },
             (ToDraw, Loaded) => {
-                // remove mesh from chunk builder???
+                // TODO: Remove mesh from chunk builder.
             }
             (ToDraw, Drawn) => {
                 let version = self.world.get_chunk_mesh_version(pos);
@@ -253,14 +253,14 @@ impl ChunkManager {
 
                 self.world.add_chunk_mesh(pos, mesh.clone());
 
-                self.with_chunk_object_callback(|cb| cb.chunk_object_created(pos, &mesh));
+                self.create_chunk_object(pos, &mesh);
             },
             (Drawn, ToDraw) => {
                 self.pass_chunk_to_builder(pos);
             },
             (Drawn, Loaded) => {
                 self.world.chunk_meshes.remove(&pos);
-                self.with_chunk_object_callback(|cb| cb.chunk_object_removed(pos));
+                self.remove_chunk_object(pos);
             },
             _ => unreachable!(),
         }
@@ -276,20 +276,26 @@ impl ChunkManager {
         self.chunk_builder.build_chunk(pos, chunk, new_mesh_version);
     }
 
-    fn with_event_callback<F: FnOnce(&mut dyn EventCallback)>(&self, f: F)
-    {
+    fn emit_event(&self, ev: WorldChunkUpdate) {
         if let Some(cb) = &self.event_callback {
             if let Ok(mut cb) = cb.lock() {
-                f(&mut *cb);
+                cb.chunk_update_callback(ev);
             }
         }
     }
 
-    fn with_chunk_object_callback<F: FnOnce(&mut dyn ChunkObjectCallback)>(&self, f: F)
-    {
+    fn create_chunk_object(&self, pos: ChunkPos, mesh: &ChunkMesh) {
         if let Some(cb) = &self.chunk_object_callback {
             if let Ok(mut cb) = cb.lock() {
-                f(&mut *cb);
+                cb.chunk_object_created(pos, mesh);
+            }
+        }
+    }
+
+    fn remove_chunk_object(&self, pos: ChunkPos) {
+        if let Some(cb) = &self.chunk_object_callback {
+            if let Ok(mut cb) = cb.lock() {
+                cb.chunk_object_removed(pos);
             }
         }
     }
@@ -342,13 +348,13 @@ impl ChunkRepository for ChunkManager {
 
         self.redraw_chunk(pos);
 
-        self.with_event_callback(|cb| cb.chunk_update_callback(WorldChunkUpdate { chunk_pos: pos, chunk: new_chunk }));
+        self.emit_event(WorldChunkUpdate { chunk_pos: pos, chunk: new_chunk });
     }
 
     // Unloads chunk and removes it from world.
     fn remove_chunk(&mut self, pos: ChunkPos) {
         if let Some(chunk) = self.world.get_chunk(pos) {
-            self.with_event_callback(|cb| cb.chunk_update_callback(WorldChunkUpdate { chunk_pos: pos, chunk: chunk.clone() }));
+            self.emit_event(WorldChunkUpdate { chunk_pos: pos, chunk: chunk.clone() });
 
             if let Some(chunk_state) = self.world.get_chunk_state(pos) {
                 if *chunk_state == ChunkState::Drawn || *chunk_state == ChunkState::ToDraw {
@@ -369,7 +375,7 @@ impl ChunkRepository for ChunkManager {
 
 impl fmt::Debug for ChunkManager {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("ChunkStateManager")
+        f.debug_struct("ChunkManager")
             .field("world", &self.world)
             .field("chunk_builder", &self.chunk_builder)
             .finish()
