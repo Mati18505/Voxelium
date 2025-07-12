@@ -122,9 +122,18 @@ impl ChunkManager {
             self.update_chunk_state(pos);
         });
 
-        let chunks_in_world: Vec<ChunkPos> = self.world.get_chunks_with_state(ChunkState::Empty);
+        let loaded_chunks_in_world: Vec<ChunkPos> = self.world.get_chunks_with_state(ChunkState::Loaded);
 
-        for pos in chunks_in_world {
+        // We need to update all loaded chunks in the world to check if they are still in load distance.
+        for pos in loaded_chunks_in_world {
+            if !pos.is_within_distance(self.controller_pos, self.config.load_distance) {
+                self.update_chunk_state(pos);
+            }
+        }
+
+        let empty_chunks_in_world: Vec<ChunkPos> = self.world.get_chunks_with_state(ChunkState::Empty);
+
+        for pos in empty_chunks_in_world {
             self.world.remove_chunk(pos);
         }
     }
