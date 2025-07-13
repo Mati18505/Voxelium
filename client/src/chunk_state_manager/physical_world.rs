@@ -69,6 +69,7 @@ impl ChunkRepository for PhysicalWorld {
 impl fmt::Debug for PhysicalWorld {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let empty = self.get_chunks_with_state::<Vec<ChunkPos>>(ChunkState::Empty).len();
+        let loading = self.get_chunks_with_state::<Vec<ChunkPos>>(ChunkState::Loading).len();
         let loaded = self.get_chunks_with_state::<Vec<ChunkPos>>(ChunkState::Loaded).len();
         let to_draw = self.get_chunks_with_state::<Vec<ChunkPos>>(ChunkState::ToDraw).len();
         let drawn = self.get_chunks_with_state::<Vec<ChunkPos>>(ChunkState::Drawn).len();
@@ -79,6 +80,7 @@ impl fmt::Debug for PhysicalWorld {
             .field("chunk_states", &self.chunk_states.len())
             .field("chunk_mesh_versions", &self.chunk_mesh_versions.len())
             .field("empty", &empty)
+            .field("loading", &loading)
             .field("loaded", &loaded)
             .field("to_draw", &to_draw)
             .field("drawn", &drawn)
