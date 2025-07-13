@@ -37,13 +37,16 @@ impl ChunkLoader {
 
         self.move_k_nearest_chunks_to_back(chunks_to_update, player_pos);
 
-        for pos in &self.chunks_to_load[self.chunks_to_load.len() - chunks_to_update .. self.chunks_to_load.len()] {
+        let median = self.chunks_to_load.len() - chunks_to_update;
+        let nearest_chunks = &self.chunks_to_load[median..];
+
+        for pos in nearest_chunks {
             let task = self.generate_chunk(*pos);
 
             self.completed.insert(*pos, task);
         }
 
-        self.chunks_to_load.truncate(self.chunks_to_load.len() - chunks_to_update);
+        self.chunks_to_load.truncate(median);
 
         // let completed_tasks = self.poll_completed_tasks();
         // self.completed.extend(completed_tasks);
@@ -73,7 +76,7 @@ impl ChunkLoader {
     }
 
     fn move_k_nearest_chunks_to_back(&mut self, k: usize, player_pos: ChunkPos) {
-        if self.chunks_to_load.len() == 0 {
+        if self.chunks_to_load.is_empty() {
             return
         }
 
