@@ -92,7 +92,7 @@ impl ChunkManager {
     /// Processes chunks ready to be loaded.
     /// Should be called once per frame.
     pub fn check_loaded_chunks(&mut self) {
-        self.chunk_loader.update();
+        self.chunk_loader.update(self.controller_pos);
         let completed = self.chunk_loader.poll_loaded_chunks();
 
         for (pos, chunk) in completed {
