@@ -1,20 +1,23 @@
 use std::{cmp::min, collections::HashMap};
 use bevy::{prelude::*, tasks::{futures_lite::future, AsyncComputeTaskPool, Task}};
 
-use super::{generator::Noise, Generator, RandomNoise};
 use crate::entities::{Chunk, ChunkPos};
 
+pub trait ChunkProvider: Send + Sync {
+    fn load_chunk(&mut self, pos: ChunkPos) -> Chunk;
+}
+
 pub struct ChunkLoader {
-    noise_factory: Box<dyn NoiseFactory>,
+    chunk_provider: Box<dyn ChunkProvider>,
     chunks_to_load: Vec<ChunkPos>,
     tasks: HashMap<ChunkPos, Task<Chunk>>,
     completed: HashMap<ChunkPos, Chunk>,
 }
 
 impl ChunkLoader {
-    pub fn new(noise_factory: Box<dyn NoiseFactory>) -> Self {
+    pub fn new(chunk_provider: Box<dyn ChunkProvider>) -> Self {
         ChunkLoader {
-            noise_factory,
+            chunk_provider,
             chunks_to_load: Vec::new(),
             tasks: HashMap::new(),
             completed: HashMap::new(),
@@ -41,7 +44,7 @@ impl ChunkLoader {
         let nearest_chunks = &self.chunks_to_load[median..];
 
         for pos in nearest_chunks {
-            let task = self.generate_chunk(*pos);
+            let task = self.chunk_provider.load_chunk(*pos);
 
             self.completed.insert(*pos, task);
         }
@@ -68,13 +71,6 @@ impl ChunkLoader {
         completed
     }
 
-    fn generate_chunk(&self, pos: ChunkPos) -> Chunk {
-        let noise = self.noise_factory.create_noise();
-        let generator = Generator::new(pos, noise).generate_terrain();
-
-        Chunk::new(generator.get())
-    }
-
     fn move_k_nearest_chunks_to_back(&mut self, k: usize, player_pos: ChunkPos) {
         if self.chunks_to_load.is_empty() {
             return
@@ -95,42 +91,5 @@ impl ChunkLoader {
         let dz = a.z - b.z;
 
         dx*dx + dy*dy + dz*dz
-    }
-}
-
-impl Default for ChunkLoader {
-    fn default() -> Self {
-        ChunkLoader::new(Box::new(RandomNoiseFactory))
-    }
-}
-
-pub trait NoiseFactory: Send + Sync {
-    fn create_noise(&self) -> Box<dyn Noise<i64>>;
-}
-
-pub struct RandomNoiseFactory;
-impl NoiseFactory for RandomNoiseFactory {
-    fn create_noise(&self) -> Box<dyn Noise<i64>> {
-        Box::new(RandomNoise::new())
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use crate::entities::*;
-
-    struct TestNoise;
-    impl Noise<i64> for TestNoise {
-        fn gen_range(&mut self, _range: std::ops::Range<i64>) -> i64 {
-            16
-        }
-    }
-
-    struct TestNoiseFactory;
-    impl NoiseFactory for TestNoiseFactory {
-        fn create_noise(&self) -> Box<dyn Noise<i64>> {
-            return Box::new(TestNoise);
-        }
     }
 }

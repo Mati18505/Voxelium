@@ -1,34 +1,31 @@
-use std::ops::Range;
+use rand::{rngs::ThreadRng, Rng};
 
 use crate::entities::{name_to_block_id, BlockID, BlockInChunkPos, BlockStorage, ChunkPos, CHUNK_SIZE};
 
-pub struct Generator {
-    chunk_pos: ChunkPos,
-    block_storage: BlockStorage,
-    noise: Box<dyn Noise<i64>>,
+#[derive(Debug, Clone)]
+pub struct TerrainGenerator {
+    engine: ThreadRng,
 }
 
-impl Generator {
-    pub fn new(chunk_pos: ChunkPos, noise: Box<dyn Noise<i64>>) -> Self {
-        Generator {
-            chunk_pos,
-            block_storage: BlockStorage::default(),
-            noise,
+impl TerrainGenerator {
+    pub fn new() -> Self {
+        Self {
+            engine: rand::rng(),
         }
     }
 
-    pub fn generate_terrain(mut self) -> Self {
-        let mut blocks = self.block_storage.get_blocks().to_owned();
+    pub fn generate_terrain(&mut self, chunk_pos: ChunkPos) -> BlockStorage {
+        let mut blocks = BlockStorage::default().get_blocks().to_owned();
 
         for y in 0..CHUNK_SIZE {
             for x in 0..CHUNK_SIZE {
-                let world_x: isize = x as isize + self.chunk_pos.x;
-                let world_y: isize = y as isize + self.chunk_pos.y;
+                let world_x: isize = x as isize + chunk_pos.x;
+                let world_y: isize = y as isize + chunk_pos.y;
 
                 let generated_height: i64 = self.generate_height(world_x, world_y);
 
                 for z in 0..CHUNK_SIZE {
-                    let world_z: isize = z as isize + self.chunk_pos.z;
+                    let world_z: isize = z as isize + chunk_pos.z;
                     let block_id = self.generate_voxel(world_z as i64, generated_height);
                     let pos = BlockInChunkPos::new(x, y, z);
 
@@ -37,16 +34,11 @@ impl Generator {
             }
         }
 
-        self.block_storage = BlockStorage::new(blocks);
-        self
-    }
-
-    pub fn get(self) -> BlockStorage {
-        self.block_storage
+        BlockStorage::new(blocks)
     }
 
     fn generate_height(&mut self, _world_x: isize, _world_y: isize) -> i64 {
-        self.noise.gen_range(5..16)
+        self.engine.random_range(5..16)
     }
 
     fn generate_voxel(&mut self, world_z: i64, generated_height: i64) -> BlockID {
@@ -66,8 +58,4 @@ impl Generator {
             name_to_block_id("air")
         }
     }
-}
-
-pub trait Noise<T: Copy> {
-    fn gen_range(&mut self, range: Range<T>) -> T;
 }

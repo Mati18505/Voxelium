@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use bevy::prelude::*;
-use shared::{chunk_loader::ChunkLoader, entities::{BlockPos, ChunkPos}};
+use shared::{chunk_loader::{providers::generated_chunk_provider::GeneratedChunkProvider, ChunkLoader}, entities::{BlockPos, ChunkPos}};
 
 use crate::{bevy_render::VoxelMaterial, bevy_types::{AppStates, GameResources}, chunk_mesh_builder::VoxelMesher, chunk_state_manager::{ChunkObjectEvent, WorldChunkUpdate}, controller};
 
@@ -38,8 +38,10 @@ fn init_chunk_manager(
 
     let (chunk_object_tx, chunk_object_rx) = crossbeam_channel::unbounded::<ChunkObjectEvent>();
     let (event_tx, event_rx) = crossbeam_channel::unbounded::<WorldChunkUpdate>();
+    let chunk_loader_provider = Box::new(GeneratedChunkProvider::new());
+    let chunk_loader = ChunkLoader::new(chunk_loader_provider);
 
-    let mut chunk_manager = ChunkManager::new(ChunkLoader::default(), chunk_builder, config);
+    let mut chunk_manager = ChunkManager::new(chunk_loader, chunk_builder, config);
 
     chunk_manager.set_chunk_object_tx(Some(chunk_object_tx));
     chunk_manager.set_event_tx(Some(event_tx));
