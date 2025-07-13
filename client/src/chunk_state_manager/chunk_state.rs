@@ -1,6 +1,7 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ChunkState {
     Empty,
+    Loading,
     Loaded,
     ToDraw,
     Drawn,
@@ -10,6 +11,7 @@ pub enum ChunkState {
 pub struct ChunkStatus {
     pub is_within_render: bool,
     pub is_within_load: bool,
+    pub loaded: bool,
     pub mesh_built: bool,
 }
 
@@ -21,7 +23,10 @@ pub fn get_next_chunk_state(
 
     match curr_state {
         Empty => {
-            if status.is_within_load { Loaded } else { Empty }
+            if status.is_within_load { Loading } else { Empty }
+        }
+        Loading => {
+            if status.loaded { Loaded } else { curr_state }
         }
         Loaded => {
             if status.is_within_render { ToDraw } 
@@ -44,7 +49,8 @@ pub fn get_next_chunk_state(
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ChunkTransition {
-	EmptyToLoaded,
+	EmptyToLoading,
+	LoadingToLoaded,
     LoadedToEmpty,
     LoadedToToDraw,
     ToDrawToLoaded,
@@ -58,7 +64,8 @@ pub fn get_chunk_transition(from: ChunkState, to: ChunkState) -> Option<ChunkTra
     use ChunkTransition::*;
 
     match (from, to) {
-        (Empty, Loaded) => Some(EmptyToLoaded),
+        (Empty, Loading) => Some(EmptyToLoading),
+        (Loading, Loaded) => Some(LoadingToLoaded),
         (Loaded, Empty) => Some(LoadedToEmpty),
         (Loaded, ToDraw) => Some(LoadedToToDraw),
         (ToDraw, Loaded) => Some(ToDrawToLoaded),

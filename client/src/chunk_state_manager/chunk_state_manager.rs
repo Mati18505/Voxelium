@@ -230,11 +230,14 @@ impl ChunkManager {
         use ChunkTransition::*;
 
         match transition {
-            EmptyToLoaded => {
+            EmptyToLoading => {
                 let chunk = self.chunk_loader.load_chunk(pos);
 
                 self.world.set_chunk(pos, chunk);
             },
+            LoadingToLoaded => {
+                log::debug!("Chunk {:?}: loaded", pos);
+            }
             LoadedToEmpty => {
                 self.world.world.remove_chunk(pos);
             },
@@ -294,7 +297,7 @@ impl ChunkManager {
         let curr_chunk_state = self.world.get_chunk_state(pos);
 
         if curr_chunk_state == ChunkState::Empty {
-            self.change_chunk_state(pos, ChunkState::Loaded);
+            self.change_chunk_state(pos, ChunkState::Loading);
         }
     }
 
@@ -316,12 +319,14 @@ impl ChunkManager {
     fn create_chunk_status(&self, pos: ChunkPos) -> ChunkStatus {
         let is_within_render = self.is_within_distance(pos, self.config.render_distance);
         let is_within_load = self.is_within_distance(pos, self.config.load_distance);
+        let loaded = self.world.get_chunk(pos) != None;
         let mesh_version = self.world.get_chunk_mesh_version(pos);
         let mesh_built = self.chunk_builder.is_chunk_mesh_built_with_version(pos, mesh_version);
 
         ChunkStatus {
             is_within_render,
             is_within_load,
+            loaded,
             mesh_built,
         }
     }
