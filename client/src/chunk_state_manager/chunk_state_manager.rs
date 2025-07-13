@@ -89,6 +89,18 @@ impl ChunkManager {
         }
     }
 
+    /// Processes chunks ready to be loaded.
+    /// Should be called once per frame.
+    pub fn check_loaded_chunks(&mut self) {
+        self.chunk_loader.update();
+        let completed = self.chunk_loader.poll_loaded_chunks();
+
+        for (pos, chunk) in completed {
+            self.world.set_chunk(pos, chunk);
+            self.update_chunk_state(pos);
+        }
+    }
+
     /// Checks and processes chunks ready to be drawn.
     /// Should be called once per frame.
     pub fn check_built_chunks(&mut self) {
@@ -231,12 +243,10 @@ impl ChunkManager {
 
         match transition {
             EmptyToLoading => {
-                let chunk = self.chunk_loader.load_chunk(pos);
-
-                self.world.set_chunk(pos, chunk);
+                self.chunk_loader.load_chunk(pos);
             },
             LoadingToLoaded => {
-                log::debug!("Chunk {:?}: loaded", pos);
+                log::debug!("Loaded chunk {:?}", pos);
             }
             LoadedToEmpty => {
                 self.world.world.remove_chunk(pos);

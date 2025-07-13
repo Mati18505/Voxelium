@@ -71,6 +71,7 @@ fn update(
         dbg!(&chunk_manager_resources.chunk_manager);
     }
 
+    chunk_manager_resources.chunk_manager.check_loaded_chunks();
     chunk_manager_resources.chunk_manager.check_built_chunks();
     chunk_manager_resources.chunk_entities_manager.process_pending(&mut commands, &mut meshes, game_resources.opaque_texture.clone(), &mut voxel_materials);
     chunk_manager_resources.event_manager.process_pending(chunk_manager_events);
