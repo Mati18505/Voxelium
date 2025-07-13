@@ -118,19 +118,19 @@ impl ChunkManager {
     }
 
     fn update_chunk_states_in_world(&mut self) {
+        // Load missing chunks within the load distance.
         Self::visit_chunks_in_distance(self.controller_pos, self.config.load_distance, self.config.dynamic_vertical_loading, |pos| {
-            self.update_chunk_state(pos);
+            self.load_chunk_if_is_empty(pos);
         });
 
-        let loaded_chunks_in_world: Vec<ChunkPos> = self.world.get_chunks_with_state(ChunkState::Loaded);
+        // Update all existing chunks in the world.
+        let chunks_in_world: Vec<ChunkPos> = self.world.chunk_states.keys().copied().collect();
 
-        // We need to update all loaded chunks in the world to check if they are still in load distance.
-        for pos in loaded_chunks_in_world {
-            if !pos.is_within_distance(self.controller_pos, self.config.load_distance) {
-                self.update_chunk_state(pos);
-            }
+        for pos in chunks_in_world {
+            self.update_chunk_state(pos);
         }
 
+        // Remove all chunks that are still empty.
         let empty_chunks_in_world: Vec<ChunkPos> = self.world.get_chunks_with_state(ChunkState::Empty);
 
         for pos in empty_chunks_in_world {
