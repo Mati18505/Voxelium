@@ -6,33 +6,38 @@ pub enum ChunkState {
     Drawn,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ChunkStatus {
+    pub is_within_render: bool,
+    pub is_within_load: bool,
+    pub mesh_built: bool,
+}
+
 pub fn get_next_chunk_state(
     curr_state: ChunkState,
-    is_within_render: bool,
-    is_within_load: bool,
-    mesh_built: bool,
+    status: ChunkStatus,
 ) -> ChunkState {
     use ChunkState::*;
 
     match curr_state {
         Empty => {
-            if is_within_load { Loaded } else { Empty }
+            if status.is_within_load { Loaded } else { Empty }
         }
         Loaded => {
-            if is_within_render { ToDraw } 
+            if status.is_within_render { ToDraw } 
             else { 
-                if is_within_load { curr_state } else { Empty }
+                if status.is_within_load { curr_state } else { Empty }
             }
         },
         ToDraw => {
-            if is_within_render { 
-                if mesh_built { Drawn } else { curr_state }
+            if status.is_within_render { 
+                if status.mesh_built { Drawn } else { curr_state }
             } else {
                 Loaded
             }
         },
         Drawn => {
-            if is_within_render { curr_state } else { Loaded }
+            if status.is_within_render { curr_state } else { Loaded }
         },
     }
 }
