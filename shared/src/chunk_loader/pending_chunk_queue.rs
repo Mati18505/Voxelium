@@ -1,4 +1,4 @@
-use std::cmp::min;
+use std::cmp::{self, min};
 
 use crate::entities::ChunkPos;
 
@@ -21,7 +21,7 @@ impl PendingChunkQueue {
         self.move_k_nearest_chunks_to_back(k, player_pos);
 
         let median = self.pending_chunks.len() - k;
-        let nearest_chunks: Vec<ChunkPos> = self.pending_chunks[median..].to_vec();
+        let nearest_chunks: Vec<ChunkPos> = self.pending_chunks.split_off(median);
 
         self.pending_chunks.truncate(median);
 
@@ -38,7 +38,7 @@ impl PendingChunkQueue {
         self.pending_chunks.select_nth_unstable_by_key(index, |chunk_pos| {
             let distance = Self::chunk_pos_distance_sq(player_pos, *chunk_pos);
 
-            -distance
+            cmp::Reverse(distance)
         });
     }
 
