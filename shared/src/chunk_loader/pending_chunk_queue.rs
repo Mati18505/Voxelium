@@ -1,23 +1,45 @@
-use std::cmp;
+use std::{cmp, collections::HashMap};
 
 use crate::entities::ChunkPos;
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct PendingChunkQueue {
-    pending_chunks: Vec<ChunkPos>
+    pending_chunks: Vec<ChunkPos>,
+    index_map: HashMap<ChunkPos, usize>,
 }
 
 impl PendingChunkQueue {
     pub fn new() -> Self {
         Self {
             pending_chunks: Vec::new(),
+            index_map: HashMap::new(),
         }
     }
 
+    /// Adds a chunk position to the queue.
+    /// If the chunk is already in the queue, it will not be added again.
     pub fn add_chunk(&mut self, pos: ChunkPos) {
+        if self.index_map.contains_key(&pos) {
+            return;
+        }
+        
         self.pending_chunks.push(pos);
+        self.index_map.insert(pos, self.pending_chunks.len() - 1);
     }
 
+    /// Removes a chunk position from the queue.
+    /// If the chunk is not in the queue, nothing happens.
+    pub fn remove_chunk(&mut self, pos: ChunkPos) {
+        if let Some(index) = self.index_map.remove(&pos) {
+            self.pending_chunks.swap_remove(index);
+    
+            // Update the index_map for the remaining chunks.
+            for i in index..self.pending_chunks.len() {
+                self.index_map.insert(self.pending_chunks[i], i);
+            }
+        }
+    }
+    
     /// Removes and returns up to `k` chunks that are nearest to `player_pos`.
     /// The returned chunks are guaranteed to be among the `k` nearest in the queue, but their order is not guaranteed.
     /// If there are fewer than `k` chunks, returns all of them.
@@ -171,5 +193,32 @@ mod tests {
 
         let d = ChunkPos::new(16, 16, 16);
         assert_eq!(PendingChunkQueue::chunk_pos_distance_sq(a, d), 16*16 + 16*16 + 16*16);
+    }
+
+    #[test]
+    fn test_add_chunk() {
+        let mut queue = PendingChunkQueue::new();
+
+        queue.add_chunk(ChunkPos::new(16, 16, 16));
+        queue.add_chunk(ChunkPos::new(16, 16, 16));
+
+        assert_eq!(queue.pending_chunks.len(), 1);
+        assert!(queue.index_map.contains_key(&ChunkPos::new(16, 16, 16)));
+    }
+
+    #[test]
+    fn test_remove_chunk() {
+        let mut queue = create_queue();
+        queue.remove_chunk(ChunkPos::new(16, 16, 16));
+
+        assert!(!queue.index_map.contains_key(&ChunkPos::new(16, 16, 16)));
+    }
+
+    #[test]
+    fn test_remove_non_existent_chunk() {
+        let mut queue = create_queue();
+        queue.remove_chunk(ChunkPos::new(128, 128, 128));
+
+        assert!(!queue.index_map.contains_key(&ChunkPos::new(128, 128, 128)));
     }
 }
