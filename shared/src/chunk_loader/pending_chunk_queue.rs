@@ -71,6 +71,12 @@ mod tests {
 
         queue
     }
+
+    fn validate(chunks: &[ChunkPos], expected: &HashSet<ChunkPos>) {
+        assert_eq!(chunks.len(), expected.len());
+        assert!(chunks.iter().all(|pos| expected.contains(pos)));
+        assert!(expected.iter().all(|pos| chunks.contains(pos)));
+    }
     
     #[test]
     fn test_pending_chunk_queue() {
@@ -86,15 +92,14 @@ mod tests {
             ChunkPos::new(0, 0, 0),
         ]);
 
-        assert_eq!(nearest_chunks.len(), 3);
-        assert!(nearest_chunks.iter().all(|pos| expected_nearest.contains(pos)));
+        validate(&nearest_chunks, &expected_nearest);
 
         let expected_remaining = HashSet::from([
             ChunkPos::new(48, 48, 48),
             ChunkPos::new(64, 64, 64),
         ]);
-        assert_eq!(queue.pending_chunks.len(), 2);
-        assert!(queue.pending_chunks.iter().all(|pos| expected_remaining.contains(pos)));
+
+        validate(&queue.pending_chunks, &expected_remaining);
     }
 
     #[test]
@@ -115,6 +120,7 @@ mod tests {
 
         let player_pos = ChunkPos::new(0, 0, 0);
         let nearest_chunks = queue.take_nearest_chunks(1, player_pos);
+
         assert_eq!(nearest_chunks.len(), 1);
         assert_eq!(nearest_chunks[0], ChunkPos::new(16, 16, 16));
     }
@@ -126,6 +132,7 @@ mod tests {
 
         let player_pos = ChunkPos::new(16, 16, 16);
         let nearest_chunks = queue.take_nearest_chunks(0, player_pos);
+        
         assert!(nearest_chunks.is_empty());
         assert_eq!(queue.pending_chunks.len(), 5);
     }
@@ -149,8 +156,8 @@ mod tests {
             ChunkPos::new(0, 0, 0),
         ]);
 
-        assert!(queue.pending_chunks[..median].iter().all(|pos| expected_front.contains(pos)));
-        assert!(queue.pending_chunks[median..].iter().all(|pos| expected_back.contains(pos)));
+        validate(&queue.pending_chunks[..median], &expected_front);
+        validate(&queue.pending_chunks[median..], &expected_back);
     }
 
     #[test]
