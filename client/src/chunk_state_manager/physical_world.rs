@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt};
+use std::{collections::{HashMap, HashSet}, fmt};
 
 use shared::entities::{world::World, Chunk, ChunkPos, ChunkRepository};
 
@@ -14,6 +14,7 @@ pub struct PhysicalWorld {
     pub chunk_meshes: HashMap<ChunkPos, ChunkMesh>,
     pub chunk_states: HashMap<ChunkPos, ChunkState>,
     chunk_mesh_versions: HashMap<ChunkPos, Version>,
+    chunks_need_rebuild: HashSet<ChunkPos>,
 }
 
 impl PhysicalWorld {
@@ -38,6 +39,18 @@ impl PhysicalWorld {
 
     pub fn get_chunk_mesh_version(&self, pos: ChunkPos) -> Version {
         self.chunk_mesh_versions.get(&pos).copied().unwrap_or(0)
+    }
+
+    pub fn set_chunk_need_rebuild(&mut self, pos: ChunkPos) {
+        self.chunks_need_rebuild.insert(pos);
+    }
+
+    pub fn get_chunk_need_rebuild(&self, pos: ChunkPos) -> bool {
+        self.chunks_need_rebuild.contains(&pos)
+    }
+
+    pub fn remove_chunk_need_rebuild(&mut self, pos: ChunkPos) {
+        self.chunks_need_rebuild.remove(&pos);
     }
 
     pub fn get_chunks_with_state<T: FromIterator<ChunkPos>>(&self, state: super::ChunkState) -> T {
@@ -73,6 +86,7 @@ impl fmt::Debug for PhysicalWorld {
         let loaded = self.get_chunks_with_state::<Vec<ChunkPos>>(ChunkState::Loaded).len();
         let to_draw = self.get_chunks_with_state::<Vec<ChunkPos>>(ChunkState::ToDraw).len();
         let drawn = self.get_chunks_with_state::<Vec<ChunkPos>>(ChunkState::Drawn).len();
+        let chunks_need_rebuild = self.chunks_need_rebuild.len();
 
         f.debug_struct("PhysicalWorld")
             .field("chunks", &self.world.chunks.len())
@@ -84,6 +98,7 @@ impl fmt::Debug for PhysicalWorld {
             .field("loaded", &loaded)
             .field("to_draw", &to_draw)
             .field("drawn", &drawn)
+            .field("chunks_need_rebuild", &chunks_need_rebuild)
             .finish()
     }
 }

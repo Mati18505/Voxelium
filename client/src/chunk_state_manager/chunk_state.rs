@@ -13,6 +13,7 @@ pub struct ChunkStatus {
     pub is_within_load: bool,
     pub loaded: bool,
     pub mesh_built: bool,
+    pub needs_rebuild: bool,
 }
 
 pub fn get_next_chunk_state(
@@ -36,13 +37,19 @@ pub fn get_next_chunk_state(
         },
         ToDraw => {
             if status.is_within_render { 
-                if status.mesh_built { Drawn } else { curr_state }
+                if status.needs_rebuild { Loaded } else { 
+                    if status.mesh_built { Drawn } else { curr_state }
+                }
             } else {
                 Loaded
             }
         },
         Drawn => {
-            if status.is_within_render { curr_state } else { Loaded }
+            if status.is_within_render { 
+                if status.needs_rebuild { ToDraw } else { curr_state }
+            } else {
+                Loaded
+            }
         },
     }
 }

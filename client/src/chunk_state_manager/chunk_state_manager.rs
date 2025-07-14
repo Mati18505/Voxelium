@@ -283,6 +283,7 @@ impl ChunkManager {
             .expect("Chunk is passed to builder, but it is not loaded.");
 
         self.chunk_builder.build_chunk(pos, chunk, new_mesh_version);
+        self.world.remove_chunk_need_rebuild(pos);
     }
 
     fn emit_event(&self, ev: WorldChunkUpdate) {
@@ -310,21 +311,6 @@ impl ChunkManager {
             self.change_chunk_state(pos, ChunkState::Loading);
         }
     }
-
-    // Redraws chunk only if it was drawn or to draw.
-    fn redraw_chunk(&mut self, pos: ChunkPos) {
-        let curr_chunk_state: ChunkState = self.world.get_chunk_state(pos);
-
-        match curr_chunk_state {
-            ChunkState::ToDraw => {
-                self.pass_chunk_to_builder(pos);
-            },
-            ChunkState::Drawn => {
-                self.change_chunk_state(pos, ChunkState::ToDraw);
-            },
-            _ => (),
-        }   
-    }
     
     fn create_chunk_status(&self, pos: ChunkPos) -> ChunkStatus {
         let is_within_render = self.is_within_distance(pos, self.config.render_distance);
@@ -332,12 +318,14 @@ impl ChunkManager {
         let loaded = self.world.get_chunk(pos) != None;
         let mesh_version = self.world.get_chunk_mesh_version(pos);
         let mesh_built = self.chunk_builder.is_chunk_mesh_built_with_version(pos, mesh_version);
+        let needs_rebuild = self.world.get_chunk_need_rebuild(pos);
 
         ChunkStatus {
             is_within_render,
             is_within_load,
             loaded,
             mesh_built,
+            needs_rebuild,
         }
     }
 }
@@ -354,7 +342,8 @@ impl ChunkRepository for ChunkManager {
             self.world.set_chunk_state(pos, ChunkState::Loaded);
         }
 
-        self.redraw_chunk(pos);
+        self.world.set_chunk_need_rebuild(pos);
+        self.update_chunk_state(pos);
 
         self.emit_event(WorldChunkUpdate { chunk_pos: pos, chunk: new_chunk });
     }
