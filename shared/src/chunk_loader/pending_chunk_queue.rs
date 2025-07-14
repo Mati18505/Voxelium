@@ -32,10 +32,9 @@ impl PendingChunkQueue {
     pub fn remove_chunk(&mut self, pos: ChunkPos) {
         if let Some(index) = self.index_map.remove(&pos) {
             self.pending_chunks.swap_remove(index);
-    
-            // Update the index_map for the remaining chunks.
-            for i in index..self.pending_chunks.len() {
-                self.index_map.insert(self.pending_chunks[i], i);
+
+            if let Some(last) = self.pending_chunks.get(index) {
+                self.index_map.insert(*last, index);
             }
         }
     }
@@ -248,5 +247,16 @@ mod tests {
         ]);
 
         validate(&queue.pending_chunks, &expected);
+    }
+
+    #[test]
+    fn test_remove_last_chunk() {
+        let mut queue = PendingChunkQueue::new();
+        queue.add_chunk(ChunkPos::new(64, 64, 64));
+
+        queue.remove_chunk(ChunkPos::new(64, 64, 64));
+        
+        assert_eq!(queue.pending_chunks.len(), 0);
+        assert_eq!(queue.index_map.len(), 0);
     }
 }
