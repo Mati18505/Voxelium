@@ -32,7 +32,7 @@ impl ChunkLoader {
         std::mem::take(&mut self.completed)
     }
 
-    const MAX_CHUNKS_PER_UPDATE: usize = 64;
+    const MAX_CHUNKS_PER_UPDATE: usize = 16;
 
     /// Should be called once per frame.
     pub fn update(&mut self, player_pos: ChunkPos) {

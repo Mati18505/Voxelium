@@ -20,7 +20,7 @@ pub enum ChunkObjectEvent {
 
 pub trait ChunkBuilder: Send + Sync + fmt::Debug {
     fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk, version: Version);
-    fn collect_finished_results(&mut self);
+    fn update(&mut self, player_pos: ChunkPos);
     fn take_built_chunk_mesh_by_version(&mut self, chunk_pos: ChunkPos, version: Version) -> Option<ChunkMesh>;
     fn is_chunk_mesh_built_with_version(&self, chunk_pos: ChunkPos, version: Version) -> bool;
 }
@@ -104,7 +104,7 @@ impl ChunkManager {
     /// Checks and processes chunks ready to be drawn.
     /// Should be called once per frame.
     pub fn check_built_chunks(&mut self) {
-        self.chunk_builder.collect_finished_results();
+        self.chunk_builder.update(self.controller_pos);
 
         let chunks_to_draw: Vec<ChunkPos> = self.world.get_chunks_with_state(ChunkState::ToDraw);
 
