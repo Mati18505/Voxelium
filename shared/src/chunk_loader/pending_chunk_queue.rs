@@ -221,4 +221,21 @@ mod tests {
 
         assert!(!queue.index_map.contains_key(&ChunkPos::new(128, 128, 128)));
     }
+
+    #[test]
+    fn test_take_and_remove() {
+        let mut queue = create_queue();
+        assert_eq!(queue.pending_chunks.len(), 5);
+
+        let player_pos = ChunkPos::new(0, 0, 0);
+
+        let _ = queue.take_nearest_chunks(3, player_pos);
+        queue.remove_chunk(ChunkPos::new(48, 48, 48));
+
+        let expected = HashSet::from([
+            ChunkPos::new(64, 64, 64),
+        ]);
+
+        validate(&queue.pending_chunks, &expected);
+    }
 }
