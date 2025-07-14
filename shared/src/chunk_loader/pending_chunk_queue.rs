@@ -1,4 +1,4 @@
-use std::cmp::{self, min};
+use std::cmp;
 
 use crate::entities::ChunkPos;
 
