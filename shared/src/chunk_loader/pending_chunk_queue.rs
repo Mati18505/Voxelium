@@ -43,12 +43,12 @@ impl PendingChunkQueue {
         });
     }
 
-    fn chunk_pos_distance_sq(a: ChunkPos, b: ChunkPos) -> isize {
+    fn chunk_pos_distance_sq(a: ChunkPos, b: ChunkPos) -> usize {
         let dx = a.x - b.x;
         let dy = a.y - b.y;
         let dz = a.z - b.z;
 
-        dx*dx + dy*dy + dz*dz
+        (dx*dx + dy*dy + dz*dz) as usize
     }
 }
 
