@@ -50,9 +50,12 @@ impl PendingChunkQueue {
         let median = self.pending_chunks.len() - k;
         let nearest_chunks: Vec<ChunkPos> = self.pending_chunks.split_off(median);
 
+        self.rebuild_index_map();
+
         nearest_chunks
     }
 
+    /// This doesn't rebuild the index map.
     fn move_k_nearest_chunks_to_back(&mut self, k: usize, player_pos: ChunkPos) {
         if self.pending_chunks.is_empty() || k == 0 {
             return
@@ -65,6 +68,14 @@ impl PendingChunkQueue {
 
             cmp::Reverse(distance)
         });
+    }
+
+    fn rebuild_index_map(&mut self) {
+        self.index_map.clear();
+
+        for (i, pos) in self.pending_chunks.iter().enumerate() {
+            self.index_map.insert(*pos, i);
+        }
     }
 
     fn chunk_pos_distance_sq(a: ChunkPos, b: ChunkPos) -> usize {
