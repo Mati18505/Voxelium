@@ -2,6 +2,7 @@ use std::cmp::{self, min};
 
 use crate::entities::ChunkPos;
 
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct PendingChunkQueue {
     pending_chunks: Vec<ChunkPos>
 }
