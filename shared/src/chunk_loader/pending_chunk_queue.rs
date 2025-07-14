@@ -13,10 +13,14 @@ impl PendingChunkQueue {
             pending_chunks: Vec::new(),
         }
     }
+
     pub fn add_chunk(&mut self, pos: ChunkPos) {
         self.pending_chunks.push(pos);
     }
 
+    /// Removes and returns up to `k` chunks that are nearest to `player_pos`.
+    /// The returned chunks are guaranteed to be among the `k` nearest in the queue, but their order is not guaranteed.
+    /// If there are fewer than `k` chunks, returns all of them.
     pub fn take_nearest_chunks(&mut self, k: usize, player_pos: ChunkPos) -> Vec<ChunkPos> {
         let k = min(k, self.pending_chunks.len());
         self.move_k_nearest_chunks_to_back(k, player_pos);
