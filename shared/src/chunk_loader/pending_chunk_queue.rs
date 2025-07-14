@@ -29,7 +29,7 @@ impl PendingChunkQueue {
     }
 
     fn move_k_nearest_chunks_to_back(&mut self, k: usize, player_pos: ChunkPos) {
-        if self.pending_chunks.is_empty() {
+        if self.pending_chunks.is_empty() || k == 0 {
             return
         }
 
