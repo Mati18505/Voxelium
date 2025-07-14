@@ -22,13 +22,11 @@ impl PendingChunkQueue {
     /// The returned chunks are guaranteed to be among the `k` nearest in the queue, but their order is not guaranteed.
     /// If there are fewer than `k` chunks, returns all of them.
     pub fn take_nearest_chunks(&mut self, k: usize, player_pos: ChunkPos) -> Vec<ChunkPos> {
-        let k = min(k, self.pending_chunks.len());
+        let k = k.min(self.pending_chunks.len());
         self.move_k_nearest_chunks_to_back(k, player_pos);
 
         let median = self.pending_chunks.len() - k;
         let nearest_chunks: Vec<ChunkPos> = self.pending_chunks.split_off(median);
-
-        self.pending_chunks.truncate(median);
 
         nearest_chunks
     }
