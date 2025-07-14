@@ -2,7 +2,7 @@ use bevy::log;
 use shared::{chunk_loader::chunk_loader, entities::{Chunk, ChunkPos, ChunkRepository, CHUNK_SIZE}};
 use std::fmt;
 
-use crate::{chunk_mesh_builder::ChunkMesh, chunk_state_manager::{chunk_state, ChunkState, ChunkTransition}};
+use crate::{chunk_mesh_builder::ChunkMesh, chunk_state_manager::{chunk_state, ChunkState, ChunkStatus, ChunkTransition}};
 
 use super::{physical_world::{PhysicalWorld, Version}};
 
@@ -86,6 +86,18 @@ impl ChunkManager {
         if new_controller_pos != self.controller_pos {
             self.controller_pos = new_controller_pos;
             self.update_chunk_states_in_world();
+        }
+    }
+
+    /// Processes chunks ready to be loaded.
+    /// Should be called once per frame.
+    pub fn check_loaded_chunks(&mut self) {
+        self.chunk_loader.update(self.controller_pos);
+        let completed = self.chunk_loader.poll_loaded_chunks();
+
+        for (pos, chunk) in completed {
+            self.world.set_chunk(pos, chunk);
+            self.update_chunk_state(pos);
         }
     }
 
@@ -184,12 +196,11 @@ impl ChunkManager {
         let prev_state = self.world.get_chunk_state(pos);
 
         if prev_state != new_state {
-            let maybe_transition = chunk_state::get_chunk_transition(prev_state, new_state);
+            let transition = chunk_state::get_chunk_transition(prev_state, new_state);
 
-            if let Some(transition) = maybe_transition {
-                self.apply_transition(pos, transition);
-            }
+            assert!(transition.is_some(), "Unsupported transition in chunk {:?}: {:?} -> {:?}", pos, prev_state, new_state);
 
+            self.apply_transition(pos, transition.unwrap());
             self.world.set_chunk_state(pos, new_state);
         }
     }
@@ -200,7 +211,8 @@ impl ChunkManager {
         let mut prev_state = self.world.get_chunk_state(pos);
 
         loop {
-            let next_state = self.get_next_chunk_state(pos, prev_state);
+            let chunk_status = self.create_chunk_status(pos);
+            let next_state = chunk_state::get_next_chunk_state(prev_state, chunk_status);
 
             if next_state == prev_state {
                 break;
@@ -219,16 +231,6 @@ impl ChunkManager {
         } 
     }
 
-    fn get_next_chunk_state(&self, pos: ChunkPos, prev_state: ChunkState) -> ChunkState {
-        let is_within_render = self.is_within_distance(pos, self.config.render_distance);
-        let is_within_load = self.is_within_distance(pos, self.config.load_distance);
-        let mesh_version = self.world.get_chunk_mesh_version(pos);
-        let mesh_built = self.chunk_builder.is_chunk_mesh_built_with_version(pos, mesh_version);
-
-        chunk_state::get_next_chunk_state(prev_state, is_within_render, is_within_load, mesh_built)
-    }
-
-
     fn is_within_distance(&self, pos: ChunkPos, distance_in_chunks: usize) -> bool {
         match self.config.dynamic_vertical_loading {
             true => pos.is_within_distance(self.controller_pos, distance_in_chunks),
@@ -240,11 +242,12 @@ impl ChunkManager {
         use ChunkTransition::*;
 
         match transition {
-            EmptyToLoaded => {
-                let chunk = self.chunk_loader.load_chunk(pos);
-
-                self.world.set_chunk(pos, chunk);
+            EmptyToLoading => {
+                self.chunk_loader.load_chunk(pos);
             },
+            LoadingToLoaded => {
+                log::debug!("Loaded chunk {:?}", pos);
+            }
             LoadedToEmpty => {
                 self.world.world.remove_chunk(pos);
             },
@@ -304,7 +307,7 @@ impl ChunkManager {
         let curr_chunk_state = self.world.get_chunk_state(pos);
 
         if curr_chunk_state == ChunkState::Empty {
-            self.change_chunk_state(pos, ChunkState::Loaded);
+            self.change_chunk_state(pos, ChunkState::Loading);
         }
     }
 
@@ -321,6 +324,21 @@ impl ChunkManager {
             },
             _ => (),
         }   
+    }
+    
+    fn create_chunk_status(&self, pos: ChunkPos) -> ChunkStatus {
+        let is_within_render = self.is_within_distance(pos, self.config.render_distance);
+        let is_within_load = self.is_within_distance(pos, self.config.load_distance);
+        let loaded = self.world.get_chunk(pos) != None;
+        let mesh_version = self.world.get_chunk_mesh_version(pos);
+        let mesh_built = self.chunk_builder.is_chunk_mesh_built_with_version(pos, mesh_version);
+
+        ChunkStatus {
+            is_within_render,
+            is_within_load,
+            loaded,
+            mesh_built,
+        }
     }
 }
 
