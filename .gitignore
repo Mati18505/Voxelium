@@ -20,3 +20,4 @@ Cargo.lock
 generate-graphs.sh
 graph1.png
 graph2.png
+/.cargo
