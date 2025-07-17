@@ -25,6 +25,8 @@ impl PendingChunkQueue {
         
         self.pending_chunks.push(pos);
         self.index_map.insert(pos, self.pending_chunks.len() - 1);
+
+        self.check_invariants();
     }
 
     /// Removes a chunk position from the queue.
@@ -37,6 +39,8 @@ impl PendingChunkQueue {
                 self.index_map.insert(*last, index);
             }
         }
+
+        self.check_invariants();
     }
     
     /// Removes and returns up to `k` chunks that are nearest to `player_pos`.
@@ -75,6 +79,8 @@ impl PendingChunkQueue {
         for (i, pos) in self.pending_chunks.iter().enumerate() {
             self.index_map.insert(*pos, i);
         }
+
+        self.check_invariants();
     }
 
     fn chunk_pos_distance_sq(a: ChunkPos, b: ChunkPos) -> usize {
@@ -83,6 +89,14 @@ impl PendingChunkQueue {
         let dz = (a.z - b.z) as i64;
 
         (dx*dx + dy*dy + dz*dz) as usize
+    }
+
+    fn check_invariants(&self) {
+        debug_assert_eq!(self.pending_chunks.len(), self.index_map.len());
+
+        for (i, pos) in self.pending_chunks.iter().enumerate() {
+            debug_assert_eq!(self.index_map.get(pos), Some(&i));
+        }
     }
 }
 
