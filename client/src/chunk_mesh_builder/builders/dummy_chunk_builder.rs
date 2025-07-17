@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, marker::PhantomData};
 
 use shared::entities::{Chunk, ChunkPos};
 
@@ -6,16 +6,20 @@ use crate::chunk_mesh_builder::ChunkMesh;
 
 use super::chunk_builder::ChunkBuilder;
 
-pub struct DummyChunkBuilder;
+pub struct DummyChunkBuilder<T> {
+    _marker: PhantomData<T>,
+}
 
-impl DummyChunkBuilder {
+impl<T> DummyChunkBuilder<T> {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            _marker: PhantomData,
+        }
     }
 }
 
-impl ChunkBuilder<()> for DummyChunkBuilder {
-    fn build_chunk(&mut self, _chunk_pos: ChunkPos, _chunk: &Chunk, _additional_data: Option<()>) {
+impl<T: Send + Sync> ChunkBuilder<T> for DummyChunkBuilder<T> {
+    fn build_chunk(&mut self, _chunk_pos: ChunkPos, _chunk: &Chunk, _additional_data: Option<T>) {
         // No operation
     }
 
@@ -31,7 +35,7 @@ impl ChunkBuilder<()> for DummyChunkBuilder {
         // No operation
     }
 
-    fn poll_completed(&mut self) -> HashMap<ChunkPos, (ChunkMesh, Option<()>)> {
+    fn poll_completed(&mut self) -> HashMap<ChunkPos, (ChunkMesh, Option<T>)> {
         HashMap::new()
     }
 }
