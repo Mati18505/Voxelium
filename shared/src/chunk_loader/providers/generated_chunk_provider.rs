@@ -1,4 +1,5 @@
-use crate::{chunk_loader::{self, providers::terrain_generator}, entities::{Chunk, ChunkPos}};
+use crate::chunk_loader::{self, };
+use crate::entities::{Chunk, ChunkPos};
 
 use super::terrain_generator::TerrainGenerator;
 
@@ -17,5 +18,11 @@ impl chunk_loader::ChunkProvider for GeneratedChunkProvider {
         let block_storage = terrain_generator.generate_terrain(pos);
 
         Chunk::new(block_storage)
+    }
+}
+
+impl Default for GeneratedChunkProvider {
+    fn default() -> Self {
+        Self::new()
     }
 }

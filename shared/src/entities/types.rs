@@ -17,18 +17,15 @@ impl ChunkPos {
     pub fn new(x: isize, y: isize, z: isize) -> Self {
         assert!(
             x % CHUNK_SIZE as isize == 0,
-            "ChunkPos must be multiple of CHUNK_SIZE. x = {}",
-            x
+            "ChunkPos must be multiple of CHUNK_SIZE. x = {x}",
         );
         assert!(
             y % CHUNK_SIZE as isize == 0,
-            "ChunkPos must be multiple of CHUNK_SIZE. y = {}",
-            y
+            "ChunkPos must be multiple of CHUNK_SIZE. y = {y}",
         );
         assert!(
             z % CHUNK_SIZE as isize == 0,
-            "ChunkPos must be multiple of CHUNK_SIZE. z = {}",
-            z
+            "ChunkPos must be multiple of CHUNK_SIZE. z = {z}",
         );
 
         ChunkPos(Vector3::new(x, y, z))
@@ -98,9 +95,9 @@ impl From<BlockPos> for ChunkPos {
 
 impl BlockInChunkPos {
     pub fn new(x: usize, y: usize, z: usize) -> Self {
-        assert!(x < CHUNK_SIZE, "Block must be in chunk. x = {}", x);
-        assert!(y < CHUNK_SIZE, "Block must be in chunk. y = {}", y);
-        assert!(z < CHUNK_SIZE, "Block must be in chunk. z = {}", z);
+        assert!(x < CHUNK_SIZE, "Block must be in chunk. x = {x}");
+        assert!(y < CHUNK_SIZE, "Block must be in chunk. y = {y}");
+        assert!(z < CHUNK_SIZE, "Block must be in chunk. z = {z}");
 
         BlockInChunkPos(Vector3::new(x, y, z))
     }

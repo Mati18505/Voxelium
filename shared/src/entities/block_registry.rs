@@ -20,11 +20,9 @@ pub fn name_to_block_id(name: &str) -> BlockID {
     let map = BLOCK_NAME_TO_ID.read().unwrap();
 
     if let Some(block_id) = map.get(name).copied() {
-        return block_id
+        block_id
     } else {
-        if name == "air" {
-            assert!(true, "Missing air block");
-        } 
+        assert!(name != "air", "Missing air block");
 
         BlockID::default()
     }

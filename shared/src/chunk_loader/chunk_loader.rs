@@ -1,5 +1,5 @@
-use std::{cmp::min, collections::HashMap};
-use bevy::{prelude::*, tasks::{futures_lite::future, AsyncComputeTaskPool, Task}};
+use std::collections::HashMap;
+use bevy::{prelude::*, tasks::{futures_lite::future, Task}};
 
 use crate::{chunk_loader::pending_chunk_queue::PendingChunkQueue, entities::{Chunk, ChunkPos}};
 
@@ -10,6 +10,7 @@ pub trait ChunkProvider: Send + Sync {
 pub struct ChunkLoader {
     chunk_provider: Box<dyn ChunkProvider>,
     chunks_to_load: PendingChunkQueue,
+    #[allow(dead_code)]
     tasks: HashMap<ChunkPos, Task<Chunk>>,
     completed: HashMap<ChunkPos, Chunk>,
 }
@@ -48,6 +49,7 @@ impl ChunkLoader {
         // self.completed.extend(completed_tasks);
     }
 
+    #[allow(dead_code)]
     fn poll_completed_tasks(&mut self) -> HashMap<ChunkPos, Chunk> {
         let mut completed: HashMap<ChunkPos, Chunk> = HashMap::default();
 

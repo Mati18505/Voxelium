@@ -100,6 +100,12 @@ impl PendingChunkQueue {
     }
 }
 
+impl Default for PendingChunkQueue {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
@@ -210,10 +216,10 @@ mod tests {
     fn test_chunk_pos_distance_sq() {
         let a = ChunkPos::new(0, 0, 0);
         let b = ChunkPos::new(48, 64, 0);
-        assert_eq!(PendingChunkQueue::chunk_pos_distance_sq(a, b), 48*48 + 64*64 + 0*0);
+        assert_eq!(PendingChunkQueue::chunk_pos_distance_sq(a, b), 48*48 + 64*64);
 
         let c = ChunkPos::new(-48, -64, 0);
-        assert_eq!(PendingChunkQueue::chunk_pos_distance_sq(a, c), 48*48 + 64*64 + 0*0);
+        assert_eq!(PendingChunkQueue::chunk_pos_distance_sq(a, c), 48*48 + 64*64);
 
         let d = ChunkPos::new(16, 16, 16);
         assert_eq!(PendingChunkQueue::chunk_pos_distance_sq(a, d), 16*16 + 16*16 + 16*16);

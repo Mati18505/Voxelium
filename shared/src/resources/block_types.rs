@@ -17,9 +17,9 @@ impl BlockTypeStorageResource {
     }
 }
 
-impl Into<BlockTypeStorage> for BlockTypeStorageResource {
-    fn into(self) -> BlockTypeStorage {
-        let block_types = self
+impl From<BlockTypeStorageResource> for BlockTypeStorage {
+    fn from(resource: BlockTypeStorageResource) -> Self {
+        let block_types = resource
             .blocks
             .into_iter()
             .map(|e| BlockType::new(&e.name, e.affect_raycast))

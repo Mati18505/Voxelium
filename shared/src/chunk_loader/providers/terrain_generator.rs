@@ -59,3 +59,9 @@ impl TerrainGenerator {
         }
     }
 }
+
+impl Default for TerrainGenerator {
+    fn default() -> Self {
+        Self::new()
+    }
+}

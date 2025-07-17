@@ -63,7 +63,7 @@ impl fmt::Display for GetBlockErr {
             GetBlockErr::OutsideOfWorld => "Block is outside of the world.",
         };
 
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 

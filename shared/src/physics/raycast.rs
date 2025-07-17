@@ -43,14 +43,14 @@ pub fn raycast(start: Vector3<f32>, dir: Vector3<f32>, config: &RaycastConfig) -
     while curr_pos.distance2(start) <= config.range * config.range && !raycast_result.collide {
         let curr_block_pos = f32_pos_to_block_pos(curr_pos);
 
-        if let Some(block_id) = config.world.get_block(curr_block_pos).ok() {
+        if let Ok(block_id) = config.world.get_block(curr_block_pos) {
             if let Some(block_type) = config.block_type_storage.get_by_id(block_id) {
 
                 if block_type.affect_raycast {
                     raycast_result.collide = true;
                     raycast_result.hitpoint = Hitpoint {
                         pos: curr_block_pos,
-                        block_id: block_id,
+                        block_id,
                     };
                     raycast_result.step_before_hitpoint = Hitpoint {
                         pos: f32_pos_to_block_pos(curr_pos - dir * config.increment),
@@ -111,6 +111,6 @@ mod test {
 
         let result = raycast(start, dir, &config);
 
-        assert_eq!(result.collide, false);
+        assert!(!result.collide, "Raycast should not collide in an empty world.");
     }
 }
