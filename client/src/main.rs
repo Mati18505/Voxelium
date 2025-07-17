@@ -19,9 +19,8 @@ use bevy_types::{AppStates, GameResources};
 use chunk_mesh_builder::*;
 use controller::ControllerPlugin;
 use shared::{
-    entities::{
-        init_block_names, name_to_block_id, BlockID, BlockPos, BlockTypeStorage,
-    }, physics::RaycastResult,
+    entities::{init_block_names, name_to_block_id, BlockID, BlockPos, BlockTypeStorage},
+    physics::RaycastResult,
 };
 
 use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
@@ -36,8 +35,8 @@ use crate::{
 mod bevy_render;
 mod bevy_resources;
 mod bevy_types;
-mod chunk_mesh_builder;
 mod chunk_manager;
+mod chunk_mesh_builder;
 mod controller;
 mod gui;
 mod orchestrator;

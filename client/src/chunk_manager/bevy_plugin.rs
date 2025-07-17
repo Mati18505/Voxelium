@@ -7,8 +7,8 @@ use shared::{
 use crate::{
     bevy_render::VoxelMaterial,
     bevy_types::{AppStates, GameResources},
-    chunk_mesh_builder::VoxelMesher,
     chunk_manager::{ChunkObjectEvent, WorldChunkUpdate},
+    chunk_mesh_builder::VoxelMesher,
     controller,
 };
 

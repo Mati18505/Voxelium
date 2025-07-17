@@ -35,6 +35,4 @@ impl fmt::Display for DebugChunk {
     }
 }
 
-fn main() {
-
-}
+fn main() {}
