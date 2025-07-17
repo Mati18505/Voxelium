@@ -4,7 +4,7 @@ use std::fmt;
 use bevy::tasks::futures_lite::future;
 use bevy::tasks::AsyncComputeTaskPool;
 use bevy::{prelude::*, tasks::Task};
-use shared::chunk_loader::pending_chunk_queue::PendingChunkQueue;
+use shared::chunk_io::pending_chunk_queue::PendingChunkQueue;
 use shared::entities::{Chunk, ChunkPos};
 
 use crate::chunk_mesh_builder::{ChunkMesh, VoxelMesher};

@@ -2,8 +2,8 @@ use std::fmt;
 
 use shared::entities::{world, Chunk, ChunkPos, ChunkRepository};
 
-mod chunk_loader;
-use chunk_loader::ChunkLoader;
+mod chunk_io;
+use chunk_io::ChunkLoader;
 
 struct DebugChunk {
     chunk: Chunk,

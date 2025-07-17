@@ -1,5 +1,5 @@
 use bevy::log;
-use shared::{chunk_loader::chunk_loader, entities::{Chunk, ChunkPos, ChunkRepository, CHUNK_SIZE}};
+use shared::{chunk_io::chunk_loader, entities::{Chunk, ChunkPos, ChunkRepository, CHUNK_SIZE}};
 use std::fmt;
 
 use crate::{chunk_mesh_builder::ChunkMesh, chunk_state_manager::{chunk_state, ChunkState, ChunkStatus, ChunkTransition}};

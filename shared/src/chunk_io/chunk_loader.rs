@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use bevy::{prelude::*, tasks::{futures_lite::future, Task}};
 
-use crate::{chunk_loader::pending_chunk_queue::PendingChunkQueue, entities::{Chunk, ChunkPos}};
+use crate::{chunk_io::pending_chunk_queue::PendingChunkQueue, entities::{Chunk, ChunkPos}};
 
 pub trait ChunkProvider: Send + Sync {
     fn load_chunk(&mut self, pos: ChunkPos) -> Chunk;
