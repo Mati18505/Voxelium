@@ -28,11 +28,11 @@ use shared::{
     resources::BlockTypeStorageResource,
 };
 
-use chunk_state_manager::{ChunkManagerPlugin, ChunkManagerResources};
+use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
 
 use crate::{
     bevy_resources::BevyBlockTypeStorageResource,
-    chunk_state_manager::{ChunkManager, WorldChunkUpdateEvent},
+    chunk_manager::{ChunkManager, WorldChunkUpdateEvent},
     controller::ActionType,
     gui::GUIPlugin,
     orchestrator::{utils::raycast_from_controller, OrchestratorPlugin},
@@ -42,7 +42,7 @@ mod bevy_render;
 mod bevy_resources;
 mod bevy_types;
 mod chunk_mesh_builder;
-mod chunk_state_manager;
+mod chunk_manager;
 mod controller;
 mod gui;
 mod orchestrator;

@@ -5,10 +5,9 @@ use shared::{
 };
 use std::fmt;
 
-use crate::{
-    chunk_mesh_builder::ChunkMesh,
-    chunk_manager::{chunk_state, ChunkState, ChunkStatus, ChunkTransition},
-};
+use crate::chunk_mesh_builder::ChunkMesh;
+
+use super::{chunk_state, ChunkState, ChunkStatus, ChunkTransition};
 
 use super::physical_world::{PhysicalWorld, Version};
 

@@ -4,7 +4,7 @@ use shared::entities::name_to_block_id;
 use super::{super::utils::raycast_from_controller, super::LookedAtBlockChangedEvent};
 use crate::{
     bevy_types::GameResources,
-    chunk_state_manager::{ChunkManagerResources, WorldChunkUpdateEvent},
+    chunk_manager::{ChunkManagerResources, WorldChunkUpdateEvent},
     controller::Controller,
 };
 
