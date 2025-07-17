@@ -1,6 +1,6 @@
-use std::collections::HashMap;
+use crate::chunk_mesh_builder::{ChunkMesh, VoxelMesher};
 use shared::entities::{Chunk, ChunkPos};
-use super::chunk_mesh_builder::ChunkMesh;
+use std::collections::HashMap;
 
 pub trait ChunkBuilder<T: Send + Sync> {
     /// Adds a chunk to the builder.
@@ -25,21 +25,9 @@ pub trait ChunkBuilder<T: Send + Sync> {
     fn poll_completed(&mut self) -> HashMap<ChunkPos, (ChunkMesh, Option<T>)>;
 }
 
-pub trait VersionedChunkBuilder {
-    /// Adds a chunk to the builder. 
-    /// If chunk with the same position exists in builder, or is built, it will be replaced.
-    /// Newest call to this function equals the latest version of the chunk.
-    fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk);
-
-    /// Updates the builder state based on the player's position.
-    /// Should be called once per frame.
-    fn update(&mut self, player_pos: ChunkPos);
-
+pub trait Versioned {
     /// Returns true if a chunk is built with the latest version.
     fn is_chunk_with_latest_version_built(&self, chunk_pos: ChunkPos) -> bool;
-
-    /// Removes all chunks from the builder, cancelling all build operations.
-    fn clear_all(&mut self);
 
     /// Returns a chunk built with the latest version.
     /// If latest version is different than version of the chunk, or no chunk is built, it will return None.
