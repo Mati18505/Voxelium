@@ -24,6 +24,7 @@ impl PhysicalWorld {
     pub fn add_chunk_mesh(&mut self, pos: ChunkPos, chunk_mesh: ChunkMesh) {
         self.chunk_meshes.insert(pos, chunk_mesh);
     }
+    #[allow(dead_code)]
     pub fn get_chunk_mesh(&self, pos: ChunkPos) -> Option<&ChunkMesh> {
         self.chunk_meshes.get(&pos)
     }

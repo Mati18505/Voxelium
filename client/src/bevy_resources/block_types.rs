@@ -12,9 +12,9 @@ pub struct BevyBlockTypeStorageResource {
     blocks: Vec<BevyBlockTypeResource>,
 }
 
-impl Into<BlockTypeStorage> for BevyBlockTypeStorageResource {
-    fn into(self) -> BlockTypeStorage {
-        let block_types = self
+impl From<BevyBlockTypeStorageResource> for BlockTypeStorage {
+    fn from(resource: BevyBlockTypeStorageResource) -> BlockTypeStorage {
+        let block_types = resource
             .blocks
             .into_iter()
             .map(|e| BlockType::new(&e.name, e.affect_raycast))
@@ -24,13 +24,13 @@ impl Into<BlockTypeStorage> for BevyBlockTypeStorageResource {
     }
 }
 
-impl Into<Vec<(String, BlockID)>> for BevyBlockTypeStorageResource {
-    fn into(self) -> Vec<(String, BlockID)> {
-        self.blocks
+impl From<BevyBlockTypeStorageResource> for Vec<(String, BlockID)> {
+    fn from(resource: BevyBlockTypeStorageResource) -> Self {
+        resource
+            .blocks
             .into_iter()
-            .map(|e| e.name)
             .enumerate()
-            .map(|(id, name)| (name, id as BlockID))
+            .map(|(i, e)| (e.name, i as BlockID))
             .collect()
     }
 }

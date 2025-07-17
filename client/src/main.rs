@@ -1,4 +1,4 @@
-use std::{fs, sync::Arc};
+use std::sync::Arc;
 
 use bevy::{
     color::palettes::css::WHITE,
@@ -16,23 +16,18 @@ use bevy_common_assets::yaml::YamlAssetPlugin;
 use bevy_render::VoxelRenderPlugin;
 use bevy_resources::{MeshBlockTypeStorageLoader, MeshBlockTypeStorageResource, TextureConfig};
 use bevy_types::{AppStates, GameResources};
-use cgmath::Vector3;
 use chunk_mesh_builder::*;
 use controller::ControllerPlugin;
 use shared::{
     entities::{
-        init_block_names, name_to_block_id, BlockID, BlockInChunkPos, BlockPos, BlockTypeStorage,
-        Chunk, ChunkPos, ChunkRepository,
-    },
-    physics::{raycast, RaycastConfig, RaycastResult},
-    resources::BlockTypeStorageResource,
+        init_block_names, name_to_block_id, BlockID, BlockPos, BlockTypeStorage,
+    }, physics::RaycastResult,
 };
 
 use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
 
 use crate::{
     bevy_resources::BevyBlockTypeStorageResource,
-    chunk_manager::{ChunkManager, WorldChunkUpdateEvent},
     controller::ActionType,
     gui::GUIPlugin,
     orchestrator::{utils::raycast_from_controller, OrchestratorPlugin},

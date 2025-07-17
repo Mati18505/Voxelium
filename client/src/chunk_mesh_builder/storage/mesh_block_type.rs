@@ -16,7 +16,7 @@ pub struct MeshBlockType {
 }
 
 impl MeshBlockType {
-    pub fn get_block_side_texture<'a>(&'a self, side: BlockSide) -> &'a str {
+    pub fn get_block_side_texture(&self, side: BlockSide) -> &str {
         match side {
             BlockSide::Top => self.top_texture.as_deref().unwrap_or(&self.side_texture),
             BlockSide::Bottom => self.bottom_texture.as_deref().unwrap_or(&self.side_texture),
@@ -47,8 +47,10 @@ pub struct MeshBlockTypeBuilder {
 
 impl MeshBlockTypeBuilder {
     pub fn new(block_type: &str) -> MeshBlockTypeBuilder {
-        let mut mesh_block_type = MeshBlockType::default();
-        mesh_block_type.block_type = block_type.to_owned();
+        let mesh_block_type = MeshBlockType {
+            block_type: block_type.to_owned(),
+            ..Default::default()
+        };
 
         MeshBlockTypeBuilder {
             block_type: mesh_block_type,

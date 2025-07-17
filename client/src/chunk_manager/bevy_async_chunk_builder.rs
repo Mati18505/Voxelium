@@ -43,7 +43,7 @@ impl AsyncChunkBuilder {
             let chunk_mesh = voxel_mesher.create_mesh(&block_storage).clone();
 
             if let Some(err) = voxel_mesher.get_last_err() {
-                eprintln!("{}", err);
+                eprintln!("{err}");
             }
 
             chunk_mesh

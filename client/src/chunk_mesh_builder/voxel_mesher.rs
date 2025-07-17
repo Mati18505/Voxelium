@@ -32,7 +32,7 @@ impl fmt::Display for MesherError {
                 )
             }
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
@@ -58,7 +58,7 @@ impl VoxelMesher {
 
             match result {
                 Some(block_type) => {
-                    let mut layer_mesh: &mut LayerMesh = chunk_mesh
+                    let layer_mesh: &mut LayerMesh = chunk_mesh
                         .layers
                         .entry(block_type.material_name.clone())
                         .or_insert(LayerMesh::default());
@@ -66,7 +66,7 @@ impl VoxelMesher {
                     let result = self.create_block(
                         block_type,
                         BlockInChunkPos::new(pos.x, pos.y, pos.z),
-                        &mut layer_mesh,
+                        layer_mesh,
                         block_storage,
                     );
 
@@ -122,7 +122,7 @@ impl VoxelMesher {
             };
 
             if has_transparent_neighbor {
-                let result = self.create_block_side(side, pos, &block_type, mesh);
+                let result = self.create_block_side(side, pos, block_type, mesh);
 
                 if let Err(err) = result {
                     last_err = Some(err);

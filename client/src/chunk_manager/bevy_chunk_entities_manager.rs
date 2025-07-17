@@ -51,13 +51,13 @@ impl ChunkEntitiesManager {
         &mut self,
         pos: ChunkPos,
         mesh: ChunkMesh,
-        mut commands: &mut Commands,
-        mut meshes: &mut ResMut<Assets<Mesh>>,
+        commands: &mut Commands,
+        meshes: &mut ResMut<Assets<Mesh>>,
         opaque_texture: Handle<Image>,
-        mut voxel_materials: &mut ResMut<Assets<VoxelMaterial>>,
+        voxel_materials: &mut ResMut<Assets<VoxelMaterial>>,
     ) {
         assert!(
-            self.chunk_entities.get(&pos).is_none(),
+            !self.chunk_entities.contains_key(&pos),
             "Potential memory leak!"
         );
 
@@ -70,18 +70,18 @@ impl ChunkEntitiesManager {
 
         let chunk_entity = BevyChunkEntity::new(
             mesh,
-            &mut commands,
-            &mut meshes,
-            &mut voxel_materials,
+            commands,
+            meshes,
+            voxel_materials,
             opaque_texture,
         );
 
         self.chunk_entities.insert(pos, chunk_entity);
     }
 
-    fn remove_chunk_entity(&mut self, pos: &ChunkPos, mut commands: &mut Commands) {
+    fn remove_chunk_entity(&mut self, pos: &ChunkPos, commands: &mut Commands) {
         if let Some(entity) = self.chunk_entities.get(pos) {
-            entity.cleanup(&mut commands);
+            entity.cleanup(commands);
             self.chunk_entities.remove(pos);
         }
     }

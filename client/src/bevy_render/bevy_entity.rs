@@ -1,14 +1,12 @@
 use bevy::{
     asset::{Assets, Handle},
-    color::Color,
     ecs::{
         entity::Entity,
         system::{Commands, ResMut},
     },
     image::Image,
-    pbr::{MeshMaterial3d, StandardMaterial},
+    pbr::MeshMaterial3d,
     render::mesh::{Mesh, Mesh3d},
-    utils::default,
 };
 
 use super::bevy_voxel_render::VoxelMaterial;
@@ -29,7 +27,8 @@ impl BevyChunkEntity {
     ) -> Self {
         let mut render_resource = BevyChunkEntity::default();
 
-        for (material_name, mesh) in chunk_mesh.layers {
+        // TODO: Support multiple materials.
+        for (_material_name, mesh) in chunk_mesh.layers {
             let mesh_handle = meshes.add(mesh);
             let material_handle = materials.add(VoxelMaterial {
                 array_texture: base_color_texture.clone(),

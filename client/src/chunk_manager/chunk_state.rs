@@ -37,24 +37,20 @@ pub fn get_next_chunk_state(curr_state: ChunkState, status: ChunkStatus) -> Chun
         Loaded => {
             if status.is_within_render {
                 ToDraw
+            } else if status.is_within_load {
+                curr_state
             } else {
-                if status.is_within_load {
-                    curr_state
-                } else {
-                    Empty
-                }
+                Empty
             }
         }
         ToDraw => {
             if status.is_within_render {
                 if status.needs_rebuild {
                     Loaded
+                } else if status.mesh_built {
+                    Drawn
                 } else {
-                    if status.mesh_built {
-                        Drawn
-                    } else {
-                        curr_state
-                    }
+                    curr_state
                 }
             } else {
                 Loaded

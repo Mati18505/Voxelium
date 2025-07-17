@@ -7,8 +7,8 @@ pub struct TextureConfig {
     pub textures: HashMap<TextureName, TextureIndex>,
 }
 
-impl Into<TextureDictionary> for TextureConfig {
-    fn into(self) -> TextureDictionary {
-        TextureDictionary::new(self.textures)
+impl From<TextureConfig> for TextureDictionary {
+    fn from(config: TextureConfig) -> Self {
+        TextureDictionary::new(config.textures)
     }
 }

@@ -13,6 +13,7 @@ impl MeshBlockTypeStorage {
         MeshBlockTypeStorage { block_types }
     }
 
+    #[allow(dead_code)]
     pub fn set_block_type(&mut self, block_id: BlockID, block_type: MeshBlockType) {
         self.block_types.insert(block_id, block_type);
     }

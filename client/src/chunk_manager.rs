@@ -13,4 +13,3 @@ pub use chunk_state_manager::*;
 
 use bevy_async_chunk_builder::*;
 use bevy_chunk_entities_manager::*;
-use physical_world::*;

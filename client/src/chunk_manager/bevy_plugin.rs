@@ -1,5 +1,3 @@
-use std::sync::{Arc, Mutex};
-
 use bevy::prelude::*;
 use shared::{
     chunk_io::{providers::generated_chunk_provider::GeneratedChunkProvider, ChunkLoader},

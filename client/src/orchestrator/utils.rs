@@ -20,7 +20,7 @@ pub fn raycast_from_controller(
     );
 
     let config = RaycastConfig {
-        world: world,
+        world,
         block_type_storage: server_block_type_storage,
         range: 16.0,
         increment: 0.01,

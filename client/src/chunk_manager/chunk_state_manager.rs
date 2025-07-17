@@ -135,6 +135,7 @@ impl ChunkManager {
 
     /// Gets chunk from the world or loads it if it is not loaded yet.
     /// Returns None only if the position is outside the world scope.
+    #[allow(dead_code)]
     pub fn get_or_load_chunk(&mut self, pos: ChunkPos) -> Option<&Chunk> {
         if !self.is_in_world_scope(pos) {
             return None;

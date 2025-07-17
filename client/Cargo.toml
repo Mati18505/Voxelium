@@ -13,8 +13,3 @@ serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 bevy_common_assets = { version = "0.13.0", features = ["yaml", "json"] }
 crossbeam-channel = "0.5.15"
-
-[profile.dev]
-opt-level = 0
-incremental = true
-debug = true

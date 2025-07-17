@@ -1,5 +1,6 @@
 use bevy::{ecs::event::Event, math::Vec3};
 
+#[allow(dead_code)]
 #[derive(Event, Debug)]
 pub struct PositionChangeEvent {
     pub prev_pos: Vec3,
