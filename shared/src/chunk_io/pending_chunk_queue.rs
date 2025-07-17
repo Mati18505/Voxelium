@@ -22,7 +22,7 @@ impl PendingChunkQueue {
         if self.index_map.contains_key(&pos) {
             return;
         }
-        
+
         self.pending_chunks.push(pos);
         self.index_map.insert(pos, self.pending_chunks.len() - 1);
 
@@ -42,7 +42,7 @@ impl PendingChunkQueue {
 
         self.check_invariants();
     }
-    
+
     /// Removes and returns up to `k` chunks that are nearest to `player_pos`.
     /// The returned chunks are guaranteed to be among the `k` nearest in the queue, but their order is not guaranteed.
     /// If there are fewer than `k` chunks, returns all of them.
@@ -61,16 +61,17 @@ impl PendingChunkQueue {
     /// This doesn't rebuild the index map.
     fn move_k_nearest_chunks_to_back(&mut self, k: usize, player_pos: ChunkPos) {
         if self.pending_chunks.is_empty() || k == 0 {
-            return
+            return;
         }
 
         let index = self.pending_chunks.len().saturating_sub(k);
 
-        self.pending_chunks.select_nth_unstable_by_key(index, |chunk_pos| {
-            let distance = Self::chunk_pos_distance_sq(player_pos, *chunk_pos);
+        self.pending_chunks
+            .select_nth_unstable_by_key(index, |chunk_pos| {
+                let distance = Self::chunk_pos_distance_sq(player_pos, *chunk_pos);
 
-            cmp::Reverse(distance)
-        });
+                cmp::Reverse(distance)
+            });
     }
 
     fn rebuild_index_map(&mut self) {
@@ -88,7 +89,7 @@ impl PendingChunkQueue {
         let dy = (a.y - b.y) as i64;
         let dz = (a.z - b.z) as i64;
 
-        (dx*dx + dy*dy + dz*dz) as usize
+        (dx * dx + dy * dy + dz * dz) as usize
     }
 
     fn check_invariants(&self) {
@@ -129,7 +130,7 @@ mod tests {
         assert!(chunks.iter().all(|pos| expected.contains(pos)));
         assert!(expected.iter().all(|pos| chunks.contains(pos)));
     }
-    
+
     #[test]
     fn test_pending_chunk_queue() {
         let mut queue = create_queue();
@@ -146,10 +147,8 @@ mod tests {
 
         validate(&nearest_chunks, &expected_nearest);
 
-        let expected_remaining = HashSet::from([
-            ChunkPos::new(48, 48, 48),
-            ChunkPos::new(64, 64, 64),
-        ]);
+        let expected_remaining =
+            HashSet::from([ChunkPos::new(48, 48, 48), ChunkPos::new(64, 64, 64)]);
 
         validate(&queue.pending_chunks, &expected_remaining);
     }
@@ -176,7 +175,7 @@ mod tests {
         assert_eq!(nearest_chunks.len(), 1);
         assert_eq!(nearest_chunks[0], ChunkPos::new(16, 16, 16));
     }
-    
+
     #[test]
     fn test_pending_chunk_queue_k_zero() {
         let mut queue = create_queue();
@@ -184,7 +183,7 @@ mod tests {
 
         let player_pos = ChunkPos::new(16, 16, 16);
         let nearest_chunks = queue.take_nearest_chunks(0, player_pos);
-        
+
         assert!(nearest_chunks.is_empty());
         assert_eq!(queue.pending_chunks.len(), 5);
     }
@@ -198,10 +197,7 @@ mod tests {
         let player_pos = ChunkPos::new(16, 16, 16);
         queue.move_k_nearest_chunks_to_back(3, player_pos);
 
-        let expected_front = HashSet::from([
-            ChunkPos::new(48, 48, 48),
-            ChunkPos::new(64, 64, 64),
-        ]);
+        let expected_front = HashSet::from([ChunkPos::new(48, 48, 48), ChunkPos::new(64, 64, 64)]);
         let expected_back = HashSet::from([
             ChunkPos::new(16, 16, 16),
             ChunkPos::new(32, 32, 32),
@@ -216,13 +212,22 @@ mod tests {
     fn test_chunk_pos_distance_sq() {
         let a = ChunkPos::new(0, 0, 0);
         let b = ChunkPos::new(48, 64, 0);
-        assert_eq!(PendingChunkQueue::chunk_pos_distance_sq(a, b), 48*48 + 64*64);
+        assert_eq!(
+            PendingChunkQueue::chunk_pos_distance_sq(a, b),
+            48 * 48 + 64 * 64
+        );
 
         let c = ChunkPos::new(-48, -64, 0);
-        assert_eq!(PendingChunkQueue::chunk_pos_distance_sq(a, c), 48*48 + 64*64);
+        assert_eq!(
+            PendingChunkQueue::chunk_pos_distance_sq(a, c),
+            48 * 48 + 64 * 64
+        );
 
         let d = ChunkPos::new(16, 16, 16);
-        assert_eq!(PendingChunkQueue::chunk_pos_distance_sq(a, d), 16*16 + 16*16 + 16*16);
+        assert_eq!(
+            PendingChunkQueue::chunk_pos_distance_sq(a, d),
+            16 * 16 + 16 * 16 + 16 * 16
+        );
     }
 
     #[test]
@@ -262,9 +267,7 @@ mod tests {
         let _ = queue.take_nearest_chunks(3, player_pos);
         queue.remove_chunk(ChunkPos::new(48, 48, 48));
 
-        let expected = HashSet::from([
-            ChunkPos::new(64, 64, 64),
-        ]);
+        let expected = HashSet::from([ChunkPos::new(64, 64, 64)]);
 
         validate(&queue.pending_chunks, &expected);
     }
@@ -275,7 +278,7 @@ mod tests {
         queue.add_chunk(ChunkPos::new(64, 64, 64));
 
         queue.remove_chunk(ChunkPos::new(64, 64, 64));
-        
+
         assert_eq!(queue.pending_chunks.len(), 0);
         assert_eq!(queue.index_map.len(), 0);
     }

@@ -40,7 +40,7 @@ impl ChunkRepository for World {
     fn set_chunk(&mut self, pos: ChunkPos, chunk: Chunk) {
         self.chunks.insert(pos, chunk);
     }
-    
+
     fn remove_chunk(&mut self, pos: ChunkPos) {
         self.chunks.remove(&pos);
     }

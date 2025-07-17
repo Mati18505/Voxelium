@@ -24,8 +24,8 @@ pub struct RaycastResult {
 }
 
 pub struct RaycastConfig<'a> {
-    pub world: &'a World, 
-    pub block_type_storage: &'a BlockTypeStorage, 
+    pub world: &'a World,
+    pub block_type_storage: &'a BlockTypeStorage,
     pub range: f32,
     pub increment: f32,
 }
@@ -33,11 +33,17 @@ pub struct RaycastConfig<'a> {
 pub fn raycast(start: Vector3<f32>, dir: Vector3<f32>, config: &RaycastConfig) -> RaycastResult {
     assert!(is_normalized(dir), "Direction must be normalized.");
     assert!(config.range >= 0.0, "Range must be positive.");
-    assert!(config.increment > 0.0, "Increment must be greater than zero.");
+    assert!(
+        config.increment > 0.0,
+        "Increment must be greater than zero."
+    );
 
     let mut curr_pos = start;
     let mut raycast_result = RaycastResult::default();
-    let mut previous_block_id: BlockID = config.world.get_block(f32_pos_to_block_pos(start)).unwrap_or_default();
+    let mut previous_block_id: BlockID = config
+        .world
+        .get_block(f32_pos_to_block_pos(start))
+        .unwrap_or_default();
     let mut curr_dir_axis = 0;
 
     while curr_pos.distance2(start) <= config.range * config.range && !raycast_result.collide {
@@ -45,7 +51,6 @@ pub fn raycast(start: Vector3<f32>, dir: Vector3<f32>, config: &RaycastConfig) -
 
         if let Ok(block_id) = config.world.get_block(curr_block_pos) {
             if let Some(block_type) = config.block_type_storage.get_by_id(block_id) {
-
                 if block_type.affect_raycast {
                     raycast_result.collide = true;
                     raycast_result.hitpoint = Hitpoint {
@@ -92,7 +97,6 @@ fn is_normalized(v: Vector3<f32>) -> bool {
     (length - 1.0).abs() < epsilon
 }
 
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -111,6 +115,9 @@ mod test {
 
         let result = raycast(start, dir, &config);
 
-        assert!(!result.collide, "Raycast should not collide in an empty world.");
+        assert!(
+            !result.collide,
+            "Raycast should not collide in an empty world."
+        );
     }
 }

@@ -1,18 +1,30 @@
 use std::sync::{Arc, Mutex};
 
 use bevy::prelude::*;
-use shared::{chunk_io::{providers::generated_chunk_provider::GeneratedChunkProvider, ChunkLoader}, entities::{BlockPos, ChunkPos}};
+use shared::{
+    chunk_io::{providers::generated_chunk_provider::GeneratedChunkProvider, ChunkLoader},
+    entities::{BlockPos, ChunkPos},
+};
 
-use crate::{bevy_render::VoxelMaterial, bevy_types::{AppStates, GameResources}, chunk_mesh_builder::VoxelMesher, chunk_state_manager::{ChunkObjectEvent, WorldChunkUpdate}, controller};
+use crate::{
+    bevy_render::VoxelMaterial,
+    bevy_types::{AppStates, GameResources},
+    chunk_mesh_builder::VoxelMesher,
+    chunk_state_manager::{ChunkObjectEvent, WorldChunkUpdate},
+    controller,
+};
 
-use super::{bevy_event_manager::WorldChunkUpdateEvent, AsyncChunkBuilder, ChunkEntitiesManager, ChunkManager, Config, EventManager};
+use super::{
+    bevy_event_manager::WorldChunkUpdateEvent, AsyncChunkBuilder, ChunkEntitiesManager,
+    ChunkManager, Config, EventManager,
+};
 
 pub struct ChunkManagerPlugin;
 impl Plugin for ChunkManagerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(AppStates::InGame), init_chunk_manager)
-        .add_event::<WorldChunkUpdateEvent>()
-        .add_systems(Update, update.run_if(in_state(AppStates::InGame)));
+            .add_event::<WorldChunkUpdateEvent>()
+            .add_systems(Update, update.run_if(in_state(AppStates::InGame)));
     }
 }
 
@@ -23,10 +35,7 @@ pub struct ChunkManagerResources {
     event_manager: EventManager,
 }
 
-fn init_chunk_manager(
-    mut commands: Commands,
-    game_resources: Res<GameResources>,
-) {
+fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>) {
     let voxel_mesher = VoxelMesher::new(
         game_resources.block_type_storage.clone(),
         game_resources.texture_dictionary.clone(),
@@ -66,15 +75,27 @@ fn update(
     for e in controller_events.read() {
         let new_pos = e.new_pos;
         // Convert bevy direction to our direction
-        let new_block_pos = BlockPos::new(new_pos.x as isize, -new_pos.z as isize, new_pos.y as isize);
+        let new_block_pos =
+            BlockPos::new(new_pos.x as isize, -new_pos.z as isize, new_pos.y as isize);
         let new_chunk_pos = ChunkPos::from(new_block_pos);
 
-        chunk_manager_resources.chunk_manager.update_controller_pos(new_chunk_pos);
+        chunk_manager_resources
+            .chunk_manager
+            .update_controller_pos(new_chunk_pos);
         dbg!(&chunk_manager_resources.chunk_manager);
     }
 
     chunk_manager_resources.chunk_manager.check_loaded_chunks();
     chunk_manager_resources.chunk_manager.check_built_chunks();
-    chunk_manager_resources.chunk_entities_manager.process_pending(&mut commands, &mut meshes, game_resources.opaque_texture.clone(), &mut voxel_materials);
-    chunk_manager_resources.event_manager.process_pending(chunk_manager_events);
+    chunk_manager_resources
+        .chunk_entities_manager
+        .process_pending(
+            &mut commands,
+            &mut meshes,
+            game_resources.opaque_texture.clone(),
+            &mut voxel_materials,
+        );
+    chunk_manager_resources
+        .event_manager
+        .process_pending(chunk_manager_events);
 }

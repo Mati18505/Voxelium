@@ -1,10 +1,16 @@
 use bevy::log;
-use shared::{chunk_io::chunk_loader, entities::{Chunk, ChunkPos, ChunkRepository, CHUNK_SIZE}};
+use shared::{
+    chunk_io::chunk_loader,
+    entities::{Chunk, ChunkPos, ChunkRepository, CHUNK_SIZE},
+};
 use std::fmt;
 
-use crate::{chunk_mesh_builder::ChunkMesh, chunk_state_manager::{chunk_state, ChunkState, ChunkStatus, ChunkTransition}};
+use crate::{
+    chunk_mesh_builder::ChunkMesh,
+    chunk_state_manager::{chunk_state, ChunkState, ChunkStatus, ChunkTransition},
+};
 
-use super::{physical_world::{PhysicalWorld, Version}};
+use super::physical_world::{PhysicalWorld, Version};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WorldChunkUpdate {
@@ -21,7 +27,11 @@ pub enum ChunkObjectEvent {
 pub trait ChunkBuilder: Send + Sync + fmt::Debug {
     fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk, version: Version);
     fn update(&mut self, player_pos: ChunkPos);
-    fn take_built_chunk_mesh_by_version(&mut self, chunk_pos: ChunkPos, version: Version) -> Option<ChunkMesh>;
+    fn take_built_chunk_mesh_by_version(
+        &mut self,
+        chunk_pos: ChunkPos,
+        version: Version,
+    ) -> Option<ChunkMesh>;
     fn is_chunk_mesh_built_with_version(&self, chunk_pos: ChunkPos, version: Version) -> bool;
 }
 
@@ -59,7 +69,11 @@ pub struct ChunkManager {
 }
 
 impl ChunkManager {
-    pub fn new(chunk_loader: chunk_loader::ChunkLoader, chunk_builder: Box<dyn ChunkBuilder>, config: Config) -> Self {
+    pub fn new(
+        chunk_loader: chunk_loader::ChunkLoader,
+        chunk_builder: Box<dyn ChunkBuilder>,
+        config: Config,
+    ) -> Self {
         ChunkManager {
             world: PhysicalWorld::default(),
             chunk_loader,
@@ -72,7 +86,10 @@ impl ChunkManager {
     }
 
     /// Sets the callback used when a chunk is drawn or mesh is removed.
-    pub fn set_chunk_object_tx(&mut self, callback: Option<crossbeam_channel::Sender<ChunkObjectEvent>>) {
+    pub fn set_chunk_object_tx(
+        &mut self,
+        callback: Option<crossbeam_channel::Sender<ChunkObjectEvent>>,
+    ) {
         self.chunk_object_tx = callback;
     }
 
@@ -123,7 +140,7 @@ impl ChunkManager {
         if !self.is_in_world_scope(pos) {
             return None;
         }
-        
+
         self.load_chunk_if_is_empty(pos);
 
         self.get_chunk(pos)
@@ -131,9 +148,14 @@ impl ChunkManager {
 
     fn update_chunk_states_in_world(&mut self) {
         // Load missing chunks within the load distance.
-        Self::visit_chunks_in_distance(self.controller_pos, self.config.load_distance, self.config.dynamic_vertical_loading, |pos| {
-            self.load_chunk_if_is_empty(pos);
-        });
+        Self::visit_chunks_in_distance(
+            self.controller_pos,
+            self.config.load_distance,
+            self.config.dynamic_vertical_loading,
+            |pos| {
+                self.load_chunk_if_is_empty(pos);
+            },
+        );
 
         // Update all existing chunks in the world.
         let chunks_in_world: Vec<ChunkPos> = self.world.chunk_states.keys().copied().collect();
@@ -143,14 +165,20 @@ impl ChunkManager {
         }
 
         // Remove all chunks that are still empty.
-        let empty_chunks_in_world: Vec<ChunkPos> = self.world.get_chunks_with_state(ChunkState::Empty);
+        let empty_chunks_in_world: Vec<ChunkPos> =
+            self.world.get_chunks_with_state(ChunkState::Empty);
 
         for pos in empty_chunks_in_world {
             self.world.remove_chunk(pos);
         }
     }
 
-    fn visit_chunks_in_distance<F: FnMut(ChunkPos)>(controller_pos: ChunkPos, dist: usize, vertical: bool, mut func: F) {
+    fn visit_chunks_in_distance<F: FnMut(ChunkPos)>(
+        controller_pos: ChunkPos,
+        dist: usize,
+        vertical: bool,
+        mut func: F,
+    ) {
         let controller_pos = *controller_pos / CHUNK_SIZE as isize;
 
         let z_start = controller_pos.z - dist as isize;
@@ -164,11 +192,15 @@ impl ChunkManager {
             for z in z_start..=z_end {
                 for y in y_start..=y_end {
                     for x in x_start..=x_end {
-                        let pos = ChunkPos::new(x * CHUNK_SIZE as isize, y * CHUNK_SIZE as isize, z * CHUNK_SIZE as isize);
+                        let pos = ChunkPos::new(
+                            x * CHUNK_SIZE as isize,
+                            y * CHUNK_SIZE as isize,
+                            z * CHUNK_SIZE as isize,
+                        );
 
                         func(pos)
                     }
-                } 
+                }
             }
         } else {
             for y in y_start..=y_end {
@@ -177,15 +209,13 @@ impl ChunkManager {
 
                     func(pos)
                 }
-            } 
+            }
         }
     }
 
     fn is_in_world_scope(&self, pos: ChunkPos) -> bool {
-        if !self.config.dynamic_vertical_loading {
-            if pos.z != 0 {
-                return false;
-            }
+        if !self.config.dynamic_vertical_loading && pos.z != 0 {
+            return false;
         }
 
         true
@@ -198,7 +228,10 @@ impl ChunkManager {
         if prev_state != new_state {
             let transition = chunk_state::get_chunk_transition(prev_state, new_state);
 
-            assert!(transition.is_some(), "Unsupported transition in chunk {:?}: {:?} -> {:?}", pos, prev_state, new_state);
+            assert!(
+                transition.is_some(),
+                "Unsupported transition in chunk {pos:?}: {prev_state:?} -> {new_state:?}"
+            );
 
             self.apply_transition(pos, transition.unwrap());
             self.world.set_chunk_state(pos, new_state);
@@ -222,13 +255,17 @@ impl ChunkManager {
             log::trace!("Chunk {:?}: {:?} -> {:?}", pos, prev_state, next_state);
 
             if iterations >= MAX_ITERATIONS {
-                log::warn!("Chunk {:?} failed to stabilize state after {} iterations", pos, MAX_ITERATIONS);
+                log::warn!(
+                    "Chunk {:?} failed to stabilize state after {} iterations",
+                    pos,
+                    MAX_ITERATIONS
+                );
                 break;
             }
 
             prev_state = next_state;
             iterations += 1;
-        } 
+        }
     }
 
     fn is_within_distance(&self, pos: ChunkPos, distance_in_chunks: usize) -> bool {
@@ -244,34 +281,37 @@ impl ChunkManager {
         match transition {
             EmptyToLoading => {
                 self.chunk_loader.load_chunk(pos);
-            },
+            }
             LoadingToLoaded => {
                 log::debug!("Loaded chunk {:?}", pos);
             }
             LoadedToEmpty => {
                 self.world.world.remove_chunk(pos);
-            },
+            }
             LoadedToToDraw => {
                 self.pass_chunk_to_builder(pos);
-            },
+            }
             ToDrawToLoaded => {
                 // TODO: Remove mesh from chunk builder.
             }
             ToDrawToDrawn => {
                 let version = self.world.get_chunk_mesh_version(pos);
-                let mesh = self.chunk_builder.take_built_chunk_mesh_by_version(pos, version).expect("ChunkState is drawn, but mesh is not built.");
+                let mesh = self
+                    .chunk_builder
+                    .take_built_chunk_mesh_by_version(pos, version)
+                    .expect("ChunkState is drawn, but mesh is not built.");
 
                 self.world.add_chunk_mesh(pos, mesh.clone());
 
                 self.create_chunk_object(pos, &mesh);
-            },
+            }
             DrawnToToDraw => {
                 self.pass_chunk_to_builder(pos);
-            },
+            }
             DrawnToLoaded => {
                 self.world.chunk_meshes.remove(&pos);
                 self.remove_chunk_object(pos);
-            },
+            }
         }
     }
 
@@ -279,7 +319,9 @@ impl ChunkManager {
         let new_mesh_version = self.world.increment_chunk_mesh_version(pos);
         //println!("Passing chunk to builder: {:?}, version: {}", pos, new_mesh_version);
 
-        let chunk = self.world.get_chunk(pos)
+        let chunk = self
+            .world
+            .get_chunk(pos)
             .expect("Chunk is passed to builder, but it is not loaded.");
 
         self.chunk_builder.build_chunk(pos, chunk, new_mesh_version);
@@ -311,13 +353,15 @@ impl ChunkManager {
             self.change_chunk_state(pos, ChunkState::Loading);
         }
     }
-    
+
     fn create_chunk_status(&self, pos: ChunkPos) -> ChunkStatus {
         let is_within_render = self.is_within_distance(pos, self.config.render_distance);
         let is_within_load = self.is_within_distance(pos, self.config.load_distance);
-        let loaded = self.world.get_chunk(pos) != None;
+        let loaded = self.world.get_chunk(pos).is_some();
         let mesh_version = self.world.get_chunk_mesh_version(pos);
-        let mesh_built = self.chunk_builder.is_chunk_mesh_built_with_version(pos, mesh_version);
+        let mesh_built = self
+            .chunk_builder
+            .is_chunk_mesh_built_with_version(pos, mesh_version);
         let needs_rebuild = self.world.get_chunk_need_rebuild(pos);
 
         ChunkStatus {
@@ -345,13 +389,19 @@ impl ChunkRepository for ChunkManager {
         self.world.set_chunk_need_rebuild(pos);
         self.update_chunk_state(pos);
 
-        self.emit_event(WorldChunkUpdate { chunk_pos: pos, chunk: new_chunk });
+        self.emit_event(WorldChunkUpdate {
+            chunk_pos: pos,
+            chunk: new_chunk,
+        });
     }
 
     /// Unloads chunk and removes it from world.
     fn remove_chunk(&mut self, pos: ChunkPos) {
         if let Some(chunk) = self.world.get_chunk(pos) {
-            self.emit_event(WorldChunkUpdate { chunk_pos: pos, chunk: chunk.clone() });
+            self.emit_event(WorldChunkUpdate {
+                chunk_pos: pos,
+                chunk: chunk.clone(),
+            });
 
             let chunk_state = self.world.get_chunk_state(pos);
 
@@ -379,7 +429,6 @@ impl fmt::Debug for ChunkManager {
     }
 }
 
-
 #[cfg(test)]
 mod test {
     use std::collections::HashSet;
@@ -395,7 +444,11 @@ mod test {
         });
 
         let expected_positions: HashSet<ChunkPos> = (-2..=2)
-            .flat_map(|y| (-2..=2).map(move |x| ChunkPos::new(x * CHUNK_SIZE as isize, y * CHUNK_SIZE as isize, 0)))
+            .flat_map(|y| {
+                (-2..=2).map(move |x| {
+                    ChunkPos::new(x * CHUNK_SIZE as isize, y * CHUNK_SIZE as isize, 0)
+                })
+            })
             .collect();
 
         assert_eq!(actual_positions, expected_positions);

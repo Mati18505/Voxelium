@@ -6,8 +6,8 @@ pub mod chunk_state;
 pub mod chunk_state_manager;
 pub mod physical_world;
 
-pub use bevy_plugin::*;
 pub use bevy_event_manager::*;
+pub use bevy_plugin::*;
 pub use chunk_state::*;
 pub use chunk_state_manager::*;
 

@@ -6,11 +6,12 @@ use crate::{bevy_types::AppStates, orchestrator};
 pub struct GUIPlugin;
 impl Plugin for GUIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_gui)
-            .add_systems(Update, update_block_cursor.run_if(in_state(AppStates::InGame)));
+        app.add_systems(Startup, setup_gui).add_systems(
+            Update,
+            update_block_cursor.run_if(in_state(AppStates::InGame)),
+        );
     }
 }
-
 
 #[derive(Component, Debug, Clone, Copy)]
 pub struct BlockCursorData {
@@ -27,12 +28,8 @@ impl Default for BlockCursorData {
     }
 }
 
-fn setup_gui(
-    mut commands: Commands,
-) {
-    commands.spawn((
-        BlockCursorData::default(),
-    ));
+fn setup_gui(mut commands: Commands) {
+    commands.spawn((BlockCursorData::default(),));
 }
 
 fn update_block_cursor(
@@ -45,7 +42,7 @@ fn update_block_cursor(
         Err(_) => {
             warn!("Gizmo data not found for update_gizmo!");
             return;
-        },
+        }
     };
 
     for ev in looked_at_block_change_ev.read() {
@@ -54,17 +51,19 @@ fn update_block_cursor(
     }
 
     if block_cursor_data.visible {
-        gizmos.cuboid({
-            let translation = Vec3::new(
-                block_cursor_data.block_pos.x as f32,
-                block_cursor_data.block_pos.z as f32,
-                -block_cursor_data.block_pos.y as f32,
-            );
-            Transform {
-                translation,
-                ..Transform::IDENTITY
-            }
-        },
-        Color::WHITE);
+        gizmos.cuboid(
+            {
+                let translation = Vec3::new(
+                    block_cursor_data.block_pos.x as f32,
+                    block_cursor_data.block_pos.z as f32,
+                    -block_cursor_data.block_pos.y as f32,
+                );
+                Transform {
+                    translation,
+                    ..Transform::IDENTITY
+                }
+            },
+            Color::WHITE,
+        );
     }
 }

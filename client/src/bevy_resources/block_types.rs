@@ -26,8 +26,7 @@ impl Into<BlockTypeStorage> for BevyBlockTypeStorageResource {
 
 impl Into<Vec<(String, BlockID)>> for BevyBlockTypeStorageResource {
     fn into(self) -> Vec<(String, BlockID)> {
-        self
-            .blocks
+        self.blocks
             .into_iter()
             .map(|e| e.name)
             .enumerate()

@@ -48,10 +48,7 @@ impl BevyChunkEntity {
         render_resource
     }
 
-    pub fn cleanup(
-        &self,
-        commands: &mut Commands,
-    ) {
+    pub fn cleanup(&self, commands: &mut Commands) {
         for entity in self.entities.iter() {
             commands.entity(*entity).despawn();
         }

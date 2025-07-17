@@ -1,6 +1,8 @@
 use rand::{rngs::ThreadRng, Rng};
 
-use crate::entities::{name_to_block_id, BlockID, BlockInChunkPos, BlockStorage, ChunkPos, CHUNK_SIZE};
+use crate::entities::{
+    name_to_block_id, BlockID, BlockInChunkPos, BlockStorage, ChunkPos, CHUNK_SIZE,
+};
 
 #[derive(Debug, Clone)]
 pub struct TerrainGenerator {

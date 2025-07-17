@@ -4,7 +4,7 @@ use cgmath::Vector3;
 use shared::entities::{BlockID, BlockInChunkPos, BlockSide, BlockStorage, Direction};
 
 use super::{
-    MeshBlockTypeStorage, ChunkMesh, LayerMesh, MeshBlockType, TextureDictionary, TextureName,
+    ChunkMesh, LayerMesh, MeshBlockType, MeshBlockTypeStorage, TextureDictionary, TextureName,
 };
 
 #[derive(Debug, Clone)]
@@ -48,10 +48,7 @@ impl VoxelMesher {
         }
     }
 
-    pub fn create_mesh(
-        &mut self,
-        block_storage: &BlockStorage,
-    ) -> ChunkMesh {
+    pub fn create_mesh(&mut self, block_storage: &BlockStorage) -> ChunkMesh {
         let mut chunk_mesh = ChunkMesh::default();
         let mut last_err = None;
 

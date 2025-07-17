@@ -7,8 +7,8 @@ use bevy::{prelude::*, tasks::Task};
 use shared::chunk_io::pending_chunk_queue::PendingChunkQueue;
 use shared::entities::{Chunk, ChunkPos};
 
+use super::{chunk_state_manager, physical_world::Version};
 use crate::chunk_mesh_builder::{ChunkMesh, VoxelMesher};
-use super::{physical_world::Version, chunk_state_manager};
 
 #[derive(Resource)]
 struct ChunkBuildTask(Task<ChunkMesh>);
@@ -70,14 +70,10 @@ impl AsyncChunkBuilder {
 }
 
 impl chunk_state_manager::ChunkBuilder for AsyncChunkBuilder {
-    fn build_chunk(
-        &mut self,
-        chunk_pos: ChunkPos,
-        chunk: &Chunk,
-        version: Version,
-    ) {
+    fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk, version: Version) {
         self.pending_chunk_queue.add_chunk(chunk_pos);
-        self.chunks_to_build.insert(chunk_pos, (chunk.clone(), version));
+        self.chunks_to_build
+            .insert(chunk_pos, (chunk.clone(), version));
     }
 
     /// Should be called once per frame.
@@ -85,19 +81,28 @@ impl chunk_state_manager::ChunkBuilder for AsyncChunkBuilder {
         // TODO
         // Chunk Grouping (for each thread job give multiple chunks).
 
-        let nearest_chunks = self.pending_chunk_queue.take_nearest_chunks(Self::MAX_BUILD_JOBS, player_pos);
+        let nearest_chunks = self
+            .pending_chunk_queue
+            .take_nearest_chunks(Self::MAX_BUILD_JOBS, player_pos);
 
         for pos in nearest_chunks {
-            let (chunk, version) = self.chunks_to_build.remove(&pos).expect("Pending chunk not found in chunks_to_build");
+            let (chunk, version) = self
+                .chunks_to_build
+                .remove(&pos)
+                .expect("Pending chunk not found in chunks_to_build");
 
             let task = self.create_build_task(chunk);
             self.tasks.insert((pos, version), ChunkBuildTask(task));
         }
- 
+
         self.collect_finished_results();
     }
 
-    fn take_built_chunk_mesh_by_version(&mut self, chunk_pos: ChunkPos, version: Version) -> Option<ChunkMesh> {
+    fn take_built_chunk_mesh_by_version(
+        &mut self,
+        chunk_pos: ChunkPos,
+        version: Version,
+    ) -> Option<ChunkMesh> {
         self.completed.remove(&(chunk_pos, version))
     }
 

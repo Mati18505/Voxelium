@@ -1,36 +1,52 @@
 use std::{fs, sync::Arc};
 
 use bevy::{
-    color::palettes::css::WHITE, pbr::wireframe::{WireframeConfig, WireframePlugin}, prelude::*, render::{
+    color::palettes::css::WHITE,
+    pbr::wireframe::{WireframeConfig, WireframePlugin},
+    prelude::*,
+    render::{
         settings::{RenderCreation, WgpuFeatures, WgpuSettings},
         *,
-    }
+    },
 };
 use bevy_asset_loader::prelude::*;
-use bevy_common_assets::yaml::YamlAssetPlugin;
 use bevy_common_assets::json::JsonAssetPlugin;
+use bevy_common_assets::yaml::YamlAssetPlugin;
 
 use bevy_render::VoxelRenderPlugin;
 use bevy_resources::{MeshBlockTypeStorageLoader, MeshBlockTypeStorageResource, TextureConfig};
+use bevy_types::{AppStates, GameResources};
 use cgmath::Vector3;
 use chunk_mesh_builder::*;
 use controller::ControllerPlugin;
-use bevy_types::{AppStates, GameResources};
-use shared::{entities::{init_block_names, name_to_block_id, BlockID, BlockInChunkPos, BlockPos, BlockTypeStorage, Chunk, ChunkPos, ChunkRepository}, physics::{raycast, RaycastConfig, RaycastResult}, resources::BlockTypeStorageResource};
+use shared::{
+    entities::{
+        init_block_names, name_to_block_id, BlockID, BlockInChunkPos, BlockPos, BlockTypeStorage,
+        Chunk, ChunkPos, ChunkRepository,
+    },
+    physics::{raycast, RaycastConfig, RaycastResult},
+    resources::BlockTypeStorageResource,
+};
 
 use chunk_state_manager::{ChunkManagerPlugin, ChunkManagerResources};
 
-use crate::{bevy_resources::BevyBlockTypeStorageResource, chunk_state_manager::{ChunkManager, WorldChunkUpdateEvent}, controller::ActionType, gui::GUIPlugin, orchestrator::{utils::raycast_from_controller, OrchestratorPlugin}};
+use crate::{
+    bevy_resources::BevyBlockTypeStorageResource,
+    chunk_state_manager::{ChunkManager, WorldChunkUpdateEvent},
+    controller::ActionType,
+    gui::GUIPlugin,
+    orchestrator::{utils::raycast_from_controller, OrchestratorPlugin},
+};
 
 mod bevy_render;
 mod bevy_resources;
-mod chunk_mesh_builder;
-mod controller;
-mod chunk_state_manager;
 mod bevy_types;
-mod voxel_edits;
+mod chunk_mesh_builder;
+mod chunk_state_manager;
+mod controller;
 mod gui;
 mod orchestrator;
+mod voxel_edits;
 
 fn main() {
     App::new()
@@ -114,9 +130,10 @@ fn create_resources(
         .get(&voxel_assets.server_blocks)
         .expect("Failed to get server_block_type_storage asset")
         .to_owned();
-    let server_block_type_storage: Arc<BlockTypeStorage> = Arc::new(server_block_type_storage_asset.clone().into());
+    let server_block_type_storage: Arc<BlockTypeStorage> =
+        Arc::new(server_block_type_storage_asset.clone().into());
 
-    commands.insert_resource(GameResources{
+    commands.insert_resource(GameResources {
         block_type_storage,
         server_block_type_storage,
         texture_dictionary,
@@ -156,7 +173,12 @@ fn update(
 ) {
     for ev in controller_ev.read() {
         let world = &chunk_manager_resources.chunk_manager.get_world().world;
-        let raycast_result = raycast_from_controller(ev.controller_pos, ev.controller_forward, world, &game_resources.server_block_type_storage);
+        let raycast_result = raycast_from_controller(
+            ev.controller_pos,
+            ev.controller_forward,
+            world,
+            &game_resources.server_block_type_storage,
+        );
 
         if raycast_result.collide {
             let block_action: BlockAction = match ev.action_type {
@@ -165,7 +187,11 @@ fn update(
             };
 
             if block_action.feasible {
-                voxel_edits::set_block_and_update_chunk(&mut chunk_manager_resources.chunk_manager, block_action.pos, block_action.new_block);
+                voxel_edits::set_block_and_update_chunk(
+                    &mut chunk_manager_resources.chunk_manager,
+                    block_action.pos,
+                    block_action.new_block,
+                );
             }
         } else {
             println!("Raycast don't collide.");
@@ -180,7 +206,7 @@ struct BlockAction {
 }
 
 fn destroy_block_action(raycast_result: RaycastResult) -> BlockAction {
-    BlockAction { 
+    BlockAction {
         feasible: true,
         pos: raycast_result.hitpoint.pos,
         new_block: name_to_block_id("air"),
@@ -190,7 +216,7 @@ fn destroy_block_action(raycast_result: RaycastResult) -> BlockAction {
 fn place_block_action(raycast_result: RaycastResult) -> BlockAction {
     let previous_block_id = raycast_result.step_before_hitpoint.block_id;
 
-    BlockAction { 
+    BlockAction {
         feasible: previous_block_id == name_to_block_id("air"),
         pos: raycast_result.step_before_hitpoint.pos,
         new_block: name_to_block_id("wood"),

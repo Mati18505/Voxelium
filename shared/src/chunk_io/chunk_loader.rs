@@ -1,7 +1,13 @@
+use bevy::{
+    prelude::*,
+    tasks::{futures_lite::future, Task},
+};
 use std::collections::HashMap;
-use bevy::{prelude::*, tasks::{futures_lite::future, Task}};
 
-use crate::{chunk_io::pending_chunk_queue::PendingChunkQueue, entities::{Chunk, ChunkPos}};
+use crate::{
+    chunk_io::pending_chunk_queue::PendingChunkQueue,
+    entities::{Chunk, ChunkPos},
+};
 
 pub trait ChunkProvider: Send + Sync {
     fn load_chunk(&mut self, pos: ChunkPos) -> Chunk;
@@ -37,7 +43,9 @@ impl ChunkLoader {
 
     /// Should be called once per frame.
     pub fn update(&mut self, player_pos: ChunkPos) {
-        let nearest_chunks = self.chunks_to_load.take_nearest_chunks(Self::MAX_CHUNKS_PER_UPDATE, player_pos);
+        let nearest_chunks = self
+            .chunks_to_load
+            .take_nearest_chunks(Self::MAX_CHUNKS_PER_UPDATE, player_pos);
 
         for pos in nearest_chunks {
             let task = self.chunk_provider.load_chunk(pos);

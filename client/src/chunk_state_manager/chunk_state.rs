@@ -16,48 +16,68 @@ pub struct ChunkStatus {
     pub needs_rebuild: bool,
 }
 
-pub fn get_next_chunk_state(
-    curr_state: ChunkState,
-    status: ChunkStatus,
-) -> ChunkState {
+pub fn get_next_chunk_state(curr_state: ChunkState, status: ChunkStatus) -> ChunkState {
     use ChunkState::*;
 
     match curr_state {
         Empty => {
-            if status.is_within_load { Loading } else { Empty }
+            if status.is_within_load {
+                Loading
+            } else {
+                Empty
+            }
         }
         Loading => {
-            if status.loaded { Loaded } else { curr_state }
+            if status.loaded {
+                Loaded
+            } else {
+                curr_state
+            }
         }
         Loaded => {
-            if status.is_within_render { ToDraw } 
-            else { 
-                if status.is_within_load { curr_state } else { Empty }
+            if status.is_within_render {
+                ToDraw
+            } else {
+                if status.is_within_load {
+                    curr_state
+                } else {
+                    Empty
+                }
             }
-        },
+        }
         ToDraw => {
-            if status.is_within_render { 
-                if status.needs_rebuild { Loaded } else { 
-                    if status.mesh_built { Drawn } else { curr_state }
+            if status.is_within_render {
+                if status.needs_rebuild {
+                    Loaded
+                } else {
+                    if status.mesh_built {
+                        Drawn
+                    } else {
+                        curr_state
+                    }
                 }
             } else {
                 Loaded
             }
-        },
+        }
         Drawn => {
-            if status.is_within_render { 
-                if status.needs_rebuild { ToDraw } else { curr_state }
+            if status.is_within_render {
+                if status.needs_rebuild {
+                    ToDraw
+                } else {
+                    curr_state
+                }
             } else {
                 Loaded
             }
-        },
+        }
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ChunkTransition {
-	EmptyToLoading,
-	LoadingToLoaded,
+    EmptyToLoading,
+    LoadingToLoaded,
     LoadedToEmpty,
     LoadedToToDraw,
     ToDrawToLoaded,
@@ -82,4 +102,3 @@ pub fn get_chunk_transition(from: ChunkState, to: ChunkState) -> Option<ChunkTra
         _ => None,
     }
 }
-

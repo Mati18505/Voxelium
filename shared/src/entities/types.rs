@@ -41,9 +41,13 @@ impl ChunkPos {
         let x_start = other.x - dist_in_chunks as isize;
         let x_end = other.x + dist_in_chunks as isize;
 
-        if self.x >= x_start && self.x <= x_end &&
-            self.y >= y_start && self.y <= y_end &&
-            self.z >= z_start && self.z <= z_end {
+        if self.x >= x_start
+            && self.x <= x_end
+            && self.y >= y_start
+            && self.y <= y_end
+            && self.z >= z_start
+            && self.z <= z_end
+        {
             return true;
         }
 
@@ -58,8 +62,7 @@ impl ChunkPos {
         let x_start = other.x - dist_in_chunks as isize;
         let x_end = other.x + dist_in_chunks as isize;
 
-        if self.x >= x_start && self.x <= x_end &&
-            self.y >= y_start && self.y <= y_end {
+        if self.x >= x_start && self.x <= x_end && self.y >= y_start && self.y <= y_end {
             return true;
         }
 
@@ -270,7 +273,7 @@ mod test {
     fn test_is_within_distance() {
         let pos1 = ChunkPos::new(0, 0, 0);
         let pos2 = ChunkPos::new(CHUNK_SIZE as isize * 8, 0, 0);
-        
+
         assert!(!pos1.is_within_distance(pos2, 1));
         assert!(pos1.is_within_distance(pos2, 8));
     }

@@ -1,12 +1,15 @@
+use super::bevy_controller_events::*;
 use bevy::prelude::*;
 use bevy_flycam::*;
-use super::bevy_controller_events::*;
 
 pub struct ControllerPlugin;
 impl Plugin for ControllerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(NoCameraPlayerPlugin)
-            .insert_resource(MovementSettings { speed: 20.0, ..default() })
+            .insert_resource(MovementSettings {
+                speed: 20.0,
+                ..default()
+            })
             .add_event::<PositionChangeEvent>()
             .add_event::<ActionEvent>()
             .add_systems(Startup, setup_controller)
@@ -36,7 +39,11 @@ pub fn update(
     if let Ok(mut controller) = q_controller.single_mut() {
         if let Ok(transform) = q_fly_cam.single() {
             if controller.last_player_pos.floor() != transform.translation.floor() {
-                position_changed(position_ev, controller.last_player_pos, transform.translation);
+                position_changed(
+                    position_ev,
+                    controller.last_player_pos,
+                    transform.translation,
+                );
 
                 controller.last_player_pos = transform.translation;
             }
@@ -53,17 +60,21 @@ pub fn player_action(
 ) {
     if let Ok(transform) = q_fly_cam.single() {
         if mouse.just_pressed(MouseButton::Left) {
-            action_ev.write(ActionEvent { action_type: ActionType::LeftClick, controller_forward: *transform.forward(), controller_pos: transform.translation });
+            action_ev.write(ActionEvent {
+                action_type: ActionType::LeftClick,
+                controller_forward: *transform.forward(),
+                controller_pos: transform.translation,
+            });
         } else if mouse.just_pressed(MouseButton::Right) {
-            action_ev.write(ActionEvent { action_type: ActionType::RightClick, controller_forward: *transform.forward(), controller_pos: transform.translation });
+            action_ev.write(ActionEvent {
+                action_type: ActionType::RightClick,
+                controller_forward: *transform.forward(),
+                controller_pos: transform.translation,
+            });
         }
     }
 }
 
-fn position_changed(
-    mut events: EventWriter<PositionChangeEvent>,
-    prev_pos: Vec3,
-    new_pos: Vec3
-) {
+fn position_changed(mut events: EventWriter<PositionChangeEvent>, prev_pos: Vec3, new_pos: Vec3) {
     events.write(PositionChangeEvent { prev_pos, new_pos });
 }
