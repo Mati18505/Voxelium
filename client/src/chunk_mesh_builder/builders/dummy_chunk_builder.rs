@@ -8,34 +8,37 @@ use super::chunk_builder::ChunkBuilder;
 
 pub struct DummyChunkBuilder<T> {
     _marker: PhantomData<T>,
+    builded_chunks: HashMap<ChunkPos, (ChunkMesh, T)>,
 }
 
 impl<T> DummyChunkBuilder<T> {
     pub fn new() -> Self {
         Self {
             _marker: PhantomData,
+            builded_chunks: HashMap::new(),
         }
     }
 }
 
-impl<T: Send + Sync> ChunkBuilder<T> for DummyChunkBuilder<T> {
-    fn build_chunk(&mut self, _chunk_pos: ChunkPos, _chunk: &Chunk, _additional_data: Option<T>) {
-        // No operation
+impl<T: Send + Sync + Default> ChunkBuilder<T> for DummyChunkBuilder<T> {
+    fn build_chunk(&mut self, chunk_pos: ChunkPos, _chunk: &Chunk, additional_data: T) {
+        self.builded_chunks
+            .insert(chunk_pos, (ChunkMesh::default(), additional_data));
     }
 
     fn update(&mut self, _player_pos: ChunkPos) {
         // No operation
     }
 
-    fn remove_chunk(&mut self, _chunk_pos: ChunkPos) {
-        // No operation
+    fn remove_chunk(&mut self, chunk_pos: ChunkPos) {
+        self.builded_chunks.remove(&chunk_pos);
     }
 
     fn clear_all(&mut self) {
-        // No operation
+        self.builded_chunks.clear();
     }
 
-    fn poll_completed(&mut self) -> HashMap<ChunkPos, (ChunkMesh, Option<T>)> {
-        HashMap::new()
+    fn poll_completed(&mut self) -> HashMap<ChunkPos, (ChunkMesh, T)> {
+        std::mem::take(&mut self.builded_chunks)
     }
 }

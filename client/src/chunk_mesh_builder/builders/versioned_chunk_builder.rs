@@ -7,7 +7,7 @@ use crate::chunk_mesh_builder::{builders::ChunkBuilder, ChunkMesh};
 
 use super::chunk_builder::Versioned;
 
-pub struct VersionedChunkBuilder<T: Send + Sync> {
+pub struct VersionedChunkBuilder<T: Send + Sync + Default> {
     /// Internal chunk builder.
     chunk_builder: Box<dyn ChunkBuilder<DecoratedData<T>>>,
 
@@ -16,19 +16,19 @@ pub struct VersionedChunkBuilder<T: Send + Sync> {
 
     /// Stores only chunks that are built with the latest version.
     /// If chunk version is updated, the chunk will be removed from this map.
-    latest_builded_chunks: HashMap<ChunkPos, (ChunkMesh, Option<T>)>,
+    latest_builded_chunks: HashMap<ChunkPos, (ChunkMesh, DecoratedData<T>)>,
 }
 
 type Version = u64;
 
-struct DecoratedData<T: Send + Sync> {
-    pub data: Option<T>,
+#[derive(Debug, Clone, Default)]
+struct DecoratedData<T: Send + Sync + Default> {
+    pub data: T,
     version: Version,
 }
 
-impl<T: Send + Sync> VersionedChunkBuilder<T> {
+impl<T: Send + Sync + Default> VersionedChunkBuilder<T> {
     /// Creates a new versioned chunk builder with the provided chunk builder.
-    /// Newest call to this function equals the latest version of the chunk.
     pub fn new(chunk_builder: Box<dyn ChunkBuilder<DecoratedData<T>>>) -> Self {
         Self {
             chunk_builder,
@@ -54,8 +54,9 @@ impl<T: Send + Sync> VersionedChunkBuilder<T> {
     }
 }
 
-impl<T: Send + Sync> ChunkBuilder<T> for VersionedChunkBuilder<T> {
-    fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk, additional_data: Option<T>) {
+impl<T: Send + Sync + Default> ChunkBuilder<T> for VersionedChunkBuilder<T> {
+    /// Newest call to this function equals the latest version of the chunk.
+    fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk, additional_data: T) {
         let version = self.increment_chunk_mesh_version(chunk_pos);
         let decorated_data = DecoratedData {
             data: additional_data,
@@ -63,11 +64,14 @@ impl<T: Send + Sync> ChunkBuilder<T> for VersionedChunkBuilder<T> {
         };
 
         self.chunk_builder
-            .build_chunk(chunk_pos, chunk, Some(decorated_data));
+            .build_chunk(chunk_pos, chunk, decorated_data);
     }
 
     fn update(&mut self, player_pos: ChunkPos) {
         self.chunk_builder.update(player_pos);
+
+        self.latest_builded_chunks
+            .extend(self.chunk_builder.poll_completed());
     }
 
     fn remove_chunk(&mut self, chunk_pos: ChunkPos) {
@@ -79,19 +83,34 @@ impl<T: Send + Sync> ChunkBuilder<T> for VersionedChunkBuilder<T> {
     }
 
     /// Returns only chunks that are built with the latest version.
-    fn poll_completed(&mut self) -> HashMap<ChunkPos, (ChunkMesh, Option<T>)> {
+    fn poll_completed(&mut self) -> HashMap<ChunkPos, (ChunkMesh, T)> {
+        // Convert DecoratedData to T.
         std::mem::take(&mut self.latest_builded_chunks)
+            .into_iter()
+            .map(|(pos, (mesh, data))| (pos, (mesh, data.data)))
+            .collect()
     }
 }
 
-impl<T: Send + Sync> Versioned for VersionedChunkBuilder<T> {
+impl<T: Send + Sync + Default> Versioned<T> for VersionedChunkBuilder<T> {
     fn is_chunk_with_latest_version_built(&self, chunk_pos: ChunkPos) -> bool {
         let version = self.get_chunk_mesh_version(chunk_pos);
-        self.latest_builded_chunks.contains_key(&chunk_pos)
+
+        if let Some(chunk) = self.latest_builded_chunks.get(&chunk_pos) {
+            dbg!(version, chunk.1.version);
+            chunk.1.version == version
+        } else {
+            false
+        }
     }
 
-    fn take_chunk_built_with_latest_version(&mut self, chunk_pos: ChunkPos) -> Option<ChunkMesh> {
-        unimplemented!()
+    fn take_chunk_built_with_latest_version(
+        &mut self,
+        chunk_pos: ChunkPos,
+    ) -> Option<(ChunkMesh, T)> {
+        self.latest_builded_chunks
+            .remove(&chunk_pos)
+            .map(|(mesh, data)| (mesh, data.data))
     }
 }
 
@@ -128,5 +147,24 @@ mod tests {
 
         let version = builder.get_chunk_mesh_version(chunk_pos);
         assert_eq!(version, 0);
+    }
+
+    #[test]
+    fn test_build_chunk() {
+        let inner_builder = Box::new(DummyChunkBuilder::new());
+        let mut builder = VersionedChunkBuilder::<u32>::new(inner_builder);
+        let chunk_pos = ChunkPos::new(0, 0, 0);
+        let chunk = Chunk::default();
+
+        builder.build_chunk(chunk_pos, &chunk, 42);
+        builder.update(ChunkPos::new(0, 0, 0));
+
+        assert!(builder.is_chunk_with_latest_version_built(chunk_pos));
+
+        let builded_chunk = builder.take_chunk_built_with_latest_version(chunk_pos);
+        assert!(builded_chunk.is_some());
+
+        let (_chunk_mesh, additional_data) = builded_chunk.unwrap();
+        assert_eq!(additional_data, 42);
     }
 }
