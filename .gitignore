@@ -20,4 +20,10 @@ Cargo.lock
 generate-graphs.sh
 graph1.png
 graph2.png
+
 /.cargo
+
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/settings.json
