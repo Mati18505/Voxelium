@@ -73,6 +73,7 @@ fn main() {
                 )
                 .load_collection::<VoxelAssets>(),
         )
+        .add_systems(OnExit(AppStates::Loading), create_resources)
         .add_systems(OnExit(AppStates::Loading), init_level)
         .add_systems(Update, update.run_if(in_state(AppStates::InGame)))
         .run();
@@ -90,32 +91,13 @@ struct VoxelAssets {
     server_blocks: Handle<BevyBlockTypeStorageResource>,
 }
 
-fn init_level(
+fn create_resources(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut ambient_light: ResMut<AmbientLight>,
     block_type_assets: Res<Assets<MeshBlockTypeStorageResource>>,
     server_block_type_assets: Res<Assets<BevyBlockTypeStorageResource>>,
     textures_assets: Res<Assets<TextureConfig>>,
     voxel_assets: Res<VoxelAssets>,
 ) {
-    commands.spawn((
-        Mesh3d(meshes.add(Plane3d::new(Vec3::Y, Vec2::splat(5.0)))),
-        MeshMaterial3d(materials.add(Color::srgb(0.3, 0.5, 0.3))),
-        Transform::from_translation(Vec3::new(0.0, -0.5, 0.0)),
-        GlobalTransform::default(),
-    ));
-
-    ambient_light.color = Color::WHITE;
-    ambient_light.brightness = 100.0;
-
-    commands.spawn((
-        DirectionalLight { ..default() },
-        Transform::from_xyz(11.0, 20.0, 4.0).looking_at(Vec3::ZERO, Vec3::Y),
-        GlobalTransform::default(),
-    ));
-
     let block_type_storage = block_type_assets
         .get(&voxel_assets.block_type_storage)
         .unwrap()
@@ -142,6 +124,29 @@ fn init_level(
     });
 
     init_block_names(server_block_type_storage_asset.into());
+}
+
+fn init_level(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut ambient_light: ResMut<AmbientLight>,
+) {
+    commands.spawn((
+        Mesh3d(meshes.add(Plane3d::new(Vec3::Y, Vec2::splat(5.0)))),
+        MeshMaterial3d(materials.add(Color::srgb(0.3, 0.5, 0.3))),
+        Transform::from_translation(Vec3::new(0.0, -0.5, 0.0)),
+        GlobalTransform::default(),
+    ));
+
+    ambient_light.color = Color::WHITE;
+    ambient_light.brightness = 100.0;
+
+    commands.spawn((
+        DirectionalLight { ..default() },
+        Transform::from_xyz(11.0, 20.0, 4.0).looking_at(Vec3::ZERO, Vec3::Y),
+        GlobalTransform::default(),
+    ));
 }
 
 fn update(
