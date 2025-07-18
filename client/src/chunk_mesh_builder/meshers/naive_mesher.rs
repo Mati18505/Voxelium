@@ -10,12 +10,12 @@ use crate::chunk_mesh_builder::{
 use super::{ChunkMesher, MesherOutput, MesherWarning};
 
 #[derive(Debug, Clone)]
-pub struct VoxelMesher {
+pub struct NaiveMesher {
     block_type_storage: Arc<MeshBlockTypeStorage>,
     texture_dictionary: Arc<TextureDictionary>,
 }
 
-impl ChunkMesher for VoxelMesher {
+impl ChunkMesher for NaiveMesher {
     fn create_mesh(&self, chunk: &Chunk) -> MesherOutput {
         let mut chunk_mesh = ChunkMesh::default();
         let mut warnings: Vec<MesherWarning> = Vec::default();
@@ -53,12 +53,12 @@ impl ChunkMesher for VoxelMesher {
     }
 }
 
-impl VoxelMesher {
+impl NaiveMesher {
     pub fn new(
         block_type_storage: Arc<MeshBlockTypeStorage>,
         texture_dictionary: Arc<TextureDictionary>,
     ) -> Self {
-        VoxelMesher {
+        NaiveMesher {
             block_type_storage,
             texture_dictionary,
         }

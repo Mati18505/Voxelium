@@ -8,7 +8,7 @@ use crate::{
     bevy_render::VoxelMaterial,
     bevy_types::{AppStates, GameResources},
     chunk_manager::{ChunkObjectEvent, WorldChunkUpdate},
-    chunk_mesh_builder::meshers::naive_mesher::VoxelMesher,
+    chunk_mesh_builder::meshers::naive_mesher::NaiveMesher,
     controller,
 };
 
@@ -34,7 +34,7 @@ pub struct ChunkManagerResources {
 }
 
 fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>) {
-    let voxel_mesher = VoxelMesher::new(
+    let voxel_mesher = NaiveMesher::new(
         game_resources.block_type_storage.clone(),
         game_resources.texture_dictionary.clone(),
     );
