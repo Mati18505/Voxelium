@@ -88,7 +88,6 @@ fn update(
         chunk_manager_resources
             .chunk_manager
             .update_controller_pos(new_chunk_pos);
-        dbg!(&chunk_manager_resources.chunk_manager);
     }
 
     chunk_manager_resources.chunk_manager.check_loaded_chunks();
