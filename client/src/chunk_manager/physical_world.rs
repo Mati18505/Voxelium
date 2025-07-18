@@ -9,14 +9,11 @@ use crate::chunk_mesh_builder::ChunkMesh;
 
 use super::ChunkState;
 
-pub type Version = u64;
-
 #[derive(Default, Clone, PartialEq)]
 pub struct PhysicalWorld {
     pub world: World,
     pub chunk_meshes: HashMap<ChunkPos, ChunkMesh>,
     pub chunk_states: HashMap<ChunkPos, ChunkState>,
-    chunk_mesh_versions: HashMap<ChunkPos, Version>,
     chunks_need_rebuild: HashSet<ChunkPos>,
 }
 
@@ -37,19 +34,6 @@ impl PhysicalWorld {
             .get(&pos)
             .copied()
             .unwrap_or(ChunkState::Empty)
-    }
-
-    pub fn increment_chunk_mesh_version(&mut self, pos: ChunkPos) -> Version {
-        let incremented_version = *self
-            .chunk_mesh_versions
-            .entry(pos)
-            .and_modify(|e| *e = e.wrapping_add(1))
-            .or_insert(1);
-        Version::from(incremented_version)
-    }
-
-    pub fn get_chunk_mesh_version(&self, pos: ChunkPos) -> Version {
-        self.chunk_mesh_versions.get(&pos).copied().unwrap_or(0)
     }
 
     pub fn set_chunk_need_rebuild(&mut self, pos: ChunkPos) {
@@ -81,7 +65,6 @@ impl ChunkRepository for PhysicalWorld {
     fn remove_chunk(&mut self, pos: ChunkPos) {
         self.chunk_meshes.remove(&pos);
         self.chunk_states.remove(&pos);
-        self.chunk_mesh_versions.remove(&pos);
         self.world.remove_chunk(pos);
     }
 
@@ -113,7 +96,6 @@ impl fmt::Debug for PhysicalWorld {
             .field("chunks", &self.world.chunks.len())
             .field("chunk_meshes", &self.chunk_meshes.len())
             .field("chunk_states", &self.chunk_states.len())
-            .field("chunk_mesh_versions", &self.chunk_mesh_versions.len())
             .field("empty", &empty)
             .field("loading", &loading)
             .field("loaded", &loaded)

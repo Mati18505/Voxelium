@@ -12,7 +12,7 @@ use crate::chunk_mesh_builder::{
 
 use super::{chunk_state, ChunkState, ChunkStatus, ChunkTransition};
 
-use super::physical_world::{PhysicalWorld, Version};
+use super::physical_world::PhysicalWorld;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WorldChunkUpdate {
