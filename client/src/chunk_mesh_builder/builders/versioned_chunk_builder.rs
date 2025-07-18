@@ -117,20 +117,10 @@ impl<T: Send + Sync + Default> ChunkBuilder<T> for VersionedChunkBuilder<T> {
         self.latest_chunk_mesh_versions.clear();
     }
 
-    /// Returns only chunks that are built with the latest version.
+    /// Returns all chunks built with latest data (latest call to `build_chunk`).
+    /// It will not return chunks that have been replaced by a newer call to `build_chunk`.
     /// Does not return more than one chunk with the same position.
     fn poll_completed(&mut self) -> Vec<(ChunkPos, (ChunkMesh, T))> {
-        let chunks_to_cleanup: Vec<ChunkPos> = self
-            .latest_built_chunks
-            .iter()
-            .map(|(chunk_pos, _)| chunk_pos)
-            .copied()
-            .collect();
-
-        for chunk_pos in chunks_to_cleanup {
-            self.latest_chunk_mesh_versions.remove(&chunk_pos);
-        }
-
         // Convert DecoratedData to T.
         std::mem::take(&mut self.latest_built_chunks)
             .into_iter()
@@ -343,6 +333,7 @@ mod tests {
         let chunk = Chunk::default();
 
         // Poll Completed should remove data of returned chunks.
+        // But shouldn't remove version.
         builder.build_chunk(chunk_pos, &chunk, ());
         builder.update(player_pos);
 
@@ -352,7 +343,7 @@ mod tests {
         builder.poll_completed();
 
         assert_eq!(builder.latest_built_chunks.len(), 0);
-        assert_eq!(builder.latest_chunk_mesh_versions.len(), 0);
+        assert_eq!(builder.latest_chunk_mesh_versions.len(), 1);
 
         // Clear all should remove data of all chunks.
         builder.build_chunk(chunk_pos, &chunk, ());
