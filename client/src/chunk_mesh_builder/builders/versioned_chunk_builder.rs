@@ -60,6 +60,8 @@ impl<T: Send + Sync + Default> VersionedChunkBuilder<T> {
     }
 
     fn increment_chunk_mesh_version(&mut self, pos: ChunkPos) -> Version {
+        self.latest_builded_chunks.remove(&pos);
+
         let incremented_version = *self
             .latest_chunk_mesh_versions
             .entry(pos)
@@ -200,15 +202,13 @@ mod tests {
     }
 
     #[test]
-    fn test_chunk_always_has_newest_version() {
+    fn test_chunk_versioning() {
         let inner_builder = Box::new(DelayedDummyChunkBuilder::new());
         let mut builder = VersionedChunkBuilder::<DelayedData<i32>>::new(inner_builder);
         let chunk_pos = ChunkPos::new(0, 0, 0);
         let player_pos = ChunkPos::new(0, 0, 0);
         let chunk = Chunk::default();
-        let mut newest_data = 0;
 
-        // Build initial chunks with different data.
         builder.build_chunk(
             chunk_pos,
             &chunk,
@@ -217,22 +217,32 @@ mod tests {
                 custom_data: -20,
             },
         );
+
+        builder.update(player_pos);
+        assert_eq!(builder.is_chunk_with_latest_version_built(chunk_pos), true);
+
         builder.build_chunk(
             chunk_pos,
             &chunk,
             DelayedData {
-                build_delay: 20,
+                build_delay: 0,
                 custom_data: -10,
             },
         );
-        builder.build_chunk(
-            chunk_pos,
-            &chunk,
-            DelayedData {
-                build_delay: 10,
-                custom_data: newest_data,
-            },
-        );
+
+        assert_eq!(builder.is_chunk_with_latest_version_built(chunk_pos), false);
+        builder.update(player_pos);
+        assert_eq!(builder.is_chunk_with_latest_version_built(chunk_pos), true);
+    }
+
+    #[test]
+    fn test_chunk_always_has_newest_version() {
+        let inner_builder = Box::new(DelayedDummyChunkBuilder::new());
+        let mut builder = VersionedChunkBuilder::<DelayedData<i32>>::new(inner_builder);
+        let chunk_pos = ChunkPos::new(0, 0, 0);
+        let player_pos = ChunkPos::new(0, 0, 0);
+        let chunk = Chunk::default();
+        let mut newest_data = 0;
 
         for frame in 0..50 {
             // Every 4th frame, we build a new chunk with the newest data.
