@@ -70,8 +70,20 @@ impl<T: Send + Sync + Default> ChunkBuilder<T> for VersionedChunkBuilder<T> {
     fn update(&mut self, player_pos: ChunkPos) {
         self.chunk_builder.update(player_pos);
 
-        self.latest_builded_chunks
-            .extend(self.chunk_builder.poll_completed());
+        let completed: HashMap<ChunkPos, (ChunkMesh, DecoratedData<T>)> = self
+            .chunk_builder
+            .poll_completed()
+            .into_iter()
+            .filter(|(chunk_pos, (_, decorated_data))| {
+                let latest_chunk_mesh_version = self.get_chunk_mesh_version(*chunk_pos);
+
+                decorated_data.version == latest_chunk_mesh_version
+            })
+            .collect();
+
+        let dbg: Vec<&ChunkPos> = completed.iter().map(|(chunk_pos, _)| chunk_pos).collect();
+
+        self.latest_builded_chunks.extend(completed);
     }
 
     fn remove_chunk(&mut self, chunk_pos: ChunkPos) {
@@ -97,7 +109,6 @@ impl<T: Send + Sync + Default> Versioned<T> for VersionedChunkBuilder<T> {
         let version = self.get_chunk_mesh_version(chunk_pos);
 
         if let Some(chunk) = self.latest_builded_chunks.get(&chunk_pos) {
-            dbg!(version, chunk.1.version);
             chunk.1.version == version
         } else {
             false
@@ -116,6 +127,8 @@ impl<T: Send + Sync + Default> Versioned<T> for VersionedChunkBuilder<T> {
 
 #[cfg(test)]
 mod tests {
+    use crate::chunk_mesh_builder::builders::delayed_dummy_chunk_builder::DelayedDummyChunkBuilder;
+
     use super::*;
     use shared::entities::{Chunk, ChunkPos};
 
@@ -166,5 +179,36 @@ mod tests {
 
         let (_chunk_mesh, additional_data) = builded_chunk.unwrap();
         assert_eq!(additional_data, 42);
+    }
+
+    #[test]
+    fn test_chunk_always_has_newest_version() {
+        let inner_builder = Box::new(DelayedDummyChunkBuilder::new());
+        let mut builder = VersionedChunkBuilder::<i32>::new(inner_builder);
+        let chunk_pos = ChunkPos::new(0, 0, 0);
+        let player_pos = ChunkPos::new(0, 0, 0);
+        let chunk = Chunk::default();
+        let mut newest_data = 0;
+
+        // Build initial chunks with different data.
+        builder.build_chunk(chunk_pos, &chunk, -20);
+        builder.build_chunk(chunk_pos, &chunk, -69);
+        builder.build_chunk(chunk_pos, &chunk, -50);
+        builder.build_chunk(chunk_pos, &chunk, newest_data);
+
+        for frame in 0..50 {
+            // Every 4th frame, we build a new chunk with the newest data.
+            if frame % 4 == 0 {
+                newest_data += 1;
+                builder.build_chunk(chunk_pos, &chunk, newest_data);
+            }
+
+            builder.update(player_pos);
+
+            for (chunk_pos, (chunk_mesh, value)) in builder.poll_completed() {
+                // Check if builded chunk returned from poll_completed always is newest.
+                assert_eq!(value, newest_data);
+            }
+        }
     }
 }

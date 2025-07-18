@@ -6,6 +6,8 @@ use crate::chunk_mesh_builder::ChunkMesh;
 
 use super::chunk_builder::ChunkBuilder;
 
+/// A dummy chunk builder that simply simulates chunk building without any delay.
+/// This is useful for testing purposes.
 pub struct DummyChunkBuilder<T> {
     _marker: PhantomData<T>,
     builded_chunks: HashMap<ChunkPos, (ChunkMesh, T)>,
