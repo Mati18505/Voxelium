@@ -3,9 +3,12 @@ use shared::{
     chunk_io::chunk_loader,
     entities::{Chunk, ChunkPos, ChunkRepository, CHUNK_SIZE},
 };
-use std::fmt;
+use std::{fmt, sync::Arc};
 
-use crate::chunk_mesh_builder::ChunkMesh;
+use crate::chunk_mesh_builder::{
+    builders::{versioned_chunk_builder::VersionedChunkBuilder, ChunkBuilder, Versioned},
+    ChunkMesh,
+};
 
 use super::{chunk_state, ChunkState, ChunkStatus, ChunkTransition};
 
@@ -21,17 +24,6 @@ pub struct WorldChunkUpdate {
 pub enum ChunkObjectEvent {
     Created(ChunkPos, ChunkMesh),
     Removed(ChunkPos),
-}
-
-pub trait ChunkBuilder: Send + Sync + fmt::Debug {
-    fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk, version: Version);
-    fn update(&mut self, player_pos: ChunkPos);
-    fn take_built_chunk_mesh_by_version(
-        &mut self,
-        chunk_pos: ChunkPos,
-        version: Version,
-    ) -> Option<ChunkMesh>;
-    fn is_chunk_mesh_built_with_version(&self, chunk_pos: ChunkPos, version: Version) -> bool;
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -56,11 +48,13 @@ impl Config {
     }
 }
 
+// pub trait VersionedChunkBuilder : ChunkBuilder + Versioned {}
+
 /// Manage chunks dependent on controller position.
 pub struct ChunkManager {
     world: PhysicalWorld,
     chunk_loader: chunk_loader::ChunkLoader,
-    chunk_builder: Box<dyn ChunkBuilder>,
+    chunk_builder: Box<VersionedChunkBuilder<()>>,
     chunk_object_tx: Option<crossbeam_channel::Sender<ChunkObjectEvent>>,
     event_tx: Option<crossbeam_channel::Sender<WorldChunkUpdate>>,
     config: Config,
@@ -70,7 +64,7 @@ pub struct ChunkManager {
 impl ChunkManager {
     pub fn new(
         chunk_loader: chunk_loader::ChunkLoader,
-        chunk_builder: Box<dyn ChunkBuilder>,
+        chunk_builder: Box<VersionedChunkBuilder<()>>,
         config: Config,
     ) -> Self {
         ChunkManager {
@@ -295,11 +289,11 @@ impl ChunkManager {
                 // TODO: Remove mesh from chunk builder.
             }
             ToDrawToDrawn => {
-                let version = self.world.get_chunk_mesh_version(pos);
                 let mesh = self
                     .chunk_builder
-                    .take_built_chunk_mesh_by_version(pos, version)
-                    .expect("ChunkState is drawn, but mesh is not built.");
+                    .take_chunk_built_with_latest_version(pos)
+                    .expect("ChunkState is drawn, but mesh is not built.")
+                    .0;
 
                 self.world.add_chunk_mesh(pos, mesh.clone());
 
@@ -316,15 +310,12 @@ impl ChunkManager {
     }
 
     fn pass_chunk_to_builder(&mut self, pos: ChunkPos) {
-        let new_mesh_version = self.world.increment_chunk_mesh_version(pos);
-        //println!("Passing chunk to builder: {:?}, version: {}", pos, new_mesh_version);
-
         let chunk = self
             .world
             .get_chunk(pos)
             .expect("Chunk is passed to builder, but it is not loaded.");
 
-        self.chunk_builder.build_chunk(pos, chunk, new_mesh_version);
+        self.chunk_builder.build_chunk(pos, chunk, ());
         self.world.remove_chunk_need_rebuild(pos);
     }
 
@@ -358,10 +349,7 @@ impl ChunkManager {
         let is_within_render = self.is_within_distance(pos, self.config.render_distance);
         let is_within_load = self.is_within_distance(pos, self.config.load_distance);
         let loaded = self.world.get_chunk(pos).is_some();
-        let mesh_version = self.world.get_chunk_mesh_version(pos);
-        let mesh_built = self
-            .chunk_builder
-            .is_chunk_mesh_built_with_version(pos, mesh_version);
+        let mesh_built = self.chunk_builder.is_chunk_with_latest_version_built(pos);
         let needs_rebuild = self.world.get_chunk_need_rebuild(pos);
 
         ChunkStatus {

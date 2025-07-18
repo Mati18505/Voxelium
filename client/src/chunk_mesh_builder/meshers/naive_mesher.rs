@@ -1,56 +1,25 @@
 use std::{fmt, sync::Arc};
 
 use cgmath::Vector3;
-use shared::entities::{BlockID, BlockInChunkPos, BlockSide, BlockStorage, Direction};
+use shared::entities::{BlockID, BlockInChunkPos, BlockSide, BlockStorage, Chunk, Direction};
 
-use super::{
-    ChunkMesh, LayerMesh, MeshBlockType, MeshBlockTypeStorage, TextureDictionary, TextureName,
+use crate::chunk_mesh_builder::{
+    ChunkMesh, LayerMesh, MeshBlockType, MeshBlockTypeStorage, TextureDictionary,
 };
 
+use super::{ChunkMesher, MesherOutput, MesherWarning};
+
 #[derive(Debug, Clone)]
-pub struct VoxelMesher {
+pub struct NaiveMesher {
     block_type_storage: Arc<MeshBlockTypeStorage>,
     texture_dictionary: Arc<TextureDictionary>,
-    last_error: Option<MesherError>,
 }
 
-#[derive(Debug, Clone)]
-pub enum MesherError {
-    UnknownBlockType(BlockID),
-    UnknownTextureName(TextureName),
-}
-
-impl fmt::Display for MesherError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match self {
-            Self::UnknownBlockType(block_id) => {
-                format!("Voxel mesher encountered unknown block type. BlockId = {block_id}")
-            }
-            Self::UnknownTextureName(texture_name) => {
-                format!(
-                    "Voxel mesher encountered unknown texture name. texture_name = {texture_name}"
-                )
-            }
-        };
-        write!(f, "{s}")
-    }
-}
-
-impl VoxelMesher {
-    pub fn new(
-        block_type_storage: Arc<MeshBlockTypeStorage>,
-        texture_dictionary: Arc<TextureDictionary>,
-    ) -> Self {
-        VoxelMesher {
-            block_type_storage,
-            texture_dictionary,
-            last_error: None,
-        }
-    }
-
-    pub fn create_mesh(&mut self, block_storage: &BlockStorage) -> ChunkMesh {
+impl ChunkMesher for NaiveMesher {
+    fn create_mesh(&self, chunk: &Chunk) -> MesherOutput {
         let mut chunk_mesh = ChunkMesh::default();
-        let mut last_err = None;
+        let mut warnings: Vec<MesherWarning> = Vec::default();
+        let block_storage = chunk.get_block_storage();
 
         for (index, block_id) in block_storage.iter().enumerate() {
             let pos = BlockInChunkPos::from_index(index);
@@ -68,32 +37,31 @@ impl VoxelMesher {
                         BlockInChunkPos::new(pos.x, pos.y, pos.z),
                         layer_mesh,
                         block_storage,
+                        &mut warnings,
                     );
-
-                    if let Err(err) = result {
-                        last_err = Some(err);
-                    }
                 }
                 None => {
-                    last_err = Some(MesherError::UnknownBlockType(*block_id));
-                    continue;
+                    warnings.push(MesherWarning::UnknownBlockType(*block_id, pos));
                 }
             }
         }
 
-        if let Some(err) = last_err {
-            self.set_last_err(err);
+        MesherOutput {
+            mesh: chunk_mesh,
+            warnings,
         }
-
-        chunk_mesh
     }
+}
 
-    pub fn get_last_err(&self) -> &Option<MesherError> {
-        &self.last_error
-    }
-
-    fn set_last_err(&mut self, err: MesherError) {
-        self.last_error = Some(err);
+impl NaiveMesher {
+    pub fn new(
+        block_type_storage: Arc<MeshBlockTypeStorage>,
+        texture_dictionary: Arc<TextureDictionary>,
+    ) -> Self {
+        NaiveMesher {
+            block_type_storage,
+            texture_dictionary,
+        }
     }
 
     fn create_block(
@@ -102,38 +70,28 @@ impl VoxelMesher {
         pos: BlockInChunkPos,
         mesh: &mut LayerMesh,
         block_storage: &BlockStorage,
-    ) -> Result<(), MesherError> {
+        warnings: &mut Vec<MesherWarning>,
+    ) {
         use BlockSide::*;
-        if !block_type.is_visible {
-            return Ok(());
-        }
 
-        let mut last_err = None;
+        if !block_type.is_visible {
+            return;
+        }
 
         for side in [Top, Bottom, Left, Right, Front, Back] {
             let result = self.has_translucent_neighbor(side, pos, block_storage);
 
             let has_transparent_neighbor = match result {
                 Err(err) => {
-                    last_err = Some(err);
+                    warnings.push(err);
                     true
                 }
                 Ok(has_transparent_neighbor) => has_transparent_neighbor,
             };
 
             if has_transparent_neighbor {
-                let result = self.create_block_side(side, pos, block_type, mesh);
-
-                if let Err(err) = result {
-                    last_err = Some(err);
-                }
+                self.create_block_side(side, pos, block_type, mesh, warnings);
             }
-        }
-
-        if let Some(err) = last_err {
-            Err(err)
-        } else {
-            Ok(())
         }
     }
 
@@ -142,13 +100,13 @@ impl VoxelMesher {
         side: BlockSide,
         pos: BlockInChunkPos,
         block_storage: &BlockStorage,
-    ) -> Result<bool, MesherError> {
+    ) -> Result<bool, MesherWarning> {
         if let Some(neighbor_pos) = self.get_neighbor_pos(pos, side) {
             let neighbor_id: BlockID = block_storage.get_block(neighbor_pos);
             let neighbor_block_type: &MeshBlockType = self
                 .block_type_storage
                 .get_block_type_from_id(neighbor_id)
-                .ok_or(MesherError::UnknownBlockType(neighbor_id))?;
+                .ok_or(MesherWarning::UnknownBlockType(neighbor_id, pos))?;
 
             return Ok(neighbor_block_type.is_translucent);
         }
@@ -165,15 +123,14 @@ impl VoxelMesher {
     fn create_block_side(
         &self,
         side: BlockSide,
-        pos: BlockInChunkPos,
+        block_pos: BlockInChunkPos,
         block_type: &MeshBlockType,
         mesh: &mut LayerMesh,
-    ) -> Result<(), MesherError> {
-        let mut last_err = None;
-
-        let pos_x = pos.x as f32;
-        let pos_y = pos.y as f32;
-        let pos_z = pos.z as f32;
+        warnings: &mut Vec<MesherWarning>,
+    ) {
+        let pos_x = block_pos.x as f32;
+        let pos_y = block_pos.y as f32;
+        let pos_z = block_pos.z as f32;
         let pos = Vector3::new(pos_x, pos_y, pos_z);
 
         let front_vertices: [Vector3<f32>; 4] = [
@@ -294,7 +251,10 @@ impl VoxelMesher {
             let texture_index: u32 = match result {
                 Some(index) => index,
                 None => {
-                    last_err = Some(MesherError::UnknownTextureName(texture_name.to_owned()));
+                    warnings.push(MesherWarning::UnknownTextureName(
+                        texture_name.to_owned(),
+                        block_pos,
+                    ));
                     0
                 }
             };
@@ -314,11 +274,5 @@ impl VoxelMesher {
         }
 
         mesh.vertex_index += 4;
-
-        if let Some(err) = last_err {
-            Err(err)
-        } else {
-            Ok(())
-        }
     }
 }

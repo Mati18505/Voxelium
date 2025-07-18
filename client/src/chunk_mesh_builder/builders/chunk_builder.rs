@@ -1,11 +1,11 @@
-use crate::chunk_mesh_builder::{ChunkMesh, VoxelMesher};
-use shared::entities::{Chunk, ChunkPos};
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Debug};
 
-pub trait ChunkBuilder<T: Send + Sync + Default> {
+use crate::chunk_mesh_builder::{meshers::chunk_mesher, ChunkMesh};
+use shared::entities::{Chunk, ChunkPos};
+
+pub trait ChunkBuilder<T: Send + Sync + Default>: Debug + Send + Sync {
     /// Adds a chunk to the builder.
     /// Additional data can be used to store version or other metadata.
-    /// If chunk with the same position exists in builder, or is built, it will be replaced.
     fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk, additional_data: T);
 
     /// Updates the builder state based on the player's position.
@@ -19,9 +19,9 @@ pub trait ChunkBuilder<T: Send + Sync + Default> {
     /// Removes all chunks from the builder, cancelling all build operations.
     fn clear_all(&mut self);
 
-    /// Returns a map of all built chunks and additional data.
-    /// Removes chunk from the builder.
-    fn poll_completed(&mut self) -> HashMap<ChunkPos, (ChunkMesh, T)>;
+    /// Returns a vector of all built chunks and additional data.
+    /// Returned chunks are removed from the builder.
+    fn poll_completed(&mut self) -> Vec<(ChunkPos, (ChunkMesh, T))>;
 }
 
 pub trait Versioned<T: Send + Sync + Default> {
@@ -30,7 +30,7 @@ pub trait Versioned<T: Send + Sync + Default> {
 
     /// Returns a chunk built with the latest version.
     /// If latest version is different than version of the chunk, or no chunk is built, it will return None.
-    /// Restarts chunk versioning for the chunk and removes chunk from the builder.
+    /// Returned chunk is removed from the builder.
     fn take_chunk_built_with_latest_version(
         &mut self,
         chunk_pos: ChunkPos,
