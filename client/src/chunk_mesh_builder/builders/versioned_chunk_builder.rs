@@ -69,6 +69,11 @@ impl<T: Send + Sync + Default> VersionedChunkBuilder<T> {
             .or_insert(1);
         Version::from(incremented_version)
     }
+
+    fn cleanup_chunk_data(&mut self, chunk_pos: ChunkPos) {
+        self.latest_chunk_mesh_versions.remove(&chunk_pos);
+        self.latest_built_chunks.remove(&chunk_pos);
+    }
 }
 
 impl<T: Send + Sync + Default> ChunkBuilder<T> for VersionedChunkBuilder<T> {
@@ -103,15 +108,29 @@ impl<T: Send + Sync + Default> ChunkBuilder<T> for VersionedChunkBuilder<T> {
 
     fn remove_chunk(&mut self, chunk_pos: ChunkPos) {
         self.chunk_builder.remove_chunk(chunk_pos);
+        self.cleanup_chunk_data(chunk_pos);
     }
 
     fn clear_all(&mut self) {
         self.chunk_builder.clear_all();
+        self.latest_built_chunks.clear();
+        self.latest_chunk_mesh_versions.clear();
     }
 
     /// Returns only chunks that are built with the latest version.
     /// Does not return more than one chunk with the same position.
     fn poll_completed(&mut self) -> Vec<(ChunkPos, (ChunkMesh, T))> {
+        let chunks_to_cleanup: Vec<ChunkPos> = self
+            .latest_built_chunks
+            .iter()
+            .map(|(chunk_pos, _)| chunk_pos)
+            .copied()
+            .collect();
+
+        for chunk_pos in chunks_to_cleanup {
+            self.latest_chunk_mesh_versions.remove(&chunk_pos);
+        }
+
         // Convert DecoratedData to T.
         std::mem::take(&mut self.latest_built_chunks)
             .into_iter()
@@ -312,5 +331,51 @@ mod tests {
         }
 
         assert_eq!(total_built, 1);
+    }
+
+    #[test]
+    fn test_data_cleanup() {
+        let inner_builder = Box::new(DummyChunkBuilder::new());
+        let mut builder = VersionedChunkBuilder::<()>::new(inner_builder);
+        let chunk_pos = ChunkPos::new(0, 0, 0);
+        let player_pos = ChunkPos::new(0, 0, 0);
+        let chunk = Chunk::default();
+
+        // Poll Completed should remove data of returned chunks.
+        builder.build_chunk(chunk_pos, &chunk, ());
+        builder.update(player_pos);
+
+        assert_eq!(builder.latest_built_chunks.len(), 1);
+        assert_eq!(builder.latest_chunk_mesh_versions.len(), 1);
+
+        builder.poll_completed();
+
+        assert_eq!(builder.latest_built_chunks.len(), 0);
+        assert_eq!(builder.latest_chunk_mesh_versions.len(), 0);
+
+        // Clear all should remove data of all chunks.
+        builder.build_chunk(chunk_pos, &chunk, ());
+        builder.build_chunk(ChunkPos::new(16, 0, 0), &chunk, ());
+        builder.update(player_pos);
+
+        builder.clear_all();
+
+        assert_eq!(builder.latest_built_chunks.len(), 0);
+        assert_eq!(builder.latest_chunk_mesh_versions.len(), 0);
+
+        // Remove chunk
+        builder.build_chunk(chunk_pos, &chunk, ());
+        builder.build_chunk(ChunkPos::new(16, 0, 0), &chunk, ());
+        builder.update(player_pos);
+
+        builder.remove_chunk(chunk_pos);
+
+        assert_eq!(builder.latest_built_chunks.len(), 1);
+        assert_eq!(builder.latest_chunk_mesh_versions.len(), 1);
+
+        builder.remove_chunk(ChunkPos::new(16, 0, 0));
+
+        assert_eq!(builder.latest_built_chunks.len(), 0);
+        assert_eq!(builder.latest_chunk_mesh_versions.len(), 0);
     }
 }
