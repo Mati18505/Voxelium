@@ -1,19 +1,22 @@
 use std::{
     collections::{HashMap, VecDeque},
     marker::PhantomData,
+    ops::{Deref, DerefMut},
 };
 
-use rand::Rng;
-use shared::entities::{Chunk, ChunkPos};
-
-use crate::chunk_mesh_builder::ChunkMesh;
-
 use super::chunk_builder::ChunkBuilder;
+use crate::chunk_mesh_builder::ChunkMesh;
+use shared::entities::{Chunk, ChunkPos};
 
 struct QueuedChunk<T> {
     mesh: ChunkMesh,
     additional_data: T,
-    delay: u32,
+}
+
+#[derive(Default)]
+pub struct DelayedData<C> {
+    pub build_delay: u32,
+    pub custom_data: C,
 }
 
 /// A dummy chunk builder that simulates chunk building with a delay.
@@ -34,9 +37,12 @@ impl<T> DelayedDummyChunkBuilder<T> {
     }
 }
 
-impl<T: Send + Sync + Default> ChunkBuilder<T> for DelayedDummyChunkBuilder<T> {
+impl<T, C> ChunkBuilder<T> for DelayedDummyChunkBuilder<T>
+where
+    T: Send + Sync + Default + DerefMut<Target = DelayedData<C>>,
+    C: Send + Sync + Default,
+{
     fn build_chunk(&mut self, chunk_pos: ChunkPos, _chunk: &Chunk, additional_data: T) {
-        let delay = rand::thread_rng().random_range(0..5);
         let mesh = ChunkMesh::default();
 
         self.queued.insert(
@@ -44,7 +50,6 @@ impl<T: Send + Sync + Default> ChunkBuilder<T> for DelayedDummyChunkBuilder<T> {
             QueuedChunk {
                 mesh,
                 additional_data,
-                delay,
             },
         );
     }
@@ -53,10 +58,10 @@ impl<T: Send + Sync + Default> ChunkBuilder<T> for DelayedDummyChunkBuilder<T> {
         let mut completed: Vec<ChunkPos> = Vec::default();
 
         for (chunk_pos, chunk) in self.queued.iter_mut() {
-            if chunk.delay <= 0 {
+            if chunk.additional_data.build_delay == 0 {
                 completed.push(*chunk_pos);
             } else {
-                chunk.delay -= 1;
+                chunk.additional_data.build_delay -= 1;
             }
         }
 

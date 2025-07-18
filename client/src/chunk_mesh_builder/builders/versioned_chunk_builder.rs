@@ -1,11 +1,12 @@
-use std::collections::HashMap;
-
-use super::dummy_chunk_builder::DummyChunkBuilder;
-use shared::entities::{Chunk, ChunkPos};
-
-use crate::chunk_mesh_builder::{builders::ChunkBuilder, ChunkMesh};
+use std::{
+    collections::HashMap,
+    ops::{Deref, DerefMut},
+};
 
 use super::chunk_builder::Versioned;
+use super::dummy_chunk_builder::DummyChunkBuilder;
+use crate::chunk_mesh_builder::{builders::ChunkBuilder, ChunkMesh};
+use shared::entities::{Chunk, ChunkPos};
 
 pub struct VersionedChunkBuilder<T: Send + Sync + Default> {
     /// Internal chunk builder.
@@ -25,6 +26,20 @@ type Version = u64;
 struct DecoratedData<T: Send + Sync + Default> {
     pub data: T,
     version: Version,
+}
+
+impl<T: Send + Sync + Default> Deref for DecoratedData<T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        &self.data
+    }
+}
+
+impl<T: Send + Sync + Default> DerefMut for DecoratedData<T> {
+    fn deref_mut(&mut self) -> &mut T {
+        &mut self.data
+    }
 }
 
 impl<T: Send + Sync + Default> VersionedChunkBuilder<T> {
@@ -127,9 +142,12 @@ impl<T: Send + Sync + Default> Versioned<T> for VersionedChunkBuilder<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::chunk_mesh_builder::builders::delayed_dummy_chunk_builder::DelayedDummyChunkBuilder;
+    use crate::chunk_mesh_builder::builders::delayed_dummy_chunk_builder::{
+        self, DelayedData, DelayedDummyChunkBuilder,
+    };
 
     use super::*;
+    use rand::Rng;
     use shared::entities::{Chunk, ChunkPos};
 
     #[test]
@@ -184,30 +202,58 @@ mod tests {
     #[test]
     fn test_chunk_always_has_newest_version() {
         let inner_builder = Box::new(DelayedDummyChunkBuilder::new());
-        let mut builder = VersionedChunkBuilder::<i32>::new(inner_builder);
+        let mut builder = VersionedChunkBuilder::<DelayedData<i32>>::new(inner_builder);
         let chunk_pos = ChunkPos::new(0, 0, 0);
         let player_pos = ChunkPos::new(0, 0, 0);
         let chunk = Chunk::default();
         let mut newest_data = 0;
 
         // Build initial chunks with different data.
-        builder.build_chunk(chunk_pos, &chunk, -20);
-        builder.build_chunk(chunk_pos, &chunk, -69);
-        builder.build_chunk(chunk_pos, &chunk, -50);
-        builder.build_chunk(chunk_pos, &chunk, newest_data);
+        builder.build_chunk(
+            chunk_pos,
+            &chunk,
+            DelayedData {
+                build_delay: 0,
+                custom_data: -20,
+            },
+        );
+        builder.build_chunk(
+            chunk_pos,
+            &chunk,
+            DelayedData {
+                build_delay: 20,
+                custom_data: -10,
+            },
+        );
+        builder.build_chunk(
+            chunk_pos,
+            &chunk,
+            DelayedData {
+                build_delay: 10,
+                custom_data: newest_data,
+            },
+        );
 
         for frame in 0..50 {
             // Every 4th frame, we build a new chunk with the newest data.
             if frame % 4 == 0 {
                 newest_data += 1;
-                builder.build_chunk(chunk_pos, &chunk, newest_data);
+                builder.build_chunk(
+                    chunk_pos,
+                    &chunk,
+                    DelayedData {
+                        build_delay: rand::rng().random_range(1..10),
+                        custom_data: newest_data,
+                    },
+                );
             }
 
             builder.update(player_pos);
 
             for (chunk_pos, (chunk_mesh, value)) in builder.poll_completed() {
-                // Check if builded chunk returned from poll_completed always is newest.
-                assert_eq!(value, newest_data);
+                // Check if each built chunk returned from poll_completed is newest.
+                assert_eq!(value.custom_data, newest_data);
+                println!("completed {:?}", value.custom_data);
             }
         }
     }
@@ -215,28 +261,44 @@ mod tests {
     #[test]
     fn test_only_one_chunk_has_newest_version() {
         let inner_builder = Box::new(DelayedDummyChunkBuilder::new());
-        let mut builder = VersionedChunkBuilder::<i32>::new(inner_builder);
+        let mut builder = VersionedChunkBuilder::<DelayedData<i32>>::new(inner_builder);
         let chunk_pos = ChunkPos::new(0, 0, 0);
         let player_pos = ChunkPos::new(0, 0, 0);
         let chunk = Chunk::default();
         let mut total_builded = 0;
 
-        // Build initial chunks with different data.
-        builder.build_chunk(chunk_pos, &chunk, -20);
-        builder.build_chunk(chunk_pos, &chunk, -69);
-        builder.build_chunk(chunk_pos, &chunk, -50);
-        builder.build_chunk(chunk_pos, &chunk, -101);
-        builder.build_chunk(chunk_pos, &chunk, -30);
-        builder.build_chunk(chunk_pos, &chunk, -19);
-        builder.build_chunk(chunk_pos, &chunk, -40);
-        builder.build_chunk(chunk_pos, &chunk, -41);
+        // Build initial chunks with different delay and data.
+        builder.build_chunk(
+            chunk_pos,
+            &chunk,
+            DelayedData {
+                build_delay: 0,
+                custom_data: -20,
+            },
+        );
+        builder.build_chunk(
+            chunk_pos,
+            &chunk,
+            DelayedData {
+                build_delay: 35,
+                custom_data: -10,
+            },
+        );
+        builder.build_chunk(
+            chunk_pos,
+            &chunk,
+            DelayedData {
+                build_delay: 1,
+                custom_data: 30,
+            },
+        );
 
         for frame in 0..50 {
             builder.update(player_pos);
 
             for (chunk_pos, (chunk_mesh, value)) in builder.poll_completed() {
-                // Check if builded chunk returned from poll_completed always is newest.
-                assert_eq!(value, -41);
+                // Check if built chunk returned from poll_completed is newest.
+                assert_eq!(value.custom_data, 30);
                 total_builded += 1;
             }
         }
