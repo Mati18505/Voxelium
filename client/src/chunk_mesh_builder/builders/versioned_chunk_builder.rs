@@ -332,8 +332,8 @@ mod tests {
         let player_pos = ChunkPos::new(0, 0, 0);
         let chunk = Chunk::default();
 
-        // Poll Completed should remove data of returned chunks.
-        // But shouldn't remove version.
+        // `poll_completed` should remove data of returned chunks,
+        // but shouldn't remove the version, because of probable conflict.
         builder.build_chunk(chunk_pos, &chunk, ());
         builder.update(player_pos);
 
@@ -345,7 +345,7 @@ mod tests {
         assert_eq!(builder.latest_built_chunks.len(), 0);
         assert_eq!(builder.latest_chunk_mesh_versions.len(), 1);
 
-        // Clear all should remove data of all chunks.
+        // `clear_all` should remove data and versions of all chunks.
         builder.build_chunk(chunk_pos, &chunk, ());
         builder.build_chunk(ChunkPos::new(16, 0, 0), &chunk, ());
         builder.update(player_pos);
@@ -355,7 +355,7 @@ mod tests {
         assert_eq!(builder.latest_built_chunks.len(), 0);
         assert_eq!(builder.latest_chunk_mesh_versions.len(), 0);
 
-        // Remove chunk
+        // `remove_chunk` should remove both the data and the version of the chunk.
         builder.build_chunk(chunk_pos, &chunk, ());
         builder.build_chunk(ChunkPos::new(16, 0, 0), &chunk, ());
         builder.update(player_pos);
@@ -369,5 +369,19 @@ mod tests {
 
         assert_eq!(builder.latest_built_chunks.len(), 0);
         assert_eq!(builder.latest_chunk_mesh_versions.len(), 0);
+
+        // `take_chunk` should remove data of returned chunk,
+        // but shouldn't remove the version, because of probable conflict.
+        builder.build_chunk(chunk_pos, &chunk, ());
+        builder.build_chunk(ChunkPos::new(16, 0, 0), &chunk, ());
+        builder.update(player_pos);
+
+        assert_eq!(builder.latest_built_chunks.len(), 2);
+        assert_eq!(builder.latest_chunk_mesh_versions.len(), 2);
+
+        builder.take_chunk_built_with_latest_version(chunk_pos);
+
+        assert_eq!(builder.latest_built_chunks.len(), 1);
+        assert_eq!(builder.latest_chunk_mesh_versions.len(), 2);
     }
 }
