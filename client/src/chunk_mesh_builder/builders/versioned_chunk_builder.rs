@@ -110,7 +110,8 @@ impl<T: Send + Sync + Default> ChunkBuilder<T> for VersionedChunkBuilder<T> {
     }
 
     /// Returns only chunks that are built with the latest version.
-    fn poll_completed(&mut self) -> HashMap<ChunkPos, (ChunkMesh, T)> {
+    /// Does not return more than one chunk with the same position.
+    fn poll_completed(&mut self) -> Vec<(ChunkPos, (ChunkMesh, T))> {
         // Convert DecoratedData to T.
         std::mem::take(&mut self.latest_built_chunks)
             .into_iter()
@@ -261,7 +262,6 @@ mod tests {
             for (chunk_pos, (chunk_mesh, value)) in builder.poll_completed() {
                 // Check if each built chunk returned from poll_completed is newest.
                 assert_eq!(value.custom_data, newest_data);
-                println!("completed {:?}", value.custom_data);
             }
         }
     }

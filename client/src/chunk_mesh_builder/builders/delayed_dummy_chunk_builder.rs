@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::HashMap,
     marker::PhantomData,
     ops::{Deref, DerefMut},
 };
@@ -23,16 +23,16 @@ pub struct DelayedData<C> {
 /// This is useful for testing purposes.
 pub struct DelayedDummyChunkBuilder<T> {
     _marker: PhantomData<T>,
-    queued: HashMap<ChunkPos, QueuedChunk<T>>,
-    built_chunks: HashMap<ChunkPos, (ChunkMesh, T)>,
+    queued: Vec<(ChunkPos, QueuedChunk<T>)>,
+    built_chunks: Vec<(ChunkPos, (ChunkMesh, T))>,
 }
 
 impl<T> DelayedDummyChunkBuilder<T> {
     pub fn new() -> Self {
         Self {
             _marker: PhantomData,
-            queued: HashMap::new(),
-            built_chunks: HashMap::new(),
+            queued: Vec::new(),
+            built_chunks: Vec::new(),
         }
     }
 }
@@ -45,37 +45,39 @@ where
     fn build_chunk(&mut self, chunk_pos: ChunkPos, _chunk: &Chunk, additional_data: T) {
         let mesh = ChunkMesh::default();
 
-        self.queued.insert(
+        self.queued.push((
             chunk_pos,
             QueuedChunk {
                 mesh,
                 additional_data,
             },
-        );
+        ));
     }
 
     fn update(&mut self, _player_pos: ChunkPos) {
-        let mut completed: Vec<ChunkPos> = Vec::default();
-
         for (chunk_pos, chunk) in self.queued.iter_mut() {
-            if chunk.additional_data.build_delay == 0 {
-                completed.push(*chunk_pos);
-            } else {
+            if chunk.additional_data.build_delay > 0 {
                 chunk.additional_data.build_delay -= 1;
+            }
+
+            if chunk.additional_data.build_delay == 0 {
+                self.built_chunks.push((
+                    *chunk_pos,
+                    (
+                        std::mem::take(&mut chunk.mesh),
+                        std::mem::take(&mut chunk.additional_data),
+                    ),
+                ));
             }
         }
 
-        for chunk_pos in completed {
-            let chunk = self.queued.remove(&chunk_pos).unwrap();
-            let chunk = (chunk.mesh, chunk.additional_data);
-
-            self.built_chunks.insert(chunk_pos, chunk);
-        }
+        self.queued
+            .retain(|(_, chunk)| chunk.additional_data.build_delay > 0);
     }
 
     fn remove_chunk(&mut self, chunk_pos: ChunkPos) {
-        self.queued.remove(&chunk_pos);
-        self.built_chunks.remove(&chunk_pos);
+        self.queued.retain(|(pos, _)| *pos != chunk_pos);
+        self.built_chunks.retain(|(pos, _)| *pos != chunk_pos);
     }
 
     fn clear_all(&mut self) {
@@ -83,7 +85,7 @@ where
         self.built_chunks.clear();
     }
 
-    fn poll_completed(&mut self) -> HashMap<ChunkPos, (ChunkMesh, T)> {
+    fn poll_completed(&mut self) -> Vec<(ChunkPos, (ChunkMesh, T))> {
         std::mem::take(&mut self.built_chunks)
     }
 }

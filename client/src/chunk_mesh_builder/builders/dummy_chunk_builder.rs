@@ -10,14 +10,14 @@ use super::chunk_builder::ChunkBuilder;
 /// This is useful for testing purposes.
 pub struct DummyChunkBuilder<T> {
     _marker: PhantomData<T>,
-    built_chunks: HashMap<ChunkPos, (ChunkMesh, T)>,
+    built_chunks: Vec<(ChunkPos, (ChunkMesh, T))>,
 }
 
 impl<T> DummyChunkBuilder<T> {
     pub fn new() -> Self {
         Self {
             _marker: PhantomData,
-            built_chunks: HashMap::new(),
+            built_chunks: Vec::new(),
         }
     }
 }
@@ -25,7 +25,7 @@ impl<T> DummyChunkBuilder<T> {
 impl<T: Send + Sync + Default> ChunkBuilder<T> for DummyChunkBuilder<T> {
     fn build_chunk(&mut self, chunk_pos: ChunkPos, _chunk: &Chunk, additional_data: T) {
         self.built_chunks
-            .insert(chunk_pos, (ChunkMesh::default(), additional_data));
+            .push((chunk_pos, (ChunkMesh::default(), additional_data)));
     }
 
     fn update(&mut self, _player_pos: ChunkPos) {
@@ -33,14 +33,14 @@ impl<T: Send + Sync + Default> ChunkBuilder<T> for DummyChunkBuilder<T> {
     }
 
     fn remove_chunk(&mut self, chunk_pos: ChunkPos) {
-        self.built_chunks.remove(&chunk_pos);
+        self.built_chunks.retain(|(pos, _)| *pos != chunk_pos);
     }
 
     fn clear_all(&mut self) {
         self.built_chunks.clear();
     }
 
-    fn poll_completed(&mut self) -> HashMap<ChunkPos, (ChunkMesh, T)> {
+    fn poll_completed(&mut self) -> Vec<(ChunkPos, (ChunkMesh, T))> {
         std::mem::take(&mut self.built_chunks)
     }
 }

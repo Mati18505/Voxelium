@@ -5,7 +5,6 @@ use std::collections::HashMap;
 pub trait ChunkBuilder<T: Send + Sync + Default> {
     /// Adds a chunk to the builder.
     /// Additional data can be used to store version or other metadata.
-    /// If chunk with the same position exists in builder, or is built, it will be replaced.
     fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk, additional_data: T);
 
     /// Updates the builder state based on the player's position.
@@ -19,9 +18,9 @@ pub trait ChunkBuilder<T: Send + Sync + Default> {
     /// Removes all chunks from the builder, cancelling all build operations.
     fn clear_all(&mut self);
 
-    /// Returns a map of all built chunks and additional data.
+    /// Returns a vector of all built chunks and additional data.
     /// Returned chunks are removed from the builder.
-    fn poll_completed(&mut self) -> HashMap<ChunkPos, (ChunkMesh, T)>;
+    fn poll_completed(&mut self) -> Vec<(ChunkPos, (ChunkMesh, T))>;
 }
 
 pub trait Versioned<T: Send + Sync + Default> {
