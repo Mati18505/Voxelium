@@ -123,18 +123,6 @@ impl<T: Send + Sync + Default + Debug> ChunkBuilder<T> for VersionedChunkBuilder
     /// It will not return chunks that have been replaced by a newer call to `build_chunk`.
     /// Does not return more than one chunk with the same position.
     fn poll_completed(&mut self) -> Vec<(ChunkPos, (ChunkMesh, T))> {
-        // For testing purposes.
-        let chunks_to_cleanup: Vec<ChunkPos> = self
-            .latest_built_chunks
-            .iter()
-            .map(|(chunk_pos, _)| chunk_pos)
-            .copied()
-            .collect();
-
-        for chunk_pos in chunks_to_cleanup {
-            self.latest_chunk_mesh_versions.remove(&chunk_pos);
-        }
-
         // Convert DecoratedData to T.
         std::mem::take(&mut self.latest_built_chunks)
             .into_iter()
