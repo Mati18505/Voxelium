@@ -1,7 +1,7 @@
 mod builders;
 mod chunk_mesh;
+mod meshers;
 mod storage;
-mod voxel_mesher;
 
 pub use chunk_mesh::*;
 pub use storage::*;

@@ -1,6 +1,7 @@
-use crate::chunk_mesh_builder::{ChunkMesh, VoxelMesher};
-use shared::entities::{Chunk, ChunkPos};
 use std::{collections::HashMap, fmt::Debug};
+
+use crate::chunk_mesh_builder::{meshers::chunk_mesher, ChunkMesh};
+use shared::entities::{Chunk, ChunkPos};
 
 pub trait ChunkBuilder<T: Send + Sync + Default>: Debug {
     /// Adds a chunk to the builder.
