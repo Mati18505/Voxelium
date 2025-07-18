@@ -123,6 +123,18 @@ impl<T: Send + Sync + Default + Debug> ChunkBuilder<T> for VersionedChunkBuilder
     /// It will not return chunks that have been replaced by a newer call to `build_chunk`.
     /// Does not return more than one chunk with the same position.
     fn poll_completed(&mut self) -> Vec<(ChunkPos, (ChunkMesh, T))> {
+        // For testing purposes.
+        let chunks_to_cleanup: Vec<ChunkPos> = self
+            .latest_built_chunks
+            .iter()
+            .map(|(chunk_pos, _)| chunk_pos)
+            .copied()
+            .collect();
+
+        for chunk_pos in chunks_to_cleanup {
+            self.latest_chunk_mesh_versions.remove(&chunk_pos);
+        }
+
         // Convert DecoratedData to T.
         std::mem::take(&mut self.latest_built_chunks)
             .into_iter()
@@ -385,6 +397,111 @@ mod tests {
 
         assert_eq!(builder.latest_built_chunks.len(), 1);
         assert_eq!(builder.latest_chunk_mesh_versions.len(), 2);
-        dbg!(builder);
+    }
+
+    #[test]
+    fn test_version_conflict_with_poll_completed() {
+        let inner_builder = Box::new(DelayedDummyChunkBuilder::new());
+        let mut builder = VersionedChunkBuilder::<DelayedData<char>>::new(inner_builder);
+        let chunk_pos = ChunkPos::new(0, 0, 0);
+        let player_pos = ChunkPos::new(0, 0, 0);
+        let chunk = Chunk::default();
+
+        builder.build_chunk(
+            chunk_pos,
+            &chunk,
+            DelayedData {
+                build_delay: 2,
+                custom_data: 'x',
+            },
+        );
+        builder.build_chunk(
+            chunk_pos,
+            &chunk,
+            DelayedData {
+                build_delay: 1,
+                custom_data: 'y',
+            },
+        );
+        builder.update(player_pos);
+
+        // tick 1: y is ready.
+        let builded = builder.poll_completed();
+        assert_eq!(builded.len(), 1);
+        assert_eq!(builded[0].1 .1.custom_data, 'y');
+
+        builder.build_chunk(
+            chunk_pos,
+            &chunk,
+            DelayedData {
+                build_delay: 2,
+                custom_data: 'z',
+            },
+        );
+        builder.update(player_pos);
+
+        // tick 2: x is ready, but is stale, so shouldn't be returned.
+        let builded = builder.poll_completed();
+        assert_eq!(builded.len(), 0);
+
+        builder.update(player_pos);
+
+        // tick 3: z is ready.
+        let builded = builder.poll_completed();
+        assert_eq!(builded.len(), 1);
+        assert_eq!(builded[0].1 .1.custom_data, 'z');
+    }
+
+    #[test]
+    fn test_version_conflict_with_take_chunk() {
+        let inner_builder = Box::new(DelayedDummyChunkBuilder::new());
+        let mut builder = VersionedChunkBuilder::<DelayedData<char>>::new(inner_builder);
+        let chunk_pos = ChunkPos::new(0, 0, 0);
+        let player_pos = ChunkPos::new(0, 0, 0);
+        let chunk = Chunk::default();
+
+        builder.build_chunk(
+            chunk_pos,
+            &chunk,
+            DelayedData {
+                build_delay: 2,
+                custom_data: 'x',
+            },
+        );
+        builder.build_chunk(
+            chunk_pos,
+            &chunk,
+            DelayedData {
+                build_delay: 1,
+                custom_data: 'y',
+            },
+        );
+        builder.update(player_pos);
+
+        // tick 1: y is ready.
+        let builded = builder.take_chunk_built_with_latest_version(chunk_pos);
+        assert!(builded.is_some());
+        assert_eq!(builded.unwrap().1.custom_data, 'y');
+
+        builder.build_chunk(
+            chunk_pos,
+            &chunk,
+            DelayedData {
+                build_delay: 2,
+                custom_data: 'z',
+            },
+        );
+        builder.update(player_pos);
+
+        // tick 2: x is ready, but is stale, so shouldn't be returned.
+        let builded = builder.take_chunk_built_with_latest_version(chunk_pos);
+        assert!(builded.is_none());
+
+        builder.update(player_pos);
+
+        // tick 3: z is ready.
+        let builded = builder.take_chunk_built_with_latest_version(chunk_pos);
+        assert!(builded.is_some());
+        assert_eq!(builded.unwrap().1.custom_data, 'z');
     }
 }
