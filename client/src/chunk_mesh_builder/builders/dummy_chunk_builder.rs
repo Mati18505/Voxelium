@@ -10,21 +10,21 @@ use super::chunk_builder::ChunkBuilder;
 /// This is useful for testing purposes.
 pub struct DummyChunkBuilder<T> {
     _marker: PhantomData<T>,
-    builded_chunks: HashMap<ChunkPos, (ChunkMesh, T)>,
+    built_chunks: HashMap<ChunkPos, (ChunkMesh, T)>,
 }
 
 impl<T> DummyChunkBuilder<T> {
     pub fn new() -> Self {
         Self {
             _marker: PhantomData,
-            builded_chunks: HashMap::new(),
+            built_chunks: HashMap::new(),
         }
     }
 }
 
 impl<T: Send + Sync + Default> ChunkBuilder<T> for DummyChunkBuilder<T> {
     fn build_chunk(&mut self, chunk_pos: ChunkPos, _chunk: &Chunk, additional_data: T) {
-        self.builded_chunks
+        self.built_chunks
             .insert(chunk_pos, (ChunkMesh::default(), additional_data));
     }
 
@@ -33,14 +33,14 @@ impl<T: Send + Sync + Default> ChunkBuilder<T> for DummyChunkBuilder<T> {
     }
 
     fn remove_chunk(&mut self, chunk_pos: ChunkPos) {
-        self.builded_chunks.remove(&chunk_pos);
+        self.built_chunks.remove(&chunk_pos);
     }
 
     fn clear_all(&mut self) {
-        self.builded_chunks.clear();
+        self.built_chunks.clear();
     }
 
     fn poll_completed(&mut self) -> HashMap<ChunkPos, (ChunkMesh, T)> {
-        std::mem::take(&mut self.builded_chunks)
+        std::mem::take(&mut self.built_chunks)
     }
 }

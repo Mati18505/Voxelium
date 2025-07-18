@@ -24,7 +24,7 @@ pub struct DelayedData<C> {
 pub struct DelayedDummyChunkBuilder<T> {
     _marker: PhantomData<T>,
     queued: HashMap<ChunkPos, QueuedChunk<T>>,
-    builded_chunks: HashMap<ChunkPos, (ChunkMesh, T)>,
+    built_chunks: HashMap<ChunkPos, (ChunkMesh, T)>,
 }
 
 impl<T> DelayedDummyChunkBuilder<T> {
@@ -32,7 +32,7 @@ impl<T> DelayedDummyChunkBuilder<T> {
         Self {
             _marker: PhantomData,
             queued: HashMap::new(),
-            builded_chunks: HashMap::new(),
+            built_chunks: HashMap::new(),
         }
     }
 }
@@ -69,21 +69,21 @@ where
             let chunk = self.queued.remove(&chunk_pos).unwrap();
             let chunk = (chunk.mesh, chunk.additional_data);
 
-            self.builded_chunks.insert(chunk_pos, chunk);
+            self.built_chunks.insert(chunk_pos, chunk);
         }
     }
 
     fn remove_chunk(&mut self, chunk_pos: ChunkPos) {
         self.queued.remove(&chunk_pos);
-        self.builded_chunks.remove(&chunk_pos);
+        self.built_chunks.remove(&chunk_pos);
     }
 
     fn clear_all(&mut self) {
         self.queued.clear();
-        self.builded_chunks.clear();
+        self.built_chunks.clear();
     }
 
     fn poll_completed(&mut self) -> HashMap<ChunkPos, (ChunkMesh, T)> {
-        std::mem::take(&mut self.builded_chunks)
+        std::mem::take(&mut self.built_chunks)
     }
 }

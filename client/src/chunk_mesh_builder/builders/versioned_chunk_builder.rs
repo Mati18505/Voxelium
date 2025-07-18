@@ -17,7 +17,7 @@ pub struct VersionedChunkBuilder<T: Send + Sync + Default> {
 
     /// Stores only chunks that are built with the latest version.
     /// If chunk version is updated, the chunk will be removed from this map.
-    latest_builded_chunks: HashMap<ChunkPos, (ChunkMesh, DecoratedData<T>)>,
+    latest_built_chunks: HashMap<ChunkPos, (ChunkMesh, DecoratedData<T>)>,
 }
 
 type Version = u64;
@@ -48,7 +48,7 @@ impl<T: Send + Sync + Default> VersionedChunkBuilder<T> {
         Self {
             chunk_builder,
             latest_chunk_mesh_versions: HashMap::new(),
-            latest_builded_chunks: HashMap::new(),
+            latest_built_chunks: HashMap::new(),
         }
     }
 
@@ -60,7 +60,7 @@ impl<T: Send + Sync + Default> VersionedChunkBuilder<T> {
     }
 
     fn increment_chunk_mesh_version(&mut self, pos: ChunkPos) -> Version {
-        self.latest_builded_chunks.remove(&pos);
+        self.latest_built_chunks.remove(&pos);
 
         let incremented_version = *self
             .latest_chunk_mesh_versions
@@ -98,9 +98,7 @@ impl<T: Send + Sync + Default> ChunkBuilder<T> for VersionedChunkBuilder<T> {
             })
             .collect();
 
-        let dbg: Vec<&ChunkPos> = completed.iter().map(|(chunk_pos, _)| chunk_pos).collect();
-
-        self.latest_builded_chunks.extend(completed);
+        self.latest_built_chunks.extend(completed);
     }
 
     fn remove_chunk(&mut self, chunk_pos: ChunkPos) {
@@ -114,7 +112,7 @@ impl<T: Send + Sync + Default> ChunkBuilder<T> for VersionedChunkBuilder<T> {
     /// Returns only chunks that are built with the latest version.
     fn poll_completed(&mut self) -> HashMap<ChunkPos, (ChunkMesh, T)> {
         // Convert DecoratedData to T.
-        std::mem::take(&mut self.latest_builded_chunks)
+        std::mem::take(&mut self.latest_built_chunks)
             .into_iter()
             .map(|(pos, (mesh, data))| (pos, (mesh, data.data)))
             .collect()
@@ -125,7 +123,7 @@ impl<T: Send + Sync + Default> Versioned<T> for VersionedChunkBuilder<T> {
     fn is_chunk_with_latest_version_built(&self, chunk_pos: ChunkPos) -> bool {
         let version = self.get_chunk_mesh_version(chunk_pos);
 
-        if let Some(chunk) = self.latest_builded_chunks.get(&chunk_pos) {
+        if let Some(chunk) = self.latest_built_chunks.get(&chunk_pos) {
             chunk.1.version == version
         } else {
             false
@@ -136,7 +134,7 @@ impl<T: Send + Sync + Default> Versioned<T> for VersionedChunkBuilder<T> {
         &mut self,
         chunk_pos: ChunkPos,
     ) -> Option<(ChunkMesh, T)> {
-        self.latest_builded_chunks
+        self.latest_built_chunks
             .remove(&chunk_pos)
             .map(|(mesh, data)| (mesh, data.data))
     }
@@ -194,10 +192,10 @@ mod tests {
 
         assert!(builder.is_chunk_with_latest_version_built(chunk_pos));
 
-        let builded_chunk = builder.take_chunk_built_with_latest_version(chunk_pos);
-        assert!(builded_chunk.is_some());
+        let built_chunk = builder.take_chunk_built_with_latest_version(chunk_pos);
+        assert!(built_chunk.is_some());
 
-        let (_chunk_mesh, additional_data) = builded_chunk.unwrap();
+        let (_chunk_mesh, additional_data) = built_chunk.unwrap();
         assert_eq!(additional_data, 42);
     }
 
@@ -275,7 +273,7 @@ mod tests {
         let chunk_pos = ChunkPos::new(0, 0, 0);
         let player_pos = ChunkPos::new(0, 0, 0);
         let chunk = Chunk::default();
-        let mut total_builded = 0;
+        let mut total_built = 0;
 
         // Build initial chunks with different delay and data.
         builder.build_chunk(
@@ -309,10 +307,10 @@ mod tests {
             for (chunk_pos, (chunk_mesh, value)) in builder.poll_completed() {
                 // Check if built chunk returned from poll_completed is newest.
                 assert_eq!(value.custom_data, 30);
-                total_builded += 1;
+                total_built += 1;
             }
         }
 
-        assert_eq!(total_builded, 1);
+        assert_eq!(total_built, 1);
     }
 }
