@@ -6,7 +6,7 @@ use shared::{
 use std::{fmt, sync::Arc};
 
 use crate::chunk_mesh_builder::{
-    builders::{versioned_chunk_builder::VersionedChunkBuilder, ChunkBuilder, Versioned},
+    builders::{ChunkBuilder, Versioned},
     ChunkMesh,
 };
 
@@ -48,13 +48,18 @@ impl Config {
     }
 }
 
-// pub trait VersionedChunkBuilder : ChunkBuilder + Versioned {}
+pub trait VersionedChunkBuilder<T: Send + Sync + Default>: ChunkBuilder<T> + Versioned<T> {}
+
+impl<T: Send + Sync + Default, U> VersionedChunkBuilder<T> for U where
+    U: ChunkBuilder<T> + Versioned<T>
+{
+}
 
 /// Manage chunks dependent on controller position.
 pub struct ChunkManager {
     world: PhysicalWorld,
     chunk_loader: chunk_loader::ChunkLoader,
-    chunk_builder: Box<VersionedChunkBuilder<()>>,
+    chunk_builder: Box<dyn VersionedChunkBuilder<()>>,
     chunk_object_tx: Option<crossbeam_channel::Sender<ChunkObjectEvent>>,
     event_tx: Option<crossbeam_channel::Sender<WorldChunkUpdate>>,
     config: Config,
@@ -64,7 +69,7 @@ pub struct ChunkManager {
 impl ChunkManager {
     pub fn new(
         chunk_loader: chunk_loader::ChunkLoader,
-        chunk_builder: Box<VersionedChunkBuilder<()>>,
+        chunk_builder: Box<dyn VersionedChunkBuilder<()>>,
         config: Config,
     ) -> Self {
         ChunkManager {
