@@ -8,7 +8,7 @@ use crate::{
     bevy_render::VoxelMaterial,
     bevy_types::{AppStates, GameResources},
     chunk_manager::{ChunkObjectEvent, WorldChunkUpdate},
-    chunk_mesh_builder::VoxelMesher,
+    chunk_mesh_builder::meshers::naive_mesher::VoxelMesher,
     controller,
 };
 

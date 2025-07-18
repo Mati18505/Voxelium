@@ -8,7 +8,7 @@ use shared::chunk_io::pending_chunk_queue::PendingChunkQueue;
 use shared::entities::{Chunk, ChunkPos};
 
 use super::{chunk_state_manager, physical_world::Version};
-use crate::chunk_mesh_builder::{ChunkMesh, VoxelMesher};
+use crate::chunk_mesh_builder::{meshers::naive_mesher::VoxelMesher, ChunkMesh};
 
 #[derive(Resource)]
 struct ChunkBuildTask(Task<ChunkMesh>);
