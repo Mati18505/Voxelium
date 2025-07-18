@@ -21,7 +21,7 @@ pub struct MesherOutput {
     pub warnings: Vec<MesherWarning>,
 }
 
-pub trait ChunkMesher: Debug {
+pub trait ChunkMesher: Send + Sync + Debug {
     /// Creates chunk mesh based on its data.
     /// Mesh is always created to the end, warnings don't interrupt mesh creation.
     fn create_mesh(&self, chunk: &Chunk) -> MesherOutput;

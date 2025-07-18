@@ -25,7 +25,7 @@ pub struct VersionedChunkBuilder<T: Send + Sync + Default> {
 type Version = u64;
 
 #[derive(Debug, Clone, Default)]
-struct DecoratedData<T: Send + Sync + Default> {
+pub struct DecoratedData<T: Send + Sync + Default> {
     pub data: T,
     version: Version,
 }
@@ -155,7 +155,7 @@ impl<T: Send + Sync + Default> Versioned<T> for VersionedChunkBuilder<T> {
 #[cfg(test)]
 mod tests {
     use crate::chunk_mesh_builder::builders::delayed_dummy_chunk_builder::{
-        self, DelayedData, DelayedDummyChunkBuilder,
+        DelayedData, DelayedDummyChunkBuilder,
     };
 
     use super::*;

@@ -1,4 +1,3 @@
-pub mod bevy_async_chunk_builder;
 pub mod bevy_chunk_entities_manager;
 pub mod bevy_event_manager;
 pub mod bevy_plugin;
@@ -11,5 +10,4 @@ pub use bevy_plugin::*;
 pub use chunk_state::*;
 pub use chunk_state_manager::*;
 
-use bevy_async_chunk_builder::*;
 use bevy_chunk_entities_manager::*;

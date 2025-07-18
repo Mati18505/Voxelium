@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use bevy::prelude::*;
 use shared::{
     chunk_io::{providers::generated_chunk_provider::GeneratedChunkProvider, ChunkLoader},
@@ -8,13 +10,18 @@ use crate::{
     bevy_render::VoxelMaterial,
     bevy_types::{AppStates, GameResources},
     chunk_manager::{ChunkObjectEvent, WorldChunkUpdate},
-    chunk_mesh_builder::meshers::naive_mesher::NaiveMesher,
+    chunk_mesh_builder::{
+        builders::{
+            async_chunk_builder::AsyncChunkBuilder, versioned_chunk_builder::VersionedChunkBuilder,
+        },
+        meshers::naive_mesher::NaiveMesher,
+    },
     controller,
 };
 
 use super::{
-    bevy_event_manager::WorldChunkUpdateEvent, AsyncChunkBuilder, ChunkEntitiesManager,
-    ChunkManager, Config, EventManager,
+    bevy_event_manager::WorldChunkUpdateEvent, ChunkEntitiesManager, ChunkManager, Config,
+    EventManager,
 };
 
 pub struct ChunkManagerPlugin;
@@ -39,7 +46,8 @@ fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>
         game_resources.texture_dictionary.clone(),
     );
 
-    let chunk_builder = Box::new(AsyncChunkBuilder::new(voxel_mesher));
+    let inner_builder = Box::new(AsyncChunkBuilder::new(Arc::new(voxel_mesher)));
+    let chunk_builder = Box::new(VersionedChunkBuilder::<()>::new(inner_builder));
     let mut config = Config::new(10, 9);
     config.dynamic_vertical_loading = false;
 

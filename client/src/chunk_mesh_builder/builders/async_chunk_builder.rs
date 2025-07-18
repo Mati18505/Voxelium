@@ -1,83 +1,108 @@
-use std::collections::HashMap;
-use std::fmt;
+use bevy::{
+    prelude::*,
+    tasks::{futures_lite::future, AsyncComputeTaskPool, Task},
+};
+use std::{
+    collections::HashMap,
+    fmt::{self, Debug},
+    sync::Arc,
+};
 
-use bevy::tasks::futures_lite::future;
-use bevy::tasks::AsyncComputeTaskPool;
-use bevy::{prelude::*, tasks::Task};
-use shared::chunk_io::pending_chunk_queue::PendingChunkQueue;
-use shared::entities::{Chunk, ChunkPos};
+use crate::chunk_mesh_builder::{
+    builders::ChunkBuilder,
+    meshers::{ChunkMesher, MesherWarning},
+    ChunkMesh,
+};
+use shared::{
+    chunk_io::pending_chunk_queue::PendingChunkQueue,
+    entities::{Chunk, ChunkPos},
+};
 
-use crate::chunk_manager::{chunk_state_manager, physical_world::Version};
-use crate::chunk_mesh_builder::meshers::ChunkMesher;
-use crate::chunk_mesh_builder::{meshers::naive_mesher::NaiveMesher, ChunkMesh};
-
+// struct ChunkBuildTask<T: Send + Sync + Default>(Task<ChunkMesh>);
 #[derive(Resource)]
 struct ChunkBuildTask(Task<ChunkMesh>);
 
-pub struct AsyncChunkBuilder {
-    voxel_mesher: NaiveMesher,
+pub struct AsyncChunkBuilder<T>
+where
+    T: Send + Sync + Default,
+{
+    mesher: Arc<dyn ChunkMesher>,
     pending_chunk_queue: PendingChunkQueue,
-    chunks_to_build: HashMap<ChunkPos, (Chunk, Version)>,
-    tasks: HashMap<(ChunkPos, Version), ChunkBuildTask>,
-    completed: HashMap<(ChunkPos, Version), ChunkMesh>,
+    chunks_to_build: Vec<(ChunkPos, (Chunk, T))>,
+    tasks: Vec<(ChunkPos, (ChunkBuildTask, T))>,
+    completed: Vec<(ChunkPos, (ChunkMesh, T))>,
 }
 
-impl AsyncChunkBuilder {
+impl<T: Send + Sync + Default + Debug> AsyncChunkBuilder<T> {
     const MAX_BUILD_JOBS: usize = 16;
 
-    pub fn new(voxel_mesher: NaiveMesher) -> Self {
+    pub fn new(mesher: Arc<dyn ChunkMesher>) -> Self {
         Self {
-            voxel_mesher,
+            mesher,
             pending_chunk_queue: PendingChunkQueue::new(),
-            chunks_to_build: HashMap::default(),
-            tasks: HashMap::default(),
-            completed: HashMap::default(),
+            chunks_to_build: Vec::default(),
+            tasks: Vec::default(),
+            completed: Vec::default(),
         }
     }
 
     fn create_build_task(&self, chunk: Chunk) -> Task<ChunkMesh> {
-        let block_storage = chunk.get_block_storage().clone();
-        let mut voxel_mesher = self.voxel_mesher.clone();
+        let mesher = self.mesher.clone();
 
         let pool = AsyncComputeTaskPool::get();
         let task = pool.spawn(async move {
-            let chunk_mesh = voxel_mesher.create_mesh(&block_storage).clone();
+            let mesher_result = mesher.create_mesh(&chunk).clone();
 
-            if let Some(err) = voxel_mesher.get_last_err() {
-                eprintln!("{err}");
+            for warning in mesher_result.warnings {
+                warn!("{warning}");
             }
 
-            chunk_mesh
+            mesher_result.mesh
         });
 
         task
     }
 
     fn collect_finished_results(&mut self) {
-        let mut completed: HashMap<(ChunkPos, Version), ChunkMesh> = HashMap::default();
+        let mut completed: HashMap<ChunkPos, (ChunkMesh, T)> = HashMap::default();
 
-        for ((chunk_pos, version), build_task) in self.tasks.iter_mut() {
+        for (chunk_pos, (build_task, additional_data)) in self.tasks.iter_mut() {
             if let Some(chunk_mesh) = future::block_on(future::poll_once(&mut build_task.0)) {
-                completed.insert((*chunk_pos, *version), chunk_mesh);
+                completed.insert(*chunk_pos, (chunk_mesh, std::mem::take(additional_data)));
             }
         }
 
-        for (chunk_pos, version) in completed.keys() {
-            self.tasks.remove(&(*chunk_pos, *version));
+        for pos in completed.keys() {
+            self.tasks.retain(|(chunk_pos, _)| chunk_pos != pos);
         }
 
         self.completed.extend(completed);
     }
+
+    fn take_chunks_to_build(&mut self, pos: ChunkPos) -> Vec<(ChunkPos, (Chunk, T))> {
+        let mut result = Vec::new();
+        let mut i = 0;
+
+        while i < self.chunks_to_build.len() {
+            if self.chunks_to_build[i].0 == pos {
+                let e = self.chunks_to_build.swap_remove(i);
+                result.push(e);
+            } else {
+                i += 1;
+            }
+        }
+
+        result
+    }
 }
 
-impl chunk_state_manager::ChunkBuilder for AsyncChunkBuilder {
-    fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk, version: Version) {
+impl<T: Send + Sync + Default + Debug> ChunkBuilder<T> for AsyncChunkBuilder<T> {
+    fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk, additional_data: T) {
         self.pending_chunk_queue.add_chunk(chunk_pos);
         self.chunks_to_build
-            .insert(chunk_pos, (chunk.clone(), version));
+            .push((chunk_pos, (chunk.clone(), additional_data)));
     }
 
-    /// Should be called once per frame.
     fn update(&mut self, player_pos: ChunkPos) {
         // TODO
         // Chunk Grouping (for each thread job give multiple chunks).
@@ -87,32 +112,39 @@ impl chunk_state_manager::ChunkBuilder for AsyncChunkBuilder {
             .take_nearest_chunks(Self::MAX_BUILD_JOBS, player_pos);
 
         for pos in nearest_chunks {
-            let (chunk, version) = self
-                .chunks_to_build
-                .remove(&pos)
-                .expect("Pending chunk not found in chunks_to_build");
+            let chunks = self.take_chunks_to_build(pos);
 
-            let task = self.create_build_task(chunk);
-            self.tasks.insert((pos, version), ChunkBuildTask(task));
+            for (pos, (chunk, additional_data)) in chunks {
+                let task = self.create_build_task(chunk);
+                self.tasks
+                    .push((pos, (ChunkBuildTask(task), additional_data)));
+            }
         }
 
         self.collect_finished_results();
     }
 
-    fn take_built_chunk_mesh_by_version(
-        &mut self,
-        chunk_pos: ChunkPos,
-        version: Version,
-    ) -> Option<ChunkMesh> {
-        self.completed.remove(&(chunk_pos, version))
+    fn remove_chunk(&mut self, pos: ChunkPos) {
+        self.pending_chunk_queue.remove_chunk(pos);
+        self.chunks_to_build
+            .retain(|(chunk_pos, _)| *chunk_pos != pos);
+        self.tasks.retain(|(chunk_pos, _)| *chunk_pos != pos);
+        self.completed.retain(|(chunk_pos, _)| *chunk_pos != pos);
     }
 
-    fn is_chunk_mesh_built_with_version(&self, chunk_pos: ChunkPos, version: Version) -> bool {
-        self.completed.contains_key(&(chunk_pos, version))
+    fn clear_all(&mut self) {
+        self.pending_chunk_queue = PendingChunkQueue::default();
+        self.chunks_to_build.clear();
+        self.tasks.clear();
+        self.completed.clear();
+    }
+
+    fn poll_completed(&mut self) -> Vec<(ChunkPos, (ChunkMesh, T))> {
+        std::mem::take(&mut self.completed)
     }
 }
 
-impl fmt::Debug for AsyncChunkBuilder {
+impl<T: Send + Sync + Default> fmt::Debug for AsyncChunkBuilder<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("AsyncChunkBuilder")
             .field("tasks", &self.tasks.len())
