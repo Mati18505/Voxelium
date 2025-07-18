@@ -207,6 +207,7 @@ mod tests {
         let chunk_pos = ChunkPos::new(0, 0, 0);
         let chunk = Chunk::default();
 
+        builder.build_chunk(chunk_pos, &chunk, 2);
         builder.build_chunk(chunk_pos, &chunk, 42);
         builder.update(ChunkPos::new(0, 0, 0));
 
