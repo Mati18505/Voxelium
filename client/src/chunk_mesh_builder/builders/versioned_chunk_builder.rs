@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    fmt::Debug,
     ops::{Deref, DerefMut},
 };
 
@@ -8,6 +9,7 @@ use super::dummy_chunk_builder::DummyChunkBuilder;
 use crate::chunk_mesh_builder::{builders::ChunkBuilder, ChunkMesh};
 use shared::entities::{Chunk, ChunkPos};
 
+#[derive(Debug)]
 pub struct VersionedChunkBuilder<T: Send + Sync + Default> {
     /// Internal chunk builder.
     chunk_builder: Box<dyn ChunkBuilder<DecoratedData<T>>>,
@@ -76,7 +78,7 @@ impl<T: Send + Sync + Default> VersionedChunkBuilder<T> {
     }
 }
 
-impl<T: Send + Sync + Default> ChunkBuilder<T> for VersionedChunkBuilder<T> {
+impl<T: Send + Sync + Default + Debug> ChunkBuilder<T> for VersionedChunkBuilder<T> {
     /// Newest call to this function equals the latest version of the chunk.
     fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk, additional_data: T) {
         let version = self.increment_chunk_mesh_version(chunk_pos);
@@ -383,5 +385,6 @@ mod tests {
 
         assert_eq!(builder.latest_built_chunks.len(), 1);
         assert_eq!(builder.latest_chunk_mesh_versions.len(), 2);
+        dbg!(builder);
     }
 }

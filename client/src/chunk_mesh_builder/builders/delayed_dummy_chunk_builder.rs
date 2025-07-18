@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    fmt::Debug,
     marker::PhantomData,
     ops::{Deref, DerefMut},
 };
@@ -8,12 +9,13 @@ use super::chunk_builder::ChunkBuilder;
 use crate::chunk_mesh_builder::ChunkMesh;
 use shared::entities::{Chunk, ChunkPos};
 
+#[derive(Debug)]
 struct QueuedChunk<T> {
     mesh: ChunkMesh,
     additional_data: T,
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct DelayedData<C> {
     pub build_delay: u32,
     pub custom_data: C,
@@ -21,6 +23,7 @@ pub struct DelayedData<C> {
 
 /// A dummy chunk builder that simulates chunk building with a delay.
 /// This is useful for testing purposes.
+#[derive(Debug)]
 pub struct DelayedDummyChunkBuilder<T> {
     _marker: PhantomData<T>,
     queued: Vec<(ChunkPos, QueuedChunk<T>)>,
@@ -39,7 +42,7 @@ impl<T> DelayedDummyChunkBuilder<T> {
 
 impl<T, C> ChunkBuilder<T> for DelayedDummyChunkBuilder<T>
 where
-    T: Send + Sync + Default + DerefMut<Target = DelayedData<C>>,
+    T: Send + Sync + Default + Debug + DerefMut<Target = DelayedData<C>>,
     C: Send + Sync + Default,
 {
     fn build_chunk(&mut self, chunk_pos: ChunkPos, _chunk: &Chunk, additional_data: T) {

@@ -1,8 +1,8 @@
 use crate::chunk_mesh_builder::{ChunkMesh, VoxelMesher};
 use shared::entities::{Chunk, ChunkPos};
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Debug};
 
-pub trait ChunkBuilder<T: Send + Sync + Default> {
+pub trait ChunkBuilder<T: Send + Sync + Default>: Debug {
     /// Adds a chunk to the builder.
     /// Additional data can be used to store version or other metadata.
     fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk, additional_data: T);
