@@ -4,7 +4,7 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use super::chunk_builder::Versioned;
+use super::{chunk_builder::Versioned, BuilderError};
 use crate::chunk_mesh_builder::{builders::ChunkBuilder, ChunkMesh};
 use shared::entities::{Chunk, ChunkPos};
 
@@ -78,7 +78,7 @@ impl<T: Send + Sync + Default> VersionedChunkBuilder<T> {
 
 impl<T: Send + Sync + Default + Debug> ChunkBuilder<T> for VersionedChunkBuilder<T> {
     /// Newest call to this function equals the latest version of the chunk.
-    fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk, additional_data: T) {
+    fn force_build(&mut self, chunk_pos: ChunkPos, chunk: &Chunk, additional_data: T) {
         let version = self.increment_chunk_mesh_version(chunk_pos);
         let decorated_data = DecoratedData {
             data: additional_data,
@@ -86,7 +86,36 @@ impl<T: Send + Sync + Default + Debug> ChunkBuilder<T> for VersionedChunkBuilder
         };
 
         self.chunk_builder
-            .build_chunk(chunk_pos, chunk, decorated_data);
+            .force_build(chunk_pos, chunk, decorated_data);
+    }
+
+    fn try_build(
+        &mut self,
+        chunk_pos: ChunkPos,
+        chunk: &Chunk,
+        additional_data: T,
+    ) -> Result<(), BuilderError> {
+        if self.latest_built_chunks.contains_key(&chunk_pos) {
+            return Err(BuilderError::ChunkAlreadyExists(chunk_pos));
+        }
+
+        let version = self.get_chunk_mesh_version(chunk_pos).wrapping_add(1);
+        let decorated_data = DecoratedData {
+            data: additional_data,
+            version,
+        };
+
+        let maybe_err = self
+            .chunk_builder
+            .try_build(chunk_pos, chunk, decorated_data);
+
+        match maybe_err {
+            Ok(_) => {
+                self.increment_chunk_mesh_version(chunk_pos);
+                Ok(())
+            }
+            Err(err) => Err(err),
+        }
     }
 
     fn update(&mut self, player_pos: ChunkPos) {
@@ -119,8 +148,7 @@ impl<T: Send + Sync + Default + Debug> ChunkBuilder<T> for VersionedChunkBuilder
 
     /// Returns all chunks built with latest data (latest call to `build_chunk`).
     /// It will not return chunks that have been replaced by a newer call to `build_chunk`.
-    /// Does not return more than one chunk with the same position.
-    fn poll_completed(&mut self) -> Vec<(ChunkPos, (ChunkMesh, T))> {
+    fn poll_completed(&mut self) -> HashMap<ChunkPos, (ChunkMesh, T)> {
         // Convert DecoratedData to T.
         std::mem::take(&mut self.latest_built_chunks)
             .into_iter()

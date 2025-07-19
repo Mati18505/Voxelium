@@ -324,7 +324,7 @@ impl ChunkManager {
             .get_chunk(pos)
             .expect("Chunk is passed to builder, but it is not loaded.");
 
-        self.chunk_builder.build_chunk(pos, chunk, ());
+        self.chunk_builder.force_build(pos, chunk, ());
         self.world.remove_chunk_need_rebuild(pos);
     }
 

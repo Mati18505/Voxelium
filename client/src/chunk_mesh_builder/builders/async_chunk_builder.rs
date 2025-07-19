@@ -14,6 +14,8 @@ use shared::{
     entities::{Chunk, ChunkPos},
 };
 
+use super::BuilderError;
+
 // struct ChunkBuildTask<T: Send + Sync + Default>(Task<ChunkMesh>);
 #[derive(Resource)]
 struct ChunkBuildTask(Task<ChunkMesh>);
@@ -69,18 +71,40 @@ impl<T: Send + Sync + Default + Debug> AsyncChunkBuilder<T> {
         }
 
         for pos in completed.keys() {
-            self.tasks.remove(&pos);
+            self.tasks.remove(pos);
         }
 
         self.completed.extend(completed);
     }
+
+    fn is_chunk_in_builder(&self, chunk_pos: ChunkPos) -> bool {
+        self.chunks_to_build.contains_key(&chunk_pos)
+            || self.tasks.contains_key(&chunk_pos)
+            || self.completed.contains_key(&chunk_pos)
+    }
 }
 
 impl<T: Send + Sync + Default + Debug> ChunkBuilder<T> for AsyncChunkBuilder<T> {
-    fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk, additional_data: T) {
+    fn force_build(&mut self, chunk_pos: ChunkPos, chunk: &Chunk, additional_data: T) {
+        self.remove_chunk(chunk_pos);
+
         self.pending_chunk_queue.add_chunk(chunk_pos);
         self.chunks_to_build
             .insert(chunk_pos, (chunk.clone(), additional_data));
+    }
+
+    fn try_build(
+        &mut self,
+        chunk_pos: ChunkPos,
+        chunk: &Chunk,
+        additional_data: T,
+    ) -> std::result::Result<(), BuilderError> {
+        if self.is_chunk_in_builder(chunk_pos) {
+            return Err(BuilderError::ChunkAlreadyExists(chunk_pos));
+        }
+
+        self.force_build(chunk_pos, chunk, additional_data);
+        Ok(())
     }
 
     fn update(&mut self, player_pos: ChunkPos) {
@@ -116,8 +140,8 @@ impl<T: Send + Sync + Default + Debug> ChunkBuilder<T> for AsyncChunkBuilder<T> 
         self.completed.clear();
     }
 
-    fn poll_completed(&mut self) -> Vec<(ChunkPos, (ChunkMesh, T))> {
-        std::mem::take(&mut self.completed).into_iter().collect()
+    fn poll_completed(&mut self) -> HashMap<ChunkPos, (ChunkMesh, T)> {
+        std::mem::take(&mut self.completed)
     }
 }
 
