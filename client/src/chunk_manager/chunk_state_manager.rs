@@ -3,7 +3,7 @@ use shared::{
     chunk_io::chunk_loader,
     entities::{Chunk, ChunkPos, ChunkRepository, CHUNK_SIZE},
 };
-use std::{fmt, sync::Arc};
+use std::fmt;
 
 use crate::chunk_mesh_builder::{
     builders::{ChunkBuilder, Versioned},

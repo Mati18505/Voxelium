@@ -5,7 +5,6 @@ use std::{
 };
 
 use super::chunk_builder::Versioned;
-use super::dummy_chunk_builder::DummyChunkBuilder;
 use crate::chunk_mesh_builder::{builders::ChunkBuilder, ChunkMesh};
 use shared::entities::{Chunk, ChunkPos};
 

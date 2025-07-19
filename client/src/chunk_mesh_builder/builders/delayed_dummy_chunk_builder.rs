@@ -1,9 +1,4 @@
-use std::{
-    collections::HashMap,
-    fmt::Debug,
-    marker::PhantomData,
-    ops::{Deref, DerefMut},
-};
+use std::{fmt::Debug, marker::PhantomData, ops::DerefMut};
 
 use super::chunk_builder::ChunkBuilder;
 use crate::chunk_mesh_builder::ChunkMesh;
@@ -15,6 +10,7 @@ struct QueuedChunk<T> {
     additional_data: T,
 }
 
+#[allow(unused)]
 #[derive(Debug, Default)]
 pub struct DelayedData<C> {
     pub build_delay: u32,
@@ -31,6 +27,7 @@ pub struct DelayedDummyChunkBuilder<T> {
 }
 
 impl<T> DelayedDummyChunkBuilder<T> {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             _marker: PhantomData,

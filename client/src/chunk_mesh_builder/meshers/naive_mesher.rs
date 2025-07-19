@@ -1,4 +1,4 @@
-use std::{fmt, sync::Arc};
+use std::sync::Arc;
 
 use cgmath::Vector3;
 use shared::entities::{BlockID, BlockInChunkPos, BlockSide, BlockStorage, Chunk, Direction};
@@ -32,7 +32,7 @@ impl ChunkMesher for NaiveMesher {
                         .entry(block_type.material_name.clone())
                         .or_insert(LayerMesh::default());
 
-                    let result = self.create_block(
+                    self.create_block(
                         block_type,
                         BlockInChunkPos::new(pos.x, pos.y, pos.z),
                         layer_mesh,

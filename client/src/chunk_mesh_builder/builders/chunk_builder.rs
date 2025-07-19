@@ -1,6 +1,6 @@
-use std::{collections::HashMap, fmt::Debug};
+use std::fmt::Debug;
 
-use crate::chunk_mesh_builder::{meshers::chunk_mesher, ChunkMesh};
+use crate::chunk_mesh_builder::ChunkMesh;
 use shared::entities::{Chunk, ChunkPos};
 
 pub trait ChunkBuilder<T: Send + Sync + Default>: Debug + Send + Sync {

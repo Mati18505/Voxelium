@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Debug, marker::PhantomData};
+use std::{fmt::Debug, marker::PhantomData};
 
 use shared::entities::{Chunk, ChunkPos};
 
@@ -15,6 +15,7 @@ pub struct DummyChunkBuilder<T> {
 }
 
 impl<T> DummyChunkBuilder<T> {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             _marker: PhantomData,
