@@ -24,9 +24,9 @@ where
 {
     mesher: Arc<dyn ChunkMesher>,
     pending_chunk_queue: PendingChunkQueue,
-    chunks_to_build: Vec<(ChunkPos, (Chunk, T))>,
-    tasks: Vec<(ChunkPos, (ChunkBuildTask, T))>,
-    completed: Vec<(ChunkPos, (ChunkMesh, T))>,
+    chunks_to_build: HashMap<ChunkPos, (Chunk, T)>,
+    tasks: HashMap<ChunkPos, (ChunkBuildTask, T)>,
+    completed: HashMap<ChunkPos, (ChunkMesh, T)>,
 }
 
 impl<T: Send + Sync + Default + Debug> AsyncChunkBuilder<T> {
@@ -36,9 +36,9 @@ impl<T: Send + Sync + Default + Debug> AsyncChunkBuilder<T> {
         Self {
             mesher,
             pending_chunk_queue: PendingChunkQueue::new(),
-            chunks_to_build: Vec::default(),
-            tasks: Vec::default(),
-            completed: Vec::default(),
+            chunks_to_build: HashMap::default(),
+            tasks: HashMap::default(),
+            completed: HashMap::default(),
         }
     }
 
@@ -69,26 +69,10 @@ impl<T: Send + Sync + Default + Debug> AsyncChunkBuilder<T> {
         }
 
         for pos in completed.keys() {
-            self.tasks.retain(|(chunk_pos, _)| chunk_pos != pos);
+            self.tasks.remove(&pos);
         }
 
         self.completed.extend(completed);
-    }
-
-    fn take_chunks_to_build(&mut self, pos: ChunkPos) -> Vec<(ChunkPos, (Chunk, T))> {
-        let mut result = Vec::new();
-        let mut i = 0;
-
-        while i < self.chunks_to_build.len() {
-            if self.chunks_to_build[i].0 == pos {
-                let e = self.chunks_to_build.swap_remove(i);
-                result.push(e);
-            } else {
-                i += 1;
-            }
-        }
-
-        result
     }
 }
 
@@ -96,7 +80,7 @@ impl<T: Send + Sync + Default + Debug> ChunkBuilder<T> for AsyncChunkBuilder<T> 
     fn build_chunk(&mut self, chunk_pos: ChunkPos, chunk: &Chunk, additional_data: T) {
         self.pending_chunk_queue.add_chunk(chunk_pos);
         self.chunks_to_build
-            .push((chunk_pos, (chunk.clone(), additional_data)));
+            .insert(chunk_pos, (chunk.clone(), additional_data));
     }
 
     fn update(&mut self, player_pos: ChunkPos) {
@@ -108,12 +92,10 @@ impl<T: Send + Sync + Default + Debug> ChunkBuilder<T> for AsyncChunkBuilder<T> 
             .take_nearest_chunks(Self::MAX_BUILD_JOBS, player_pos);
 
         for pos in nearest_chunks {
-            let chunks = self.take_chunks_to_build(pos);
-
-            for (pos, (chunk, additional_data)) in chunks {
+            if let Some((chunk, additional_data)) = self.chunks_to_build.remove(&pos) {
                 let task = self.create_build_task(chunk);
                 self.tasks
-                    .push((pos, (ChunkBuildTask(task), additional_data)));
+                    .insert(pos, (ChunkBuildTask(task), additional_data));
             }
         }
 
@@ -122,10 +104,9 @@ impl<T: Send + Sync + Default + Debug> ChunkBuilder<T> for AsyncChunkBuilder<T> 
 
     fn remove_chunk(&mut self, pos: ChunkPos) {
         self.pending_chunk_queue.remove_chunk(pos);
-        self.chunks_to_build
-            .retain(|(chunk_pos, _)| *chunk_pos != pos);
-        self.tasks.retain(|(chunk_pos, _)| *chunk_pos != pos);
-        self.completed.retain(|(chunk_pos, _)| *chunk_pos != pos);
+        self.chunks_to_build.remove(&pos);
+        self.tasks.remove(&pos);
+        self.completed.remove(&pos);
     }
 
     fn clear_all(&mut self) {
@@ -136,7 +117,7 @@ impl<T: Send + Sync + Default + Debug> ChunkBuilder<T> for AsyncChunkBuilder<T> 
     }
 
     fn poll_completed(&mut self) -> Vec<(ChunkPos, (ChunkMesh, T))> {
-        std::mem::take(&mut self.completed)
+        std::mem::take(&mut self.completed).into_iter().collect()
     }
 }
 
