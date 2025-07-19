@@ -168,6 +168,7 @@ mod tests {
     use crate::chunk_mesh_builder::builders::delayed_dummy_chunk_builder::{
         DelayedData, DelayedDummyChunkBuilder,
     };
+    use crate::chunk_mesh_builder::builders::dummy_chunk_builder::DummyChunkBuilder;
 
     use super::*;
     use rand::Rng;
