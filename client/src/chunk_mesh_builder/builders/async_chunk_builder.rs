@@ -147,6 +147,8 @@ impl<T: Send + Sync + Default + Debug> ChunkBuilder<T> for AsyncChunkBuilder<T> 
 impl<T: Send + Sync + Default> fmt::Debug for AsyncChunkBuilder<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("AsyncChunkBuilder")
+            .field("pending_chunk_queue", &self.pending_chunk_queue)
+            .field("to_build", &self.chunks_to_build.len())
             .field("tasks", &self.tasks.len())
             .field("completed", &self.completed.len())
             .finish()

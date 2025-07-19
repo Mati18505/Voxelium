@@ -155,6 +155,11 @@ impl<T: Send + Sync + Default> fmt::Debug for VersionedChunkBuilder<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("VersionedChunkBuilder")
             .field("internal_chunk_builder", &self.chunk_builder)
+            .field(
+                "latest_chunk_mesh_versions",
+                &self.latest_chunk_mesh_versions.len(),
+            )
+            .field("latest_built_chunks", &self.latest_built_chunks.len())
             .finish()
     }
 }

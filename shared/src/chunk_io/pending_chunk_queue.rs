@@ -1,8 +1,7 @@
-use std::{cmp, collections::HashMap};
+use std::{cmp, collections::HashMap, fmt};
 
 use crate::entities::ChunkPos;
 
-#[derive(Debug, PartialEq, Eq)]
 pub struct PendingChunkQueue {
     pending_chunks: Vec<ChunkPos>,
     index_map: HashMap<ChunkPos, usize>,
@@ -281,5 +280,14 @@ mod tests {
 
         assert_eq!(queue.pending_chunks.len(), 0);
         assert_eq!(queue.index_map.len(), 0);
+    }
+}
+
+impl fmt::Debug for PendingChunkQueue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PendingChunkQueue")
+            .field("pending_chunks", &self.pending_chunks.len())
+            .field("index_map", &self.index_map.len())
+            .finish()
     }
 }
