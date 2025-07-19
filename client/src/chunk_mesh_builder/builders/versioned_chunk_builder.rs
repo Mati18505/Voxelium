@@ -233,14 +233,14 @@ mod tests {
     }
 
     #[test]
-    fn test_build_chunk() {
+    fn test_force_build() {
         let inner_builder = Box::new(DummyChunkBuilder::new());
         let mut builder = VersionedChunkBuilder::<u32>::new(inner_builder);
         let chunk_pos = ChunkPos::new(0, 0, 0);
         let chunk = Chunk::default();
 
-        builder.build_chunk(chunk_pos, &chunk, 2);
-        builder.build_chunk(chunk_pos, &chunk, 42);
+        builder.force_build(chunk_pos, &chunk, 2);
+        builder.force_build(chunk_pos, &chunk, 42);
         builder.update(ChunkPos::new(0, 0, 0));
 
         assert!(builder.is_chunk_with_latest_version_built(chunk_pos));
@@ -260,7 +260,7 @@ mod tests {
         let player_pos = ChunkPos::new(0, 0, 0);
         let chunk = Chunk::default();
 
-        builder.build_chunk(
+        builder.force_build(
             chunk_pos,
             &chunk,
             DelayedData {
@@ -272,7 +272,7 @@ mod tests {
         builder.update(player_pos);
         assert_eq!(builder.is_chunk_with_latest_version_built(chunk_pos), true);
 
-        builder.build_chunk(
+        builder.force_build(
             chunk_pos,
             &chunk,
             DelayedData {
@@ -299,7 +299,7 @@ mod tests {
             // Every 4th frame, we build a new chunk with the newest data.
             if frame % 4 == 0 {
                 newest_data += 1;
-                builder.build_chunk(
+                builder.force_build(
                     chunk_pos,
                     &chunk,
                     DelayedData {
@@ -328,7 +328,7 @@ mod tests {
         let mut total_built = 0;
 
         // Build initial chunks with different delay and data.
-        builder.build_chunk(
+        builder.force_build(
             chunk_pos,
             &chunk,
             DelayedData {
@@ -336,7 +336,7 @@ mod tests {
                 custom_data: -20,
             },
         );
-        builder.build_chunk(
+        builder.force_build(
             chunk_pos,
             &chunk,
             DelayedData {
@@ -344,7 +344,7 @@ mod tests {
                 custom_data: -10,
             },
         );
-        builder.build_chunk(
+        builder.force_build(
             chunk_pos,
             &chunk,
             DelayedData {
@@ -376,7 +376,7 @@ mod tests {
 
         // `poll_completed` should remove data of returned chunks,
         // but shouldn't remove the version, because of probable conflict.
-        builder.build_chunk(chunk_pos, &chunk, ());
+        builder.force_build(chunk_pos, &chunk, ());
         builder.update(player_pos);
 
         assert_eq!(builder.latest_built_chunks.len(), 1);
@@ -388,8 +388,8 @@ mod tests {
         assert_eq!(builder.latest_chunk_mesh_versions.len(), 1);
 
         // `clear_all` should remove data and versions of all chunks.
-        builder.build_chunk(chunk_pos, &chunk, ());
-        builder.build_chunk(ChunkPos::new(16, 0, 0), &chunk, ());
+        builder.force_build(chunk_pos, &chunk, ());
+        builder.force_build(ChunkPos::new(16, 0, 0), &chunk, ());
         builder.update(player_pos);
 
         builder.clear_all();
@@ -398,8 +398,8 @@ mod tests {
         assert_eq!(builder.latest_chunk_mesh_versions.len(), 0);
 
         // `remove_chunk` should remove both the data and the version of the chunk.
-        builder.build_chunk(chunk_pos, &chunk, ());
-        builder.build_chunk(ChunkPos::new(16, 0, 0), &chunk, ());
+        builder.force_build(chunk_pos, &chunk, ());
+        builder.force_build(ChunkPos::new(16, 0, 0), &chunk, ());
         builder.update(player_pos);
 
         builder.remove_chunk(chunk_pos);
@@ -414,8 +414,8 @@ mod tests {
 
         // `take_chunk` should remove data of returned chunk,
         // but shouldn't remove the version, because of probable conflict.
-        builder.build_chunk(chunk_pos, &chunk, ());
-        builder.build_chunk(ChunkPos::new(16, 0, 0), &chunk, ());
+        builder.force_build(chunk_pos, &chunk, ());
+        builder.force_build(ChunkPos::new(16, 0, 0), &chunk, ());
         builder.update(player_pos);
 
         assert_eq!(builder.latest_built_chunks.len(), 2);
@@ -435,7 +435,7 @@ mod tests {
         let player_pos = ChunkPos::new(0, 0, 0);
         let chunk = Chunk::default();
 
-        builder.build_chunk(
+        builder.force_build(
             chunk_pos,
             &chunk,
             DelayedData {
@@ -443,7 +443,7 @@ mod tests {
                 custom_data: 'x',
             },
         );
-        builder.build_chunk(
+        builder.force_build(
             chunk_pos,
             &chunk,
             DelayedData {
@@ -456,9 +456,9 @@ mod tests {
         // tick 1: y is ready.
         let builded = builder.poll_completed();
         assert_eq!(builded.len(), 1);
-        assert_eq!(builded[0].1 .1.custom_data, 'y');
+        assert_eq!(builded[&chunk_pos].1.custom_data, 'y');
 
-        builder.build_chunk(
+        builder.force_build(
             chunk_pos,
             &chunk,
             DelayedData {
@@ -477,7 +477,7 @@ mod tests {
         // tick 3: z is ready.
         let builded = builder.poll_completed();
         assert_eq!(builded.len(), 1);
-        assert_eq!(builded[0].1 .1.custom_data, 'z');
+        assert_eq!(builded[&chunk_pos].1.custom_data, 'z');
     }
 
     #[test]
@@ -488,7 +488,7 @@ mod tests {
         let player_pos = ChunkPos::new(0, 0, 0);
         let chunk = Chunk::default();
 
-        builder.build_chunk(
+        builder.force_build(
             chunk_pos,
             &chunk,
             DelayedData {
@@ -496,7 +496,7 @@ mod tests {
                 custom_data: 'x',
             },
         );
-        builder.build_chunk(
+        builder.force_build(
             chunk_pos,
             &chunk,
             DelayedData {
@@ -511,7 +511,7 @@ mod tests {
         assert!(builded.is_some());
         assert_eq!(builded.unwrap().1.custom_data, 'y');
 
-        builder.build_chunk(
+        builder.force_build(
             chunk_pos,
             &chunk,
             DelayedData {
