@@ -2,7 +2,7 @@ use bevy::{
     prelude::*,
     tasks::{futures_lite::future, Task},
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt};
 
 use crate::{
     chunk_io::pending_chunk_queue::PendingChunkQueue,
@@ -33,6 +33,14 @@ impl ChunkLoader {
 
     pub fn load_chunk(&mut self, pos: ChunkPos) {
         self.chunks_to_load.add_chunk(pos);
+    }
+
+    /// Removes chunk from the `chunks_to_load` queue.
+    /// If the chunk is currently loading, load operation is cancelled.
+    /// If the chunk was already loaded, removes it.
+    pub fn cancel_loading_chunk(&mut self, pos: ChunkPos) {
+        self.chunks_to_load.remove_chunk(pos);
+        self.completed.remove(&pos);
     }
 
     pub fn poll_loaded_chunks(&mut self) -> HashMap<ChunkPos, Chunk> {
@@ -72,5 +80,14 @@ impl ChunkLoader {
         }
 
         completed
+    }
+}
+
+impl fmt::Debug for ChunkLoader {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ChunkLoader")
+            .field("chunks_to_load", &self.chunks_to_load)
+            .field("completed", &self.completed.len())
+            .finish()
     }
 }

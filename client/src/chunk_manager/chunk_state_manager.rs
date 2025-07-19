@@ -281,6 +281,9 @@ impl ChunkManager {
             EmptyToLoading => {
                 self.chunk_loader.load_chunk(pos);
             }
+            LoadingToEmpty => {
+                self.chunk_loader.cancel_loading_chunk(pos);
+            }
             LoadingToLoaded => {
                 log::debug!("Loaded chunk {:?}", pos);
             }
@@ -292,6 +295,7 @@ impl ChunkManager {
             }
             ToDrawToLoaded => {
                 // TODO: Remove mesh from chunk builder.
+                // self.chunk_builder.remove_chunk(chunk_pos);
             }
             ToDrawToDrawn => {
                 let mesh = self
@@ -417,7 +421,8 @@ impl fmt::Debug for ChunkManager {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ChunkManager")
             .field("world", &self.world)
-            .field("chunk_builder", &self.chunk_builder)
+            // .field("chunk_builder", &self.chunk_builder)
+            .field("chunk_loader", &self.chunk_loader)
             .finish()
     }
 }

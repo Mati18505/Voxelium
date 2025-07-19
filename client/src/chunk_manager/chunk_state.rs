@@ -28,10 +28,14 @@ pub fn get_next_chunk_state(curr_state: ChunkState, status: ChunkStatus) -> Chun
             }
         }
         Loading => {
-            if status.loaded {
-                Loaded
+            if status.is_within_load {
+                if status.loaded {
+                    Loaded
+                } else {
+                    curr_state
+                }
             } else {
-                curr_state
+                Empty
             }
         }
         Loaded => {
@@ -73,6 +77,7 @@ pub fn get_next_chunk_state(curr_state: ChunkState, status: ChunkStatus) -> Chun
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ChunkTransition {
     EmptyToLoading,
+    LoadingToEmpty,
     LoadingToLoaded,
     LoadedToEmpty,
     LoadedToToDraw,
@@ -88,6 +93,7 @@ pub fn get_chunk_transition(from: ChunkState, to: ChunkState) -> Option<ChunkTra
 
     match (from, to) {
         (Empty, Loading) => Some(EmptyToLoading),
+        (Loading, Empty) => Some(LoadingToEmpty),
         (Loading, Loaded) => Some(LoadingToLoaded),
         (Loaded, Empty) => Some(LoadedToEmpty),
         (Loaded, ToDraw) => Some(LoadedToToDraw),
