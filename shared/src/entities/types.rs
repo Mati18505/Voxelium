@@ -2,7 +2,7 @@ pub type BlockID = u8;
 pub const CHUNK_SIZE: usize = 16;
 
 use cgmath::Vector3;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 pub type BlockPos = Vector3<isize>;
 pub type Direction = Vector3<isize>;
@@ -78,11 +78,23 @@ impl Deref for ChunkPos {
     }
 }
 
+impl DerefMut for ChunkPos {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0 
+    }
+}
+
 impl Deref for BlockInChunkPos {
     type Target = Vector3<usize>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl DerefMut for BlockInChunkPos {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
