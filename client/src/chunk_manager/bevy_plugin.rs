@@ -53,7 +53,7 @@ fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>
 
     let (chunk_object_tx, chunk_object_rx) = crossbeam_channel::unbounded::<ChunkObjectEvent>();
     let (event_tx, event_rx) = crossbeam_channel::unbounded::<WorldChunkUpdate>();
-    let chunk_loader_provider = Box::new(GeneratedChunkProvider::new());
+    let chunk_loader_provider = Box::new(GeneratedChunkProvider::default());
     let chunk_loader = ChunkLoader::new(chunk_loader_provider);
 
     let mut chunk_manager = ChunkManager::new(chunk_loader, chunk_builder, config);

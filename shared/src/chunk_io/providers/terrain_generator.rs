@@ -1,5 +1,4 @@
-use cgmath::num_traits::Float;
-use simdnoise::{CellDistanceFunction, NoiseBuilder, FbmSettings};
+use simdnoise::NoiseBuilder;
 
 use crate::entities::{
     name_to_block_id, BlockID, BlockInChunkPos, BlockPos, BlockStorage, ChunkPos, CHUNK_SIZE
@@ -7,23 +6,15 @@ use crate::entities::{
 
 #[derive(Debug, Clone)]
 pub struct TerrainGenerator {
-    chunk_pos: ChunkPos,
-    height_map: Vec<f32>,
-    density_map: Vec<f32>,
 }
 
 impl TerrainGenerator {
     pub fn new() -> Self {
-        Self {
-            chunk_pos: ChunkPos::new(0, 0, 0),
-            height_map: Vec::default(),
-            density_map: Vec::default(),
-        }
+        Self {}
     }
 
     pub fn generate_terrain(&mut self, chunk_pos: ChunkPos) -> BlockStorage {
-        self.chunk_pos = chunk_pos;
-        self.generate_noise();
+        let noise = self.generate_density_map(chunk_pos);
 
         let mut blocks = BlockStorage::default().get_blocks().to_owned();
 
@@ -36,7 +27,7 @@ impl TerrainGenerator {
 
                     let pos = BlockInChunkPos::new(x, y, z);
                     let world_pos = BlockPos::new(world_x, world_y, world_z);
-                    let block_id = self.generate_voxel(pos, world_pos);
+                    let block_id = self.generate_voxel(pos, world_pos, noise[pos.index()]);
 
                     blocks[pos.index()] = block_id;
                 }
@@ -46,30 +37,27 @@ impl TerrainGenerator {
         BlockStorage::new(blocks)
     }
     
-    fn generate_noise(&mut self) {
-        let offset_x = self.chunk_pos.x as f32;
-        let offset_y = self.chunk_pos.y as f32;
-        let offset_z = self.chunk_pos.z as f32;
+    fn generate_density_map(&self, chunk_pos: ChunkPos) -> Vec<f32> {
+        let offset_x = chunk_pos.x as f32;
+        let offset_y = chunk_pos.y as f32;
+        let offset_z = chunk_pos.z as f32;
 
-        self.density_map = NoiseBuilder::fbm_3d_offset(offset_x, CHUNK_SIZE, offset_y, CHUNK_SIZE, offset_z, CHUNK_SIZE)
+        NoiseBuilder::fbm_3d_offset(offset_x, CHUNK_SIZE, offset_y, CHUNK_SIZE, offset_z, CHUNK_SIZE)
             .with_freq(0.5)
             .with_octaves(5)
             .with_seed(1337)
             .with_lacunarity(0.5)
-            .generate_scaled(0.0, 100.0);
+            .generate_scaled(0.0, 100.0)
     }
 
-    fn generate_voxel(&self, pos: BlockInChunkPos, world_pos: BlockPos) -> BlockID {
-        if self.density_map[pos.index()] < 20.0 {
+    fn generate_voxel(&self, pos: BlockInChunkPos, world_pos: BlockPos, density: f32) -> BlockID {
+        if density < 20.0 {
             name_to_block_id("stone")
-        } else if self.density_map[pos.index()] < 40.0 {
+        } else if density < 40.0 {
             name_to_block_id("grass")
         } else {
             name_to_block_id("air")
         }
-    }
-    fn index(pos: BlockInChunkPos) -> usize {
-        pos.x + pos.z * CHUNK_SIZE + pos.y * CHUNK_SIZE * CHUNK_SIZE
     }
 }
 
