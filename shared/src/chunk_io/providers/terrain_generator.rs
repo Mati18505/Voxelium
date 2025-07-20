@@ -4,13 +4,35 @@ use crate::entities::{
     name_to_block_id, BlockID, BlockInChunkPos, BlockPos, BlockStorage, ChunkPos, CHUNK_SIZE
 };
 
+#[derive(Debug, Default, Clone)]
+pub struct TerrainConfig {
+    seed: i32,
+    freq: f32,
+    lacunarity: f32,
+    octaves: u8,
+}
+
+impl Default for TerrainConfig {
+    fn default() -> Self {
+        Self {
+            seed: 1337,
+            freq: 0.5,
+            lacunarity: 0.5,
+            octaves: 5,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct TerrainGenerator {
+    config: TerrainConfig
 }
 
 impl TerrainGenerator {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(config: TerrainConfig) -> Self {
+        Self {
+            config,
+        }
     }
 
     pub fn generate_terrain(&mut self, chunk_pos: ChunkPos) -> BlockStorage {
@@ -63,6 +85,6 @@ impl TerrainGenerator {
 
 impl Default for TerrainGenerator {
     fn default() -> Self {
-        Self::new()
+        Self::new(TerrainConfig::default())
     }
 }
