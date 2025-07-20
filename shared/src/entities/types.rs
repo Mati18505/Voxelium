@@ -80,7 +80,7 @@ impl Deref for ChunkPos {
 
 impl DerefMut for ChunkPos {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0 
+        &mut self.0
     }
 }
 

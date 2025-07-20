@@ -5,7 +5,7 @@ use shared::{
     chunk_io::{
         providers::generated_chunk_provider::GeneratedChunkProvider, ChunkLoader, ChunkProvider,
     },
-    entities::{BlockPos, ChunkPos},
+    entities::{BlockPos, ChunkPos, ChunkPosGenerator2D, ChunkRepository},
 };
 
 use crate::{
@@ -25,7 +25,12 @@ use super::{bevy_event_manager::WorldChunkUpdateEvent, ChunkEntitiesManager};
 pub struct ChunkManagerPlugin;
 impl Plugin for ChunkManagerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppStates::InGame), init_manager)
+        app.insert_resource(Config{
+            load_distance: 10,
+            render_distance: 9,
+            dynamic_vertical_loading: false,
+        })
+        .add_systems(OnEnter(AppStates::InGame), init_manager)
             .add_event::<WorldChunkUpdateEvent>()
             .add_systems(Update, update.run_if(in_state(AppStates::InGame)))
             .add_systems(Update, chunk_streamer.run_if(in_state(AppStates::InGame)));
@@ -43,12 +48,9 @@ fn init_manager(mut commands: Commands, game_resources: Res<GameResources>) {
         game_resources.texture_dictionary.clone(),
     ));
 
-    let mut config = Config::new(10, 9);
-    config.dynamic_vertical_loading = false;
-
     let chunk_provider = Box::new(GeneratedChunkProvider::new());
 
-    let chunk_manager_resource = ChunkManagerResources::new(voxel_mesher, chunk_provider, config);
+    let chunk_manager_resource = ChunkManagerResources::new(voxel_mesher, chunk_provider);
 
     /*
     let manager_resources = ManagerResources {
@@ -98,7 +100,7 @@ fn update(
  */
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Resource, Debug, Clone, PartialEq)]
 pub struct Config {
     /// Horizontal radius (in chunks) within which chunks are loaded.
     pub load_distance: usize,
@@ -132,14 +134,12 @@ pub struct ChunkManagerResources {
     world: PhysicalWorld,
     chunk_loader: ChunkLoader,
     chunk_builder: Box<dyn VersionedChunkBuilder<()>>,
-    config: Config,
 }
 
 impl ChunkManagerResources {
     fn new(
         voxel_mesher: Arc<dyn ChunkMesher>,
         chunk_provider: Box<dyn ChunkProvider>,
-        config: Config,
     ) -> Self {
         let chunk_loader = ChunkLoader::new(chunk_provider);
 
@@ -150,14 +150,37 @@ impl ChunkManagerResources {
             world: PhysicalWorld::default(),
             chunk_loader,
             chunk_builder,
-            config,
         }
     }
 }
 
-fn chunk_streamer(mut chunk_pos_changed_ev: EventReader<ChunkPosChangedEvent>) {
+fn chunk_streamer(mut chunk_pos_changed_ev: EventReader<ChunkPosChangedEvent>, resources: ChunkManagerResources, config: Config) {
     for ev in chunk_pos_changed_ev.read() {
-        println!("chunk pos: {:?}", ev.chunk_pos);
+        info!("chunk pos: {:?}", ev.chunk_pos);
+        let player_pos = ev.chunk_pos;
+
+        // Remove all chunks that are still empty.
+        let empty_chunks_in_world: Vec<ChunkPos> =
+            resources.world.get_chunks_with_state(ChunkState::Empty);
+
+        for pos in empty_chunks_in_world {
+            resources.world.remove_chunk(pos);
+        }
+
+
+        // Load missing chunks within the load distance.
+        let generator = ChunkPosGenerator2D::new(player_pos, config.load_distance);
+        generator.for_each(|| {
+            self.load_chunk_if_is_empty(pos);
+        });
+
+        // Update all existing chunks in the world.
+        let chunks_in_world: Vec<ChunkPos> = self.world.chunk_states.keys().copied().collect();
+
+        for pos in chunks_in_world {
+            self.update_chunk_state(pos);
+        }
     }
-    // dbg!(&chunk_manager_resources.chunk_manager);
 }
+
+fn 
