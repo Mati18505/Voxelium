@@ -81,6 +81,9 @@ impl TerrainGenerator {
             name_to_block_id("air")
         }
     }
+    fn index(pos: BlockInChunkPos) -> usize {
+        pos.x + pos.z * CHUNK_SIZE + pos.y * CHUNK_SIZE * CHUNK_SIZE
+    }
 }
 
 impl Default for TerrainGenerator {
