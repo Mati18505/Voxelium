@@ -9,6 +9,7 @@ pub struct LookedAtBlockChangedEvent {
 }
 
 /// Controller position in chunks changed.
+#[derive(Event, Debug)]
 pub struct ChunkPosChangedEvent {
     pub chunk_pos: ChunkPos,
 }
