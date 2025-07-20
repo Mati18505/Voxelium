@@ -2,26 +2,25 @@ use std::sync::Arc;
 
 use bevy::prelude::*;
 use shared::{
-    chunk_io::{providers::generated_chunk_provider::GeneratedChunkProvider, ChunkLoader, ChunkProvider},
+    chunk_io::{
+        providers::generated_chunk_provider::GeneratedChunkProvider, ChunkLoader, ChunkProvider,
+    },
     entities::{BlockPos, ChunkPos},
 };
 
 use crate::{
     bevy_render::VoxelMaterial,
     bevy_types::{AppStates, GameResources},
-    chunk_manager::{ChunkManagerSystemsPlugin, ChunkObjectEvent, WorldChunkUpdate},
+    chunk_manager::{physical_world::PhysicalWorld, ChunkManagerSystemsPlugin},
     chunk_mesh_builder::{
-        builders::{
-            async_chunk_builder::AsyncChunkBuilder, versioned_chunk_builder::VersionedChunkBuilder,
-        },
-        meshers::naive_mesher::NaiveMesher,
+        builders::{async_chunk_builder::AsyncChunkBuilder, ChunkBuilder, Versioned},
+        meshers::{naive_mesher::NaiveMesher, ChunkMesher},
     },
     controller,
+    orchestrator::ChunkPosChangedEvent,
 };
 
-use super::{
-    bevy_event_manager::WorldChunkUpdateEvent, ChunkEntitiesManager, ChunkManager, Config,
-};
+use super::{bevy_event_manager::WorldChunkUpdateEvent, ChunkEntitiesManager};
 
 pub struct ChunkManagerPlugin;
 impl Plugin for ChunkManagerPlugin {
@@ -29,6 +28,7 @@ impl Plugin for ChunkManagerPlugin {
         app.add_systems(OnEnter(AppStates::InGame), init__manager)
             .add_event::<WorldChunkUpdateEvent>()
             .add_systems(Update, update.run_if(in_state(AppStates::InGame)))
+            .add_systems(Update, chunk_streamer.run_if(in_state(AppStates::InGame)))
             .insert_resource(ChunkManagerResources::default());
     }
 }
@@ -56,7 +56,7 @@ fn init_manager(mut commands: Commands, game_resources: Res<GameResources>) {
     let manager_resources = ManagerResources {
         chunk_entities_manager: ChunkEntitiesManager::new(chunk_object_rx),
     };
-    
+
     commands.insert_resource(manager_resources);
 }
 
@@ -97,9 +97,6 @@ fn update(
         .process_pending(chunk_manager_events);
 }
 
-
-
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct Config {
     /// Horizontal radius (in chunks) within which chunks are loaded.
@@ -138,8 +135,12 @@ pub struct ChunkManagerResources {
 }
 
 impl ChunkManagerResources {
-    fn new(voxel_mesher: Arc<dyn VoxelMesher>, chunk_provider: Box<dyn ChunkProvider>, config: Config) {
-        let chunk_loader = ChunkLoader::new(chunk_loader_provider);
+    fn new(
+        voxel_mesher: Arc<dyn ChunkMesher>,
+        chunk_provider: Box<dyn ChunkProvider>,
+        config: Config,
+    ) {
+        let chunk_loader = ChunkLoader::new(chunk_provider);
 
         let inner_builder = Box::new(AsyncChunkBuilder::new(Arc::new(voxel_mesher)));
         let chunk_builder = Box::new(VersionedChunkBuilder::<()>::new(inner_builder));
@@ -150,5 +151,12 @@ impl ChunkManagerResources {
             chunk_builder,
             config,
         }
+    }
+}
+
+fn chunk_streamer(chunk_pos_changed_ev: EventWriter<ChunkPosChangedEvent>) {
+    println!("3");
+    for ev in chunk_pos_changed_ev.read() {
+        println!("chunk pos: {}");
     }
 }
