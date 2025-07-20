@@ -3,10 +3,23 @@ use shared::entities::name_to_block_id;
 
 use super::{super::utils::raycast_from_controller, super::LookedAtBlockChangedEvent};
 use crate::{
-    bevy_types::GameResources,
+    bevy_types::{AppStates, GameResources},
     chunk_manager::{ChunkManagerResources, WorldChunkUpdateEvent},
     controller::Controller,
 };
+
+pub struct LookedAtBlockEventPlugin;
+
+impl Plugin for LookedAtBlockEventPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_event::<LookedAtBlockEventPlugin>()
+            .add_systems(Startup, initialize_looked_at_block)
+            .add_systems(
+                Update,
+                update_looked_at_block.run_if(in_state(AppStates::InGame)),
+            )
+    }
+}
 
 #[derive(Component, Debug, Default, Clone, Copy)]
 pub struct LookedAtBlockData {
