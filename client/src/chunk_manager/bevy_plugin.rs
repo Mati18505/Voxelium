@@ -144,7 +144,6 @@ impl ChunkManagerResources {
 }
 
 fn chunk_streamer(mut chunk_pos_changed_ev: EventReader<ChunkPosChangedEvent>) {
-    println!("3");
     for ev in chunk_pos_changed_ev.read() {
         println!("chunk pos: {:?}", ev.chunk_pos);
     }

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use shared::entities::{BlockPos, ChunkPos};
 
-use crate::{controller, orchestrator::ChunkPosChangedEvent};
+use crate::{bevy_types::AppStates, controller::{self, PositionChangeEvent}, orchestrator::ChunkPosChangedEvent};
 
 pub struct PositionChangeEventPlugin;
 
@@ -12,6 +12,7 @@ impl Plugin for PositionChangeEventPlugin {
             .add_systems(
                 Update,
                 (
+                    update_chunk_pos_data,
                     emit_chunk_change_events.after(update_chunk_pos_data),
                 ),
             );
@@ -28,7 +29,7 @@ pub fn initialize_chunk_pos_data(mut commands: Commands) {
 }
 
 pub fn update_chunk_pos_data(
-    mut controller_pos_changed_ev: EventReader<controller::PositionChangeEvent>,
+    mut controller_pos_changed_ev: EventReader<PositionChangeEvent>,
     mut q_chunk_pos_data: Query<&mut ChunkPositionData>,
 ) {
     let mut chunk_pos_data = match q_chunk_pos_data.single_mut() {
@@ -53,7 +54,6 @@ pub fn update_chunk_pos_data(
             chunk_pos_data.last_chunk_pos = Some(chunk_pos);
         }
     }
-    println!("1");
 }
 
 pub fn emit_chunk_change_events(
@@ -61,9 +61,10 @@ pub fn emit_chunk_change_events(
     mut chunk_pos_changed_ev: EventWriter<ChunkPosChangedEvent>,
 ) {
     for chunk_pos_data in &q_chunk_pos_data {
-        chunk_pos_changed_ev.send(ChunkPosChangedEvent {
-            chunk_pos: chunk_pos_data.last_chunk_pos.unwrap(),
-        });
+        if let Some(chunk_pos) = chunk_pos_data.last_chunk_pos {
+            chunk_pos_changed_ev.send(ChunkPosChangedEvent {
+                chunk_pos: chunk_pos,
+            });
+        }
     }
-    println!("2");
 }
