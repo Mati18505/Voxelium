@@ -43,6 +43,10 @@ impl ChunkLoader {
         self.completed.remove(&pos);
     }
 
+    pub fn get_loaded_chunks(&self) -> impl Iterator<Item = ChunkPos> + '_ {
+        self.completed.iter().map(|(chunk_pos, _)| *chunk_pos)
+    }
+
     pub fn poll_loaded_chunks(&mut self) -> HashMap<ChunkPos, Chunk> {
         std::mem::take(&mut self.completed)
     }
