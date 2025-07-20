@@ -20,7 +20,7 @@ impl Plugin for PositionChangeEventPlugin {
 
 #[derive(Component, Debug, Default, Clone, Copy)]
 pub struct ChunkPositionData {
-    last_chunk_pos: ChunkPos,
+    last_chunk_pos: Option<ChunkPos>,
 }
 
 pub fn initialize_chunk_pos_data(mut commands: Commands) {
@@ -28,7 +28,7 @@ pub fn initialize_chunk_pos_data(mut commands: Commands) {
 }
 
 pub fn update_chunk_pos_data(
-    controller_pos_changed_ev: EventReader<controller::PositionChangeEvent>,
+    mut controller_pos_changed_ev: EventReader<controller::PositionChangeEvent>,
     mut q_chunk_pos_data: Query<&mut ChunkPositionData>,
 ) {
     let mut chunk_pos_data = match q_chunk_pos_data.single_mut() {
@@ -40,11 +40,17 @@ pub fn update_chunk_pos_data(
     };
 
     for ev in controller_pos_changed_ev.read() {
-        let block_pos = BlockPos::new(ev.new_pos.x, ev.new_pos.y, ev.new_pos.z);
+        // Convert bevy direction to our direction
+        let block_pos =
+            BlockPos::new(ev.new_pos.x as isize, -ev.new_pos.z as isize, ev.new_pos.y as isize);
         let chunk_pos = ChunkPos::from(block_pos);
 
-        if chunk_pos != chunk_pos_data.last_chunk_pos {
-            chunk_pos_data.last_chunk_pos = chunk_pos;
+        if let Some(last_chunk_pos) = chunk_pos_data.last_chunk_pos {
+            if chunk_pos != last_chunk_pos {
+                chunk_pos_data.last_chunk_pos = Some(chunk_pos);
+            }
+        } else {
+            chunk_pos_data.last_chunk_pos = Some(chunk_pos);
         }
     }
     println!("1");
@@ -52,11 +58,11 @@ pub fn update_chunk_pos_data(
 
 pub fn emit_chunk_change_events(
     q_chunk_pos_data: Query<&ChunkPositionData, Changed<ChunkPositionData>>,
-    chunk_pos_changed_ev: EventWriter<ChunkPosChangedEvent>,
+    mut chunk_pos_changed_ev: EventWriter<ChunkPosChangedEvent>,
 ) {
     for chunk_pos_data in &q_chunk_pos_data {
         chunk_pos_changed_ev.send(ChunkPosChangedEvent {
-            chunk_pos: chunk_pos_data.last_chunk_pos,
+            chunk_pos: chunk_pos_data.last_chunk_pos.unwrap(),
         });
     }
     println!("2");

@@ -160,11 +160,13 @@ fn init_level(
     ));
 }
 
+// TODO: Fix this.
 fn update(
     mut chunk_manager_resources: ResMut<ChunkManagerResources>,
     game_resources: ResMut<GameResources>,
     mut controller_ev: EventReader<controller::ActionEvent>,
 ) {
+    /*
     for ev in controller_ev.read() {
         let world = &chunk_manager_resources.chunk_manager.get_world().world;
         let raycast_result = raycast_from_controller(
@@ -191,6 +193,7 @@ fn update(
             println!("Raycast don't collide.");
         }
     }
+ */
 }
 
 struct BlockAction {

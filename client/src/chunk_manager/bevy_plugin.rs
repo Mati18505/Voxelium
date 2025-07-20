@@ -11,9 +11,9 @@ use shared::{
 use crate::{
     bevy_render::VoxelMaterial,
     bevy_types::{AppStates, GameResources},
-    chunk_manager::{physical_world::PhysicalWorld, ChunkManagerSystemsPlugin},
+    chunk_manager::{physical_world::PhysicalWorld},
     chunk_mesh_builder::{
-        builders::{async_chunk_builder::AsyncChunkBuilder, ChunkBuilder, Versioned},
+        builders::{self, async_chunk_builder::AsyncChunkBuilder, ChunkBuilder, Versioned},
         meshers::{naive_mesher::NaiveMesher, ChunkMesher},
     },
     controller,
@@ -25,11 +25,10 @@ use super::{bevy_event_manager::WorldChunkUpdateEvent, ChunkEntitiesManager};
 pub struct ChunkManagerPlugin;
 impl Plugin for ChunkManagerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppStates::InGame), init__manager)
+        app.add_systems(OnEnter(AppStates::InGame), init_manager)
             .add_event::<WorldChunkUpdateEvent>()
             .add_systems(Update, update.run_if(in_state(AppStates::InGame)))
-            .add_systems(Update, chunk_streamer.run_if(in_state(AppStates::InGame)))
-            .insert_resource(ChunkManagerResources::default());
+            .add_systems(Update, chunk_streamer.run_if(in_state(AppStates::InGame)));
     }
 }
 
@@ -39,10 +38,10 @@ pub struct ManagerResources {
 }
 
 fn init_manager(mut commands: Commands, game_resources: Res<GameResources>) {
-    let voxel_mesher = NaiveMesher::new(
+    let voxel_mesher = Arc::new(NaiveMesher::new(
         game_resources.block_type_storage.clone(),
         game_resources.texture_dictionary.clone(),
-    );
+    ));
 
     let mut config = Config::new(10, 9);
     config.dynamic_vertical_loading = false;
@@ -51,13 +50,14 @@ fn init_manager(mut commands: Commands, game_resources: Res<GameResources>) {
 
     let chunk_manager_resource = ChunkManagerResources::new(voxel_mesher, chunk_provider, config);
 
-    commands.insert_resource(resource);
-
+    /*
     let manager_resources = ManagerResources {
         chunk_entities_manager: ChunkEntitiesManager::new(chunk_object_rx),
     };
 
     commands.insert_resource(manager_resources);
+ */
+    commands.insert_resource(chunk_manager_resource);
 }
 
 fn update(
@@ -69,19 +69,7 @@ fn update(
     mut controller_events: EventReader<controller::PositionChangeEvent>,
     chunk_manager_events: EventWriter<WorldChunkUpdateEvent>,
 ) {
-    for e in controller_events.read() {
-        let new_pos = e.new_pos;
-        // Convert bevy direction to our direction
-        let new_block_pos =
-            BlockPos::new(new_pos.x as isize, -new_pos.z as isize, new_pos.y as isize);
-        let new_chunk_pos = ChunkPos::from(new_block_pos);
-
-        chunk_manager_resources
-            .chunk_manager
-            .update_controller_pos(new_chunk_pos);
-        dbg!(&chunk_manager_resources.chunk_manager);
-    }
-
+/*
     chunk_manager_resources.chunk_manager.check_loaded_chunks();
     chunk_manager_resources.chunk_manager.check_built_chunks();
     chunk_manager_resources
@@ -95,6 +83,7 @@ fn update(
     chunk_manager_resources
         .event_manager
         .process_pending(chunk_manager_events);
+ */
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -139,11 +128,11 @@ impl ChunkManagerResources {
         voxel_mesher: Arc<dyn ChunkMesher>,
         chunk_provider: Box<dyn ChunkProvider>,
         config: Config,
-    ) {
+    ) -> Self {
         let chunk_loader = ChunkLoader::new(chunk_provider);
 
-        let inner_builder = Box::new(AsyncChunkBuilder::new(Arc::new(voxel_mesher)));
-        let chunk_builder = Box::new(VersionedChunkBuilder::<()>::new(inner_builder));
+        let inner_builder = Box::new(AsyncChunkBuilder::new(voxel_mesher));
+        let chunk_builder = Box::new(builders::versioned_chunk_builder::VersionedChunkBuilder::<()>::new(inner_builder));
 
         Self {
             world: PhysicalWorld::default(),
@@ -154,9 +143,10 @@ impl ChunkManagerResources {
     }
 }
 
-fn chunk_streamer(chunk_pos_changed_ev: EventWriter<ChunkPosChangedEvent>) {
+fn chunk_streamer(mut chunk_pos_changed_ev: EventReader<ChunkPosChangedEvent>) {
     println!("3");
     for ev in chunk_pos_changed_ev.read() {
-        println!("chunk pos: {}");
+        println!("chunk pos: {:?}", ev.chunk_pos);
     }
+    // dbg!(&chunk_manager_resources.chunk_manager);
 }

@@ -12,12 +12,12 @@ pub struct LookedAtBlockEventPlugin;
 
 impl Plugin for LookedAtBlockEventPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<LookedAtBlockEventPlugin>()
+        app.add_event::<LookedAtBlockChangedEvent>()
             .add_systems(Startup, initialize_looked_at_block)
             .add_systems(
                 Update,
                 update_looked_at_block.run_if(in_state(AppStates::InGame)),
-            )
+            );
     }
 }
 
@@ -77,12 +77,14 @@ pub fn update_looked_at_block(
     }
 }
 
+// TODO: fix
 fn process_raycast_and_send_event(
     mut looked_at_block_change_ev: EventWriter<'_, LookedAtBlockChangedEvent>,
     chunk_manager_resources: Res<'_, ChunkManagerResources>,
     game_resources: Res<'_, GameResources>,
     looked_at_block_data: Mut<'_, LookedAtBlockData>,
 ) {
+    /*
     let world = &chunk_manager_resources.chunk_manager.get_world().world;
     let raycast_result = raycast_from_controller(
         looked_at_block_data.last_player_pos,
@@ -119,4 +121,5 @@ fn process_raycast_and_send_event(
     } else {
         warn!("Air block type not found in block type storage!")
     }
+ */
 }
