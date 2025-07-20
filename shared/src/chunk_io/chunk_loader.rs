@@ -35,12 +35,34 @@ impl ChunkLoader {
         self.chunks_to_load.add_chunk(pos);
     }
 
+    /// Replaces the current chunk provider.
+    /// Only new chunks will be loaded using the new provider.
+    /// Previously loaded chunks are not affected.
+    pub fn change_chunk_provider(&mut self, chunk_provider: Box<dyn ChunkProvider>) {
+        self.chunk_provider = chunk_provider;
+    }
+
+    /// Clears all currently loaded chunks and adds them to `chunks_to_load` queue.
+    /// This is useful when changing the chunk provider.
+    pub fn reload_all(&mut self) {
+        for chunk_pos in self.completed.keys() {
+            self.chunks_to_load.add_chunk(*chunk_pos);
+        }
+        self.completed.clear();
+    }
+
     /// Removes chunk from the `chunks_to_load` queue.
     /// If the chunk is currently loading, load operation is cancelled.
     /// If the chunk was already loaded, removes it.
     pub fn cancel_loading_chunk(&mut self, pos: ChunkPos) {
         self.chunks_to_load.remove_chunk(pos);
         self.completed.remove(&pos);
+    }
+
+    /// Cancels loading of all chunks and clears loaded ones.
+    pub fn clear_all(&mut self) {
+        self.chunks_to_load = PendingChunkQueue::default();
+        self.completed.clear();
     }
 
     pub fn poll_loaded_chunks(&mut self) -> HashMap<ChunkPos, Chunk> {
