@@ -21,7 +21,7 @@ generate-graphs.sh
 graph1.png
 graph2.png
 
-/.cargo
+/.cargo/config.toml
 
 .vscode/*
 !.vscode/tasks.json
