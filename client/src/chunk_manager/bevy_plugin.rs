@@ -37,6 +37,7 @@ impl Plugin for ChunkManagerPlugin {
         .add_event::<WorldChunkUpdateEvent>()
         .add_event::<ChunkLoaded>()
         .add_event::<ChunkBuilt>()
+        .add_event::<ChunkNeedUpdate>()
         .add_systems(Update, update.run_if(in_state(AppStates::InGame)))
         .add_systems(Update, chunk_streamer.run_if(in_state(AppStates::InGame)));
     }
@@ -181,9 +182,21 @@ fn update_controller_pos(
     }
 }
 
+/// `chunk_streamer` requests to change world state.
+#[derive(Event, Debug)]
+enum ChunkStreamerRequest {
+    /// Request to update the chunk state based on its status.
+    Update(ChunkPos),
+    /// Request to load the chunk if it is empty.
+    Load(ChunkPos),
+    /// Request to remove chunk.
+    Remove(ChunkPos),
+}
+
 /// Manages loaded chunks in world based on player position.
 fn chunk_streamer(
     mut chunk_pos_changed_ev: EventReader<ChunkPosChangedEvent>,
+    mut chunk_streamer_ev: EventWriter<ChunkNeedUpdate>,
     mut world: ResMut<PhysicalWorldResource>,
     config: Res<Config>,
 ) {
@@ -198,22 +211,20 @@ fn chunk_streamer(
         let empty_chunks_in_world: Vec<ChunkPos> = world.get_chunks_with_state(ChunkState::Empty);
 
         for pos in empty_chunks_in_world {
-            world.remove_chunk(pos);
+            chunk_streamer_ev.write(ChunkStreamerRequest::Remove(pos));
         }
 
         // Load missing chunks within the load distance.
-        let generator = ChunkPosGenerator2D::new(player_pos, config.load_distance);
-        generator.for_each(|pos| {
-            // TODO
-            // self.load_chunk_if_is_empty(pos);
-        });
+        let to_load = ChunkPosGenerator2D::new(player_pos, config.load_distance);
+        for pos in to_load {
+            chunk_streamer_ev.write(ChunkStreamerRequest::Load(pos));
+        }
 
         // Update all existing chunks in the world.
         let chunks_in_world: Vec<ChunkPos> = world.chunk_states.keys().copied().collect();
 
         for pos in chunks_in_world {
-            // TODO
-            // self.update_chunk_state(pos);
+            chunk_streamer_ev.write(ChunkStreamerRequest::Update(pos));
         }
     }
 }
@@ -235,7 +246,7 @@ fn chunks_loader(
     chunk_loader.update(chunk_manager_resource.controller_pos);
 
     for (chunk_pos, chunk) in chunk_loader.poll_loaded_chunks() {
-        chunk_loaded_ev.send(ChunkLoaded { chunk_pos, chunk });
+        chunk_loaded_ev.write(ChunkLoaded { chunk_pos, chunk });
     }
 }
 
@@ -256,7 +267,7 @@ fn chunks_builder(
     chunk_builder.update(chunk_manager_resource.controller_pos);
 
     for (chunk_pos, (chunk_mesh, _)) in chunk_builder.poll_completed() {
-        chunk_built_ev.send(ChunkBuilt {
+        chunk_built_ev.write(ChunkBuilt {
             chunk_pos,
             chunk_mesh,
         });
