@@ -18,11 +18,6 @@ impl Plugin for WorldStateManagerPlugin {
     }
 }
 
-#[derive(Event, Debug)]
-struct StateUpdateRequest {
-    pub chunk_status: ChunkStatus,
-}
-
 struct ChunkUpdateHandler<'a> {
     controller_pos: ChunkPos,
     config: &'a StreamerConfig,
