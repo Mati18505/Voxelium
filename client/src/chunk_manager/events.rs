@@ -1,6 +1,12 @@
 use bevy::prelude::*;
 
-use crate::chunk_mesh_builder::ChunkMesh;
+use crate::{
+    chunk_manager::{
+        chunk_state::{self, ChunkTransition},
+        ChunkState, ChunkStatus,
+    },
+    chunk_mesh_builder::ChunkMesh,
+};
 use shared::entities::{types::*, Chunk};
 
 /// Chunks loaded by `ChunkLoader`, not added to world.
@@ -44,5 +50,14 @@ pub enum ChunkStreamerRequest {
 /// `world_event_handler` request to update the chunk state based on its status.
 #[derive(Event, Debug)]
 pub struct StateUpdateRequest {
+    pub chunk_pos: ChunkPos,
+    pub curr_state: ChunkState,
     pub chunk_status: ChunkStatus,
+}
+
+/// Chunk is changing it's state.
+#[derive(Event, Debug)]
+pub struct ChunkStateTransition {
+    pub chunk_pos: ChunkPos,
+    pub transition: ChunkTransition,
 }

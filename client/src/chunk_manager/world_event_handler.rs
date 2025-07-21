@@ -10,7 +10,8 @@ use crate::chunk_manager::{
 pub struct WorldEventHandlerPlugin;
 impl Plugin for WorldEventHandlerPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(PhysicalWorldResource::default())
+        app.add_event::<StateUpdateRequest>()
+        .insert_resource(PhysicalWorldResource::default())
             .add_systems(
                 Update,
                 process_world_events.run_if(in_state(AppStates::InGame)),
@@ -60,7 +61,11 @@ impl<'a> ChunkUpdateHandler<'a> {
         world: &PhysicalWorld,
     ) -> StateUpdateRequest {
         let chunk_status = self.create_chunk_status(pos, world);
-        StateUpdateRequest { chunk_status }
+        StateUpdateRequest {
+            chunk_pos: pos,
+            curr_state: world.get_chunk_state(pos),
+            chunk_status,
+        }
     }
 
     fn create_load_chunk_request(
@@ -74,7 +79,11 @@ impl<'a> ChunkUpdateHandler<'a> {
 
         let mut chunk_status = self.create_chunk_status(pos, world);
         chunk_status.is_within_load = true;
-        Some(StateUpdateRequest { chunk_status })
+        Some(StateUpdateRequest {
+            chunk_pos: pos,
+            curr_state: world.get_chunk_state(pos),
+            chunk_status,
+        })
     }
 
     fn apply_chunk_loaded(&self, ev: &ChunkLoaded, world: &mut PhysicalWorld) {
