@@ -303,12 +303,13 @@ fn state_manager(
     mut world: ResMut<PhysicalWorldResource>,
     mut chunk_loaded_ev: EventReader<ChunkLoaded>,
     mut chunk_built_ev: EventReader<ChunkBuilt>,
+    mut chunk_streamer_ev: EventReader<ChunkStreamerRequest>,
 ) {
     let world = &mut world.world;
     
     for ev in chunk_loaded_ev.read() {
         let pos = ev.chunk_pos;
-        let chunk = &ev.chunk;
+        let chunk = ev.chunk;
 
         world.set_chunk(pos, chunk);
         update_chunk_state(pos);
@@ -316,9 +317,18 @@ fn state_manager(
 
     for ev in chunk_built_ev.read() {
         let pos = ev.chunk_pos;
-        let mesh = &ev.chunk_mesh;
+        let mesh = ev.chunk_mesh;
 
         world.add_chunk_mesh(pos, mesh);
         update_chunk_state(pos);
+    }
+
+    // TODO: remove only if state is `Empty`?
+    for ev in chunk_streamer_ev.read() {
+        match ev {
+            ChunkStreamerRequest::Update(chunk_pos) => update_chunk_state(pos),
+            ChunkStreamerRequest::Load(chunk_pos) => load_chunk_if_is_empty(pos),
+            ChunkStreamerRequest::Remove(chunk_pos) => world.remove_chunk(pos),
+        }
     }
 }
