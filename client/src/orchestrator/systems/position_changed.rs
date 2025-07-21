@@ -1,7 +1,11 @@
 use bevy::prelude::*;
 use shared::entities::{BlockPos, ChunkPos};
 
-use crate::{bevy_types::AppStates, controller::{self, PositionChangeEvent}, orchestrator::ChunkPosChangedEvent};
+use crate::{
+    bevy_types::AppStates,
+    controller::{self, PositionChangeEvent},
+    orchestrator::ChunkPosChangedEvent,
+};
 
 pub struct PositionChangeEventPlugin;
 
@@ -42,8 +46,11 @@ pub fn update_chunk_pos_data(
 
     for ev in controller_pos_changed_ev.read() {
         // Convert bevy direction to our direction
-        let block_pos =
-            BlockPos::new(ev.new_pos.x as isize, -ev.new_pos.z as isize, ev.new_pos.y as isize);
+        let block_pos = BlockPos::new(
+            ev.new_pos.x as isize,
+            -ev.new_pos.z as isize,
+            ev.new_pos.y as isize,
+        );
         let chunk_pos = ChunkPos::from(block_pos);
 
         if let Some(last_chunk_pos) = chunk_pos_data.last_chunk_pos {

@@ -1,9 +1,8 @@
 use bevy::prelude::*;
 
-use crate::{
-    orchestrator::systems::{looked_at_block::LookedAtBlockEventPlugin, position_changed::PositionChangeEventPlugin},
+use crate::orchestrator::systems::{
+    looked_at_block::LookedAtBlockEventPlugin, position_changed::PositionChangeEventPlugin,
 };
-
 
 pub struct OrchestratorPlugin;
 
