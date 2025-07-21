@@ -156,7 +156,6 @@ fn process_world_events(
 
         let req = chunk_update_handler.create_state_update_request(ev.chunk_pos, &world.world);
         state_update_req_ev.write(req);
-        warn!("test")
     }
 
     for ev in chunk_streamer_ev.read() {
@@ -172,6 +171,7 @@ fn process_transition_events(
     mut world: ResMut<PhysicalWorldResource>,
     mut chunk_load_req_ev: EventWriter<ChunkLoaderRequest>,
     mut chunk_build_req_ev: EventWriter<ChunkBuilderRequest>,
+    mut chunk_entity_req_ev: EventWriter<ChunkEntityEvent>,
     mut state_update_req_ev: EventWriter<StateUpdateRequest>,
     mut chunk_state_transition_ev: EventReader<ChunkStateTransition>,
     config: Res<StreamerConfig>,
@@ -196,7 +196,8 @@ fn process_transition_events(
             }
             LoadingToLoaded => {
                 log::debug!("Loaded chunk {:?}", pos);
-                // We need to check, if chunk is within render distance, or outside load distance.
+
+                // We need to check, if chunk is within render distance, or outside load distance or still in load distance.
                 let req = chunk_update_handler.create_state_update_request(pos, &world);
                 state_update_req_ev.write(req);
             }
@@ -207,7 +208,6 @@ fn process_transition_events(
             LoadedToToDraw => {
                 let chunk = chunk_update_handler.get_chunk_to_draw(pos, &mut world);
                 chunk_build_req_ev.write(ChunkBuilderRequest::Build(pos, chunk));
-                info!("to draw");
             }
             ToDrawToLoaded => {
                 chunk_build_req_ev.write(ChunkBuilderRequest::CancelBuilding(pos));
@@ -215,7 +215,8 @@ fn process_transition_events(
             ToDrawToDrawn => {
                 log::debug!("Built chunk {:?}", pos);
 
-                // send ChunkEntityRequest::create (pos mesh)
+                let mesh = world.get_chunk_mesh(pos).unwrap();
+                chunk_entity_req_ev.write(ChunkEntityEvent::Create(pos, mesh.clone()));
             }
             DrawnToToDraw => {
                 let chunk = chunk_update_handler.get_chunk_to_draw(pos, &mut world);
@@ -223,7 +224,7 @@ fn process_transition_events(
             }
             DrawnToLoaded => {
                 world.chunk_meshes.remove(&pos);
-                // send ChunkEntityRequest::remove (pos)
+                chunk_entity_req_ev.write(ChunkEntityEvent::Remove(pos));
             }
         }
     }

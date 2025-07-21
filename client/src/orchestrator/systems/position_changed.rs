@@ -69,7 +69,7 @@ pub fn emit_chunk_change_events(
 ) {
     for chunk_pos_data in &q_chunk_pos_data {
         if let Some(chunk_pos) = chunk_pos_data.last_chunk_pos {
-            chunk_pos_changed_ev.send(ChunkPosChangedEvent {
+            chunk_pos_changed_ev.write(ChunkPosChangedEvent {
                 chunk_pos: chunk_pos,
             });
         }
