@@ -1,20 +1,20 @@
 use bevy::prelude::*;
-use shared::entities::ChunkPos;
-use shared::entities::ChunkRepository;
+use shared::entities::{ChunkPos, ChunkRepository};
 
 use crate::bevy_types::AppStates;
-use crate::chunk_manager::chunk_streamer::StreamerConfig;
-use crate::chunk_manager::events::*;
-use crate::chunk_manager::physical_world::PhysicalWorld;
-use crate::chunk_manager::resources::*;
-use crate::chunk_manager::ChunkState;
-use crate::chunk_manager::ChunkStatus;
+use crate::chunk_manager::{
+    chunk_streamer::StreamerConfig, events::*, physical_world::PhysicalWorld, resources::*,
+    ChunkState, ChunkStatus,
+};
 
-pub struct WorldStateManagerPlugin;
-impl Plugin for WorldStateManagerPlugin {
+pub struct WorldEventHandlerPlugin;
+impl Plugin for WorldEventHandlerPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(PhysicalWorldResource::default())
-            .add_systems(Update, process_world_events.run_if(in_state(AppStates::InGame)));
+            .add_systems(
+                Update,
+                process_world_events.run_if(in_state(AppStates::InGame)),
+            );
     }
 }
 
@@ -24,10 +24,7 @@ struct ChunkUpdateHandler<'a> {
 }
 
 impl<'a> ChunkUpdateHandler<'a> {
-    fn new(
-        controller_pos: ChunkPos,
-        config: &'a StreamerConfig,
-    ) -> Self {
+    fn new(controller_pos: ChunkPos, config: &'a StreamerConfig) -> Self {
         Self {
             controller_pos,
             config,
@@ -57,12 +54,20 @@ impl<'a> ChunkUpdateHandler<'a> {
         }
     }
 
-    fn create_state_update_request(&self, pos: ChunkPos, world: &PhysicalWorld) -> StateUpdateRequest {
+    fn create_state_update_request(
+        &self,
+        pos: ChunkPos,
+        world: &PhysicalWorld,
+    ) -> StateUpdateRequest {
         let chunk_status = self.create_chunk_status(pos, world);
         StateUpdateRequest { chunk_status }
     }
 
-    fn create_load_chunk_request(&self, pos: ChunkPos, world: &PhysicalWorld) -> Option<StateUpdateRequest> {
+    fn create_load_chunk_request(
+        &self,
+        pos: ChunkPos,
+        world: &PhysicalWorld,
+    ) -> Option<StateUpdateRequest> {
         if world.get_chunk_state(pos) != ChunkState::Empty {
             return None;
         }
@@ -77,14 +82,19 @@ impl<'a> ChunkUpdateHandler<'a> {
     }
 
     fn apply_chunk_built(&self, ev: &ChunkBuilt, world: &mut PhysicalWorld) {
-        world
-            .add_chunk_mesh(ev.chunk_pos, ev.chunk_mesh.clone());
+        world.add_chunk_mesh(ev.chunk_pos, ev.chunk_mesh.clone());
     }
 
-    fn handle_streamer_request(&self, ev: &ChunkStreamerRequest, world: &mut PhysicalWorld) -> Option<StateUpdateRequest> {
+    fn handle_streamer_request(
+        &self,
+        ev: &ChunkStreamerRequest,
+        world: &mut PhysicalWorld,
+    ) -> Option<StateUpdateRequest> {
         // TODO: remove only if state is `Empty`?
         match ev {
-            ChunkStreamerRequest::Update(pos) => Some(self.create_state_update_request(*pos, world)),
+            ChunkStreamerRequest::Update(pos) => {
+                Some(self.create_state_update_request(*pos, world))
+            }
             ChunkStreamerRequest::Remove(pos) => {
                 world.remove_chunk(*pos);
                 None
@@ -105,10 +115,8 @@ fn process_world_events(
     config: Res<StreamerConfig>,
     chunk_manager_resources: Res<ChunkManagerResource>,
 ) {
-    let mut chunk_update_handler = ChunkUpdateHandler::new(
-        chunk_manager_resources.controller_pos,
-        &config,
-    );
+    let mut chunk_update_handler =
+        ChunkUpdateHandler::new(chunk_manager_resources.controller_pos, &config);
 
     for ev in chunk_loaded_ev.read() {
         chunk_update_handler.apply_chunk_loaded(ev, &mut world.world);
