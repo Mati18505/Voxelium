@@ -177,6 +177,8 @@ fn process_transition_events(
     config: Res<StreamerConfig>,
     chunk_manager_resources: Res<ChunkManagerResource>,
 ) {
+    log::info!("{:?}", chunk_manager_resources.controller_pos);
+
     let mut chunk_update_handler =
         ChunkUpdateHandler::new(chunk_manager_resources.controller_pos, &config);
 
@@ -189,9 +191,11 @@ fn process_transition_events(
 
         match ev.transition {
             EmptyToLoading => {
+                log::debug!("Started loading chunk {:?}", pos);
                 chunk_load_req_ev.write(ChunkLoaderRequest::Load(pos));
             }
             LoadingToEmpty => {
+                log::debug!("Canceled loading chunk {:?}", pos);
                 chunk_load_req_ev.write(ChunkLoaderRequest::CancelLoading(pos));
             }
             LoadingToLoaded => {
@@ -202,8 +206,8 @@ fn process_transition_events(
                 state_update_req_ev.write(req);
             }
             LoadedToEmpty => {
-                world.remove_chunk(pos);
                 log::debug!("Removed chunk {:?}", pos);
+                world.remove_chunk(pos);
             }
             LoadedToToDraw => {
                 let chunk = chunk_update_handler.get_chunk_to_draw(pos, &mut world);
