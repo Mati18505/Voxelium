@@ -1,9 +1,15 @@
+/// Represents the current state of a chunk in the world generation and rendering pipeline.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ChunkState {
+    /// No chunk data or mesh exists in world.
     Empty,
+    /// Chunk data is currently being loaded into memory.
     Loading,
+    /// Chunk is already loaded, but mesh has not yet been built.
     Loaded,
+    /// Mesh is currently being built and will be added to the world once complete.
     ToDraw,
+    /// Mesh has been built and is currently in the world.
     Drawn,
 }
 
