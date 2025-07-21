@@ -14,6 +14,7 @@ use crate::{
     chunk_manager::{
         chunk_builder_system::{ChunkBuilderPlugin, ChunkBuilderResource},
         chunk_loader_system::{ChunkLoaderPlugin, ChunkLoaderResource},
+        chunk_state_manager::ChunkStateManagerPlugin,
         chunk_streamer::{ChunkStreamerPlugin, StreamerConfig},
         physical_world::PhysicalWorld,
         world_event_handler::WorldEventHandlerPlugin,
@@ -38,9 +39,10 @@ impl Plugin for ChunkManagerPlugin {
                 render_distance: 9,
                 dynamic_vertical_loading: false,
             }),
-            WorldEventHandlerPlugin,
             ChunkBuilderPlugin,
             ChunkLoaderPlugin,
+            ChunkStateManagerPlugin,
+            WorldEventHandlerPlugin,
         ))
         .add_systems(OnEnter(AppStates::InGame), init_manager)
         .add_systems(Update, update.run_if(in_state(AppStates::InGame)));
