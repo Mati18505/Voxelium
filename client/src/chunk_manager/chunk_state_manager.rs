@@ -32,11 +32,8 @@ fn process_state_update_requests(
             chunk_state_transition_ev.write(ChunkStateTransition {
                 chunk_pos,
                 transition,
+                new_state: next_state,
             });
-        } else {
-            warn!(
-                "Unsupported transition in chunk {chunk_pos:?}: {prev_state:?} -> {next_state:?}"
-            );
-        }
+        } 
     }
 }

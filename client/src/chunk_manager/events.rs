@@ -18,8 +18,9 @@ pub struct ChunkLoaded {
 
 /// Chunks requested to load by `ChunkLoader`.
 #[derive(Event, Debug)]
-pub struct ChunkLoadRequest {
-    pub chunk_pos: ChunkPos,
+pub enum ChunkLoaderRequest {
+    Load(ChunkPos),
+    CancelLoading(ChunkPos),
 }
 
 /// Chunk meshes built by `ChunkBuilder`, not added to world.
@@ -31,9 +32,9 @@ pub struct ChunkBuilt {
 
 /// Chunks requested to build by `ChunkBuilder`.
 #[derive(Event, Debug)]
-pub struct ChunkBuildRequest {
-    pub chunk_pos: ChunkPos,
-    pub chunk: Chunk,
+pub enum ChunkBuilderRequest {
+    Build(ChunkPos, Chunk),
+    CancelBuilding(ChunkPos),
 }
 
 /// `chunk_streamer` requests to change world state.
@@ -60,4 +61,5 @@ pub struct StateUpdateRequest {
 pub struct ChunkStateTransition {
     pub chunk_pos: ChunkPos,
     pub transition: ChunkTransition,
+    pub new_state: ChunkState,
 }

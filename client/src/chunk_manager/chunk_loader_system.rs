@@ -10,7 +10,7 @@ pub struct ChunkLoaderPlugin;
 impl Plugin for ChunkLoaderPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<ChunkLoaded>()
-            .add_event::<ChunkLoadRequest>()
+            .add_event::<ChunkLoaderRequest>()
             .add_systems(Update, chunks_loader.run_if(in_state(AppStates::InGame)));
     }
 }
@@ -30,14 +30,21 @@ impl ChunkLoaderResource {
 
 fn chunks_loader(
     mut chunk_loaded_ev: EventWriter<ChunkLoaded>,
-    mut chunk_load_req_ev: EventReader<ChunkLoadRequest>,
+    mut chunk_load_req_ev: EventReader<ChunkLoaderRequest>,
     mut chunk_loader: ResMut<ChunkLoaderResource>,
     chunk_manager_resource: Res<ChunkManagerResource>,
 ) {
     let mut chunk_loader = &mut chunk_loader.chunk_loader;
 
     for ev in chunk_load_req_ev.read() {
-        chunk_loader.load_chunk(ev.chunk_pos);
+        match ev {
+            ChunkLoaderRequest::Load(chunk_pos) => {
+                chunk_loader.load_chunk(*chunk_pos);
+            }
+            ChunkLoaderRequest::CancelLoading(chunk_pos) => {
+                chunk_loader.cancel_loading_chunk(*chunk_pos);
+            }
+        }
     }
 
     chunk_loader.update(chunk_manager_resource.controller_pos);

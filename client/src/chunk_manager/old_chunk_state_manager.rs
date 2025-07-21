@@ -182,91 +182,6 @@ impl ChunkManager {
         true
     }
 
-    fn apply_transition(&mut self, pos: ChunkPos, transition: ChunkTransition) {
-        use ChunkTransition::*;
-
-        match transition {
-            EmptyToLoading => {
-                // send ChunkLoadRequest::load
-                self.chunk_loader.load_chunk(pos);
-            }
-            LoadingToEmpty => {
-                // send ChunkLoadRequest::cancel
-                self.chunk_loader.cancel_loading_chunk(pos);
-            }
-            LoadingToLoaded => {
-                log::debug!("Loaded chunk {:?}", pos);
-            }
-            LoadedToEmpty => {
-                self.world.world.remove_chunk(pos);
-            }
-            LoadedToToDraw => {
-                self.pass_chunk_to_builder(pos);
-            }
-            ToDrawToLoaded => {
-                // send ChunkBuildRequest::cancel
-                // TODO: Remove mesh from chunk builder.
-                // self.chunk_builder.remove_chunk(chunk_pos);
-            }
-            ToDrawToDrawn => {
-                let mesh = self
-                    .chunk_builder
-                    .take_chunk_built_with_latest_version(pos)
-                    .expect("ChunkState is drawn, but mesh is not built.")
-                    .0;
-
-                self.world.add_chunk_mesh(pos, mesh.clone());
-
-                // send ChunkEntityRequest::create
-                self.create_chunk_object(pos, &mesh);
-            }
-            DrawnToToDraw => {
-                self.pass_chunk_to_builder(pos);
-            }
-            DrawnToLoaded => {
-                self.world.chunk_meshes.remove(&pos);
-                // send ChunkEntityRequest::remove
-                self.remove_chunk_object(pos);
-            }
-        }
-    }
-
-    fn pass_chunk_to_builder(&mut self, pos: ChunkPos) {
-        let chunk = self
-            .world
-            .get_chunk(pos)
-            .expect("Chunk is passed to builder, but it is not loaded.");
-
-        // send ChunkBuildRequest::build
-        self.chunk_builder.force_build(pos, chunk, ());
-        self.world.remove_chunk_need_rebuild(pos);
-    }
-
-    fn load_chunk_if_is_empty(&mut self, pos: ChunkPos) {
-        let curr_chunk_state = self.world.get_chunk_state(pos);
-
-        if curr_chunk_state == ChunkState::Empty {
-            self.change_chunk_state(pos, ChunkState::Loading);
-        }
-    }
-
-
-    /// Always use this instead of set_chunk_state directly – handles transitions.
-    fn change_chunk_state(&mut self, pos: ChunkPos, new_state: ChunkState) {
-        let prev_state = self.world.get_chunk_state(pos);
-
-        if prev_state != new_state {
-            let transition = chunk_state::get_chunk_transition(prev_state, new_state);
-
-            assert!(
-                transition.is_some(),
-                "Unsupported transition in chunk {pos:?}: {prev_state:?} -> {new_state:?}"
-            );
-
-            self.apply_transition(pos, transition.unwrap());
-            self.world.set_chunk_state(pos, new_state);
-        }
-    }
 
     const MAX_ITERATIONS: u32 = 16;
 
@@ -276,30 +191,6 @@ impl ChunkManager {
         MaxIterationsExceeded(ChunkPos),
     }
 
-    fn update_chunk_state(curr_state: ChunkState, status: ChunkStatus, pos: ChunkPos) -> Result<ChunkState, ChunkStateUpdateError>  {
-        let mut iterations = 1;
-        let mut prev_state = self.world.get_chunk_state(pos);
-
-        loop {
-            let chunk_status = self.create_chunk_status(pos);
-            let next_state = chunk_state::get_next_chunk_state(prev_state, chunk_status);
-
-            if next_state == prev_state {
-                break;
-            }
-
-            self.change_chunk_state(pos, next_state);
-            log::trace!("Chunk {:?}: {:?} -> {:?}", pos, prev_state, next_state);
-
-            if iterations >= MAX_ITERATIONS {
-                return Err(ChunkStateUpdateError::UnknownBlockType(pos))
-                break;
-            }
-
-            prev_state = next_state;
-            iterations += 1;
-        }
-}
 
 }
 
