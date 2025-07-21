@@ -34,6 +34,6 @@ fn process_state_update_requests(
                 transition,
                 new_state: next_state,
             });
-        } 
+        }
     }
 }

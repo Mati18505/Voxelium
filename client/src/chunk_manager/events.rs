@@ -63,3 +63,10 @@ pub struct ChunkStateTransition {
     pub transition: ChunkTransition,
     pub new_state: ChunkState,
 }
+
+/// Chunks passed to `chunk_entities_manager`to create an entity.
+#[derive(Event, Debug)]
+pub enum ChunkEntityEvent {
+    Create(ChunkPos, ChunkMesh),
+    Remove(ChunkPos),
+}

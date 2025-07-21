@@ -13,6 +13,7 @@ use crate::{
     bevy_types::{AppStates, GameResources},
     chunk_manager::{
         chunk_builder_system::{ChunkBuilderPlugin, ChunkBuilderResource},
+        chunk_entities_manager::{ChunkEntitiesManagerPlugin, ChunkEntitiesManagerResource},
         chunk_loader_system::{ChunkLoaderPlugin, ChunkLoaderResource},
         chunk_state_manager::ChunkStateManagerPlugin,
         chunk_streamer::{ChunkStreamerPlugin, StreamerConfig},
@@ -40,6 +41,7 @@ impl Plugin for ChunkManagerPlugin {
                 dynamic_vertical_loading: false,
             }),
             ChunkBuilderPlugin,
+            ChunkEntitiesManagerPlugin,
             ChunkLoaderPlugin,
             ChunkStateManagerPlugin,
             WorldEventHandlerPlugin,
@@ -55,9 +57,12 @@ fn init_manager(mut commands: Commands, game_resources: Res<GameResources>) {
         game_resources.texture_dictionary.clone(),
     ));
     let chunk_provider = Box::new(GeneratedChunkProvider::new());
+    let entities_manager_resource =
+        ChunkEntitiesManagerResource::new(game_resources.opaque_texture.clone());
     let loader_resource = ChunkLoaderResource::new(chunk_provider);
     let builder_resource = ChunkBuilderResource::new(chunk_mesher);
 
+    commands.insert_resource(entities_manager_resource);
     commands.insert_resource(loader_resource);
     commands.insert_resource(builder_resource);
 }
