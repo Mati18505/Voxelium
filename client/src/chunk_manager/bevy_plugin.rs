@@ -16,7 +16,7 @@ use crate::{
         chunk_loader_system::{ChunkLoaderPlugin, ChunkLoaderResource},
         chunk_streamer::{ChunkStreamerPlugin, StreamerConfig},
         physical_world::PhysicalWorld,
-        world_state_manager::WorldStateManagerPlugin,
+        world_event_handler::WorldStateManagerPlugin,
         ChunkState,
     },
     chunk_mesh_builder::{

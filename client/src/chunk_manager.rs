@@ -6,7 +6,7 @@ pub mod chunk_streamer;
 pub mod events;
 pub mod physical_world;
 pub mod resources;
-pub mod world_state_manager;
+pub mod world_event_handler;
 
 pub use bevy_plugin::*;
 pub use chunk_state::*;
