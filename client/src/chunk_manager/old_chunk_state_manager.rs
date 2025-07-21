@@ -187,9 +187,11 @@ impl ChunkManager {
 
         match transition {
             EmptyToLoading => {
+                // send ChunkLoadRequest::load
                 self.chunk_loader.load_chunk(pos);
             }
             LoadingToEmpty => {
+                // send ChunkLoadRequest::cancel
                 self.chunk_loader.cancel_loading_chunk(pos);
             }
             LoadingToLoaded => {
@@ -202,6 +204,7 @@ impl ChunkManager {
                 self.pass_chunk_to_builder(pos);
             }
             ToDrawToLoaded => {
+                // send ChunkBuildRequest::cancel
                 // TODO: Remove mesh from chunk builder.
                 // self.chunk_builder.remove_chunk(chunk_pos);
             }
@@ -214,6 +217,7 @@ impl ChunkManager {
 
                 self.world.add_chunk_mesh(pos, mesh.clone());
 
+                // send ChunkEntityRequest::create
                 self.create_chunk_object(pos, &mesh);
             }
             DrawnToToDraw => {
@@ -221,6 +225,7 @@ impl ChunkManager {
             }
             DrawnToLoaded => {
                 self.world.chunk_meshes.remove(&pos);
+                // send ChunkEntityRequest::remove
                 self.remove_chunk_object(pos);
             }
         }
@@ -232,6 +237,7 @@ impl ChunkManager {
             .get_chunk(pos)
             .expect("Chunk is passed to builder, but it is not loaded.");
 
+        // send ChunkBuildRequest::build
         self.chunk_builder.force_build(pos, chunk, ());
         self.world.remove_chunk_need_rebuild(pos);
     }

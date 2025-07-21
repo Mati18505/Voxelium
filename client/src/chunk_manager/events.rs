@@ -40,3 +40,9 @@ pub enum ChunkStreamerRequest {
     /// Request to remove chunk.
     Remove(ChunkPos),
 }
+
+/// `world_event_handler` request to update the chunk state based on its status.
+#[derive(Event, Debug)]
+pub struct StateUpdateRequest {
+    pub chunk_status: ChunkStatus,
+}
