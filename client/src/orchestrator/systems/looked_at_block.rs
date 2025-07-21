@@ -4,7 +4,6 @@ use shared::entities::name_to_block_id;
 use super::{super::utils::raycast_from_controller, super::LookedAtBlockChangedEvent};
 use crate::{
     bevy_types::{AppStates, GameResources},
-    chunk_manager::WorldChunkUpdateEvent,
     controller::Controller,
 };
 
@@ -34,7 +33,7 @@ pub fn initialize_looked_at_block(mut commands: Commands) {
 // TODO: fix
 pub fn update_looked_at_block(
     q_controller: Query<&Transform, With<Controller>>,
-    world_chunk_update_ev: EventReader<WorldChunkUpdateEvent>,
+    // world_chunk_update_ev: EventReader<WorldChunkUpdateEvent>,
     mut q_looked_at_block_data: Query<&mut LookedAtBlockData>,
     looked_at_block_change_ev: EventWriter<LookedAtBlockChangedEvent>,
     // chunk_manager_resources: Res<ChunkManagerResources>,

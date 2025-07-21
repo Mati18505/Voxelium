@@ -23,13 +23,8 @@ use shared::{
     physics::RaycastResult,
 };
 
-use chunk_manager::ChunkManagerPlugin;
-
 use crate::{
-    bevy_resources::BevyBlockTypeStorageResource,
-    controller::ActionType,
-    gui::GUIPlugin,
-    orchestrator::{utils::raycast_from_controller, OrchestratorPlugin},
+    bevy_resources::BevyBlockTypeStorageResource, chunk_manager::ChunkManagerPlugin, controller::ActionType, gui::GUIPlugin, orchestrator::{utils::raycast_from_controller, OrchestratorPlugin}
 };
 
 mod bevy_render;

@@ -182,60 +182,6 @@ impl ChunkManager {
         true
     }
 
-    /// Always use this instead of set_chunk_state directly – handles transitions.
-    fn change_chunk_state(&mut self, pos: ChunkPos, new_state: ChunkState) {
-        let prev_state = self.world.get_chunk_state(pos);
-
-        if prev_state != new_state {
-            let transition = chunk_state::get_chunk_transition(prev_state, new_state);
-
-            assert!(
-                transition.is_some(),
-                "Unsupported transition in chunk {pos:?}: {prev_state:?} -> {new_state:?}"
-            );
-
-            self.apply_transition(pos, transition.unwrap());
-            self.world.set_chunk_state(pos, new_state);
-        }
-    }
-
-    fn update_chunk_state(&mut self, pos: ChunkPos) {
-        const MAX_ITERATIONS: u32 = 16;
-        let mut iterations = 1;
-        let mut prev_state = self.world.get_chunk_state(pos);
-
-        loop {
-            let chunk_status = self.create_chunk_status(pos);
-            let next_state = chunk_state::get_next_chunk_state(prev_state, chunk_status);
-
-            if next_state == prev_state {
-                break;
-            }
-
-            self.change_chunk_state(pos, next_state);
-            log::trace!("Chunk {:?}: {:?} -> {:?}", pos, prev_state, next_state);
-
-            if iterations >= MAX_ITERATIONS {
-                log::warn!(
-                    "Chunk {:?} failed to stabilize state after {} iterations",
-                    pos,
-                    MAX_ITERATIONS
-                );
-                break;
-            }
-
-            prev_state = next_state;
-            iterations += 1;
-        }
-    }
-
-    fn is_within_distance(&self, pos: ChunkPos, distance_in_chunks: usize) -> bool {
-        match self.config.dynamic_vertical_loading {
-            true => pos.is_within_distance(self.controller_pos, distance_in_chunks),
-            false => pos.is_within_distance_2d(self.controller_pos, distance_in_chunks),
-        }
-    }
-
     fn apply_transition(&mut self, pos: ChunkPos, transition: ChunkTransition) {
         use ChunkTransition::*;
 
@@ -290,24 +236,6 @@ impl ChunkManager {
         self.world.remove_chunk_need_rebuild(pos);
     }
 
-    fn emit_event(&self, ev: WorldChunkUpdate) {
-        if let Some(event_tx) = &self.event_tx {
-            let _ = event_tx.send(ev);
-        }
-    }
-
-    fn create_chunk_object(&self, pos: ChunkPos, mesh: &ChunkMesh) {
-        if let Some(chunk_object_tx) = &self.chunk_object_tx {
-            let _ = chunk_object_tx.send(ChunkObjectEvent::Created(pos, mesh.clone()));
-        }
-    }
-
-    fn remove_chunk_object(&self, pos: ChunkPos) {
-        if let Some(chunk_object_tx) = &self.chunk_object_tx {
-            let _ = chunk_object_tx.send(ChunkObjectEvent::Removed(pos));
-        }
-    }
-
     fn load_chunk_if_is_empty(&mut self, pos: ChunkPos) {
         let curr_chunk_state = self.world.get_chunk_state(pos);
 
@@ -316,21 +244,57 @@ impl ChunkManager {
         }
     }
 
-    fn create_chunk_status(&self, pos: ChunkPos) -> ChunkStatus {
-        let is_within_render = self.is_within_distance(pos, self.config.render_distance);
-        let is_within_load = self.is_within_distance(pos, self.config.load_distance);
-        let loaded = self.world.get_chunk(pos).is_some();
-        let mesh_built = self.chunk_builder.is_chunk_with_latest_version_built(pos);
-        let needs_rebuild = self.world.get_chunk_need_rebuild(pos);
 
-        ChunkStatus {
-            is_within_render,
-            is_within_load,
-            loaded,
-            mesh_built,
-            needs_rebuild,
+    /// Always use this instead of set_chunk_state directly – handles transitions.
+    fn change_chunk_state(&mut self, pos: ChunkPos, new_state: ChunkState) {
+        let prev_state = self.world.get_chunk_state(pos);
+
+        if prev_state != new_state {
+            let transition = chunk_state::get_chunk_transition(prev_state, new_state);
+
+            assert!(
+                transition.is_some(),
+                "Unsupported transition in chunk {pos:?}: {prev_state:?} -> {new_state:?}"
+            );
+
+            self.apply_transition(pos, transition.unwrap());
+            self.world.set_chunk_state(pos, new_state);
         }
     }
+
+    const MAX_ITERATIONS: u32 = 16;
+
+    #[derive(Debug, Error, Clone, PartialEq)]
+    pub enum ChunkStateUpdateError {
+        #[error("Chunk {:?} failed to stabilize state after {MAX_ITERATIONS} iterations")]
+        MaxIterationsExceeded(ChunkPos),
+    }
+
+    fn update_chunk_state(curr_state: ChunkState, status: ChunkStatus, pos: ChunkPos) -> Result<ChunkState, ChunkStateUpdateError>  {
+        let mut iterations = 1;
+        let mut prev_state = self.world.get_chunk_state(pos);
+
+        loop {
+            let chunk_status = self.create_chunk_status(pos);
+            let next_state = chunk_state::get_next_chunk_state(prev_state, chunk_status);
+
+            if next_state == prev_state {
+                break;
+            }
+
+            self.change_chunk_state(pos, next_state);
+            log::trace!("Chunk {:?}: {:?} -> {:?}", pos, prev_state, next_state);
+
+            if iterations >= MAX_ITERATIONS {
+                return Err(ChunkStateUpdateError::UnknownBlockType(pos))
+                break;
+            }
+
+            prev_state = next_state;
+            iterations += 1;
+        }
+}
+
 }
 
 // public API
