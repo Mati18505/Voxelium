@@ -23,7 +23,7 @@ use shared::{
     physics::RaycastResult,
 };
 
-use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
+use chunk_manager::ChunkManagerPlugin;
 
 use crate::{
     bevy_resources::BevyBlockTypeStorageResource,
@@ -162,38 +162,38 @@ fn init_level(
 
 // TODO: Fix this.
 fn update(
-    mut chunk_manager_resources: ResMut<ChunkManagerResources>,
+    // mut chunk_manager_resources: ResMut<ChunkManagerResources>,
     game_resources: ResMut<GameResources>,
     mut controller_ev: EventReader<controller::ActionEvent>,
 ) {
     /*
-    for ev in controller_ev.read() {
-        let world = &chunk_manager_resources.chunk_manager.get_world().world;
-        let raycast_result = raycast_from_controller(
-            ev.controller_pos,
-            ev.controller_forward,
-            world,
-            &game_resources.server_block_type_storage,
-        );
+       for ev in controller_ev.read() {
+           let world = &chunk_manager_resources.chunk_manager.get_world().world;
+           let raycast_result = raycast_from_controller(
+               ev.controller_pos,
+               ev.controller_forward,
+               world,
+               &game_resources.server_block_type_storage,
+           );
 
-        if raycast_result.collide {
-            let block_action: BlockAction = match ev.action_type {
-                ActionType::LeftClick => destroy_block_action(raycast_result),
-                ActionType::RightClick => place_block_action(raycast_result),
-            };
+           if raycast_result.collide {
+               let block_action: BlockAction = match ev.action_type {
+                   ActionType::LeftClick => destroy_block_action(raycast_result),
+                   ActionType::RightClick => place_block_action(raycast_result),
+               };
 
-            if block_action.feasible {
-                voxel_edits::set_block_and_update_chunk(
-                    &mut chunk_manager_resources.chunk_manager,
-                    block_action.pos,
-                    block_action.new_block,
-                );
-            }
-        } else {
-            println!("Raycast don't collide.");
-        }
-    }
- */
+               if block_action.feasible {
+                   voxel_edits::set_block_and_update_chunk(
+                       &mut chunk_manager_resources.chunk_manager,
+                       block_action.pos,
+                       block_action.new_block,
+                   );
+               }
+           } else {
+               println!("Raycast don't collide.");
+           }
+       }
+    */
 }
 
 struct BlockAction {
