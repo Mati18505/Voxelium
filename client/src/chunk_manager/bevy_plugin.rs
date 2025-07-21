@@ -12,7 +12,12 @@ use crate::{
     bevy_render::VoxelMaterial,
     bevy_types::{AppStates, GameResources},
     chunk_manager::{
-        chunk_builder_system::{ChunkBuilderPlugin, ChunkBuilderResource}, chunk_loader_system::{ChunkLoaderPlugin, ChunkLoaderResource}, chunk_streamer::{ChunkStreamerPlugin, StreamerConfig}, physical_world::PhysicalWorld, world_state_manager::WorldStateManagerPlugin, ChunkState
+        chunk_builder_system::{ChunkBuilderPlugin, ChunkBuilderResource},
+        chunk_loader_system::{ChunkLoaderPlugin, ChunkLoaderResource},
+        chunk_streamer::{ChunkStreamerPlugin, StreamerConfig},
+        physical_world::PhysicalWorld,
+        world_state_manager::WorldStateManagerPlugin,
+        ChunkState,
     },
     chunk_mesh_builder::{
         builders::{self, async_chunk_builder::AsyncChunkBuilder, ChunkBuilder, Versioned},
@@ -27,18 +32,16 @@ use crate::{
 pub struct ChunkManagerPlugin;
 impl Plugin for ChunkManagerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(
-            (
-                ChunkStreamerPlugin::new(StreamerConfig {
-                    load_distance: 10,
-                    render_distance: 9,
-                    dynamic_vertical_loading: false,
-                }),
-                WorldStateManagerPlugin,
-                ChunkBuilderPlugin,
-                ChunkLoaderPlugin,
-            ),
-        )
+        app.add_plugins((
+            ChunkStreamerPlugin::new(StreamerConfig {
+                load_distance: 10,
+                render_distance: 9,
+                dynamic_vertical_loading: false,
+            }),
+            WorldStateManagerPlugin,
+            ChunkBuilderPlugin,
+            ChunkLoaderPlugin,
+        ))
         .add_systems(OnEnter(AppStates::InGame), init_manager)
         .add_systems(Update, update.run_if(in_state(AppStates::InGame)));
     }
