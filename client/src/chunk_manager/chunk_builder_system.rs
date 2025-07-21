@@ -13,7 +13,7 @@ pub struct ChunkBuilderPlugin;
 impl Plugin for ChunkBuilderPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<ChunkBuilt>()
-            .add_event::<ChunkBuildRequest>()
+            .add_event::<ChunkBuilderRequest>()
             .add_systems(Update, chunks_builder.run_if(in_state(AppStates::InGame)));
     }
 }
@@ -43,14 +43,21 @@ impl ChunkBuilderResource {
 
 fn chunks_builder(
     mut chunk_built_ev: EventWriter<ChunkBuilt>,
-    mut chunk_build_req_ev: EventReader<ChunkBuildRequest>,
+    mut chunk_build_req_ev: EventReader<ChunkBuilderRequest>,
     mut chunk_builder: ResMut<ChunkBuilderResource>,
     chunk_manager_resource: Res<ChunkManagerResource>,
 ) {
     let mut chunk_builder = &mut chunk_builder.chunk_builder;
 
     for ev in chunk_build_req_ev.read() {
-        chunk_builder.force_build(ev.chunk_pos, &ev.chunk, ());
+        match ev {
+            ChunkBuilderRequest::Build(chunk_pos, chunk) => {
+                chunk_builder.force_build(*chunk_pos, &chunk, ())
+            }
+            ChunkBuilderRequest::CancelBuilding(chunk_pos) => {
+                chunk_builder.remove_chunk(*chunk_pos)
+            }
+        }
     }
 
     chunk_builder.update(chunk_manager_resource.controller_pos);
