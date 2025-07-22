@@ -1,6 +1,6 @@
+use super::terrain_generator::TerrainGenerator;
 use crate::chunk_io;
 use crate::entities::{Chunk, ChunkPos};
-use super::terrain_generator::TerrainGenerator;
 
 #[derive(Debug, Clone)]
 pub struct GeneratedChunkProvider {
@@ -9,9 +9,7 @@ pub struct GeneratedChunkProvider {
 
 impl GeneratedChunkProvider {
     pub fn new(terrain_generator: TerrainGenerator) -> Self {
-        Self {
-            terrain_generator
-        }
+        Self { terrain_generator }
     }
 }
 

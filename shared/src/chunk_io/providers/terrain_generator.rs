@@ -1,10 +1,11 @@
+use bevy::log::{info_span, tracing::span};
 use simdnoise::NoiseBuilder;
 
 use crate::entities::{
-    name_to_block_id, BlockID, BlockInChunkPos, BlockPos, BlockStorage, ChunkPos, CHUNK_SIZE
+    name_to_block_id, BlockID, BlockInChunkPos, BlockPos, BlockStorage, ChunkPos, CHUNK_SIZE,
 };
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct TerrainConfig {
     seed: i32,
     freq: f32,
@@ -25,20 +26,19 @@ impl Default for TerrainConfig {
 
 #[derive(Debug, Clone)]
 pub struct TerrainGenerator {
-    config: TerrainConfig
+    config: TerrainConfig,
 }
 
 impl TerrainGenerator {
     pub fn new(config: TerrainConfig) -> Self {
-        Self {
-            config,
-        }
+        Self { config }
     }
 
     pub fn generate_terrain(&mut self, chunk_pos: ChunkPos) -> BlockStorage {
+        let my_span = info_span!("generate_terrain", name = "generate_terrain").entered();
         let noise = self.generate_density_map(chunk_pos);
 
-        let mut blocks = BlockStorage::default().get_blocks().to_owned();
+        let mut blocks = vec![0; CHUNK_SIZE.pow(3)];
 
         for z in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
@@ -58,7 +58,7 @@ impl TerrainGenerator {
 
         BlockStorage::new(blocks)
     }
-    
+
     fn generate_density_map(&self, chunk_pos: ChunkPos) -> Vec<f32> {
         let offset_x = chunk_pos.x as f32;
         let offset_y = chunk_pos.y as f32;
