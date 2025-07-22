@@ -1,4 +1,4 @@
-use bevy::log;
+use bevy::log::{self, info_span};
 use shared::{
     chunk_io::chunk_loader,
     entities::{Chunk, ChunkPos, ChunkRepository, CHUNK_SIZE},
@@ -119,6 +119,8 @@ impl ChunkManager {
     /// Checks and processes chunks ready to be drawn.
     /// Should be called once per frame.
     pub fn check_built_chunks(&mut self) {
+        let my_span = info_span!("check_built_chunks", name = "check_built_chunks").entered();
+
         self.chunk_builder.update(self.controller_pos);
 
         let chunks_to_draw: Vec<ChunkPos> = self.world.get_chunks_with_state(ChunkState::ToDraw);

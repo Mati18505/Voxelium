@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use bevy::log::info_span;
 use cgmath::Vector3;
 use shared::entities::{BlockID, BlockInChunkPos, BlockSide, BlockStorage, Chunk, Direction};
 
@@ -17,6 +18,12 @@ pub struct NaiveMesher {
 
 impl ChunkMesher for NaiveMesher {
     fn create_mesh(&self, chunk: &Chunk) -> MesherOutput {
+        let my_span = info_span!(
+            "naive_mesher_create_mesh",
+            name = "naive_mesher_create_mesh"
+        )
+        .entered();
+
         let mut chunk_mesh = ChunkMesh::default();
         let mut warnings: Vec<MesherWarning> = Vec::default();
         let block_storage = chunk.get_block_storage();
