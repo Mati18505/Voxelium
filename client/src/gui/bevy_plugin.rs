@@ -115,6 +115,10 @@ fn terrain_editor(
                     .drag_value_speed(0.01),
             );
             ui.add(egui::DragValue::new(&mut new.octaves).speed(1));
+            ui.add(egui::Checkbox::new(
+                &mut new.add_flat_noise,
+                "add flat noise",
+            ));
         });
 
     if new != ui_data.terrain {

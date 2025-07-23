@@ -89,7 +89,7 @@ impl ChunkManager {
         for pos in chunks_in_world {
             self.remove_chunk(pos);
         }
-        
+
         self.world = PhysicalWorld::default();
         self.chunk_loader = chunk_loader;
         self.update_chunk_states_in_world();

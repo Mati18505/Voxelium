@@ -11,6 +11,7 @@ pub struct TerrainConfig {
     pub freq: f32,
     pub lacunarity: f32,
     pub octaves: u8,
+    pub add_flat_noise: bool,
 }
 
 impl Default for TerrainConfig {
@@ -20,6 +21,7 @@ impl Default for TerrainConfig {
             freq: 0.17,
             lacunarity: 0.5,
             octaves: 5,
+            add_flat_noise: true,
         }
     }
 }
@@ -36,7 +38,8 @@ impl TerrainGenerator {
 
     pub fn generate_terrain(&mut self, chunk_pos: ChunkPos) -> BlockStorage {
         let my_span = info_span!("generate_terrain", name = "generate_terrain").entered();
-        let noise = self.generate_density_map(chunk_pos);
+        let density_noise = self.generate_density_map(chunk_pos);
+        let flat_noise = self.generate_density_map(chunk_pos);
 
         let mut blocks = vec![0; CHUNK_SIZE.pow(3)];
 
@@ -49,7 +52,15 @@ impl TerrainGenerator {
 
                     let pos = BlockInChunkPos::new(x, y, z);
                     let world_pos = BlockPos::new(world_x, world_y, world_z);
-                    let block_id = self.generate_voxel(pos, world_pos, noise[pos.index()]);
+                    let block_id = match self.config.add_flat_noise {
+                        true => self.generate_voxel_with_flat(
+                            pos,
+                            world_pos,
+                            density_noise[pos.index()],
+                            flat_noise[Self::index_2d(pos)],
+                        ),
+                        false => self.generate_voxel(pos, world_pos, density_noise[pos.index()]),
+                    };
 
                     blocks[pos.index()] = block_id;
                 }
@@ -57,6 +68,10 @@ impl TerrainGenerator {
         }
 
         BlockStorage::new(blocks)
+    }
+
+    fn index_2d(pos: BlockInChunkPos) -> usize {
+        pos.y * CHUNK_SIZE + pos.x
     }
 
     fn generate_density_map(&self, chunk_pos: ChunkPos) -> Vec<f32> {
@@ -72,6 +87,38 @@ impl TerrainGenerator {
         .with_seed(self.config.seed)
         .with_lacunarity(self.config.lacunarity)
         .generate_scaled(0.0, 100.0)
+    }
+
+    fn generate_flat_map(&self, chunk_pos: ChunkPos) -> Vec<f32> {
+        let offset_x = chunk_pos.x as f32;
+        let offset_y = chunk_pos.y as f32;
+
+        NoiseBuilder::fbm_2d_offset(offset_x, CHUNK_SIZE, offset_y, CHUNK_SIZE)
+            .with_freq(self.config.freq)
+            .with_octaves(self.config.octaves)
+            .with_seed(self.config.seed)
+            .with_lacunarity(self.config.lacunarity)
+            .generate_scaled(0.0, 100.0)
+    }
+
+    fn generate_voxel_with_flat(
+        &self,
+        pos: BlockInChunkPos,
+        world_pos: BlockPos,
+        density: f32,
+        flat: f32,
+    ) -> BlockID {
+        if world_pos.z < flat.round() as isize {
+            if density < 20.0 {
+                name_to_block_id("stone")
+            } else if density < 40.0 {
+                name_to_block_id("grass")
+            } else {
+                name_to_block_id("air")
+            }
+        } else {
+            name_to_block_id("air")
+        }
     }
 
     fn generate_voxel(&self, pos: BlockInChunkPos, world_pos: BlockPos, density: f32) -> BlockID {

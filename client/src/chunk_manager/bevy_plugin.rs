@@ -48,7 +48,7 @@ fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>
 
     let inner_builder = Box::new(AsyncChunkBuilder::new(Arc::new(voxel_mesher)));
     let chunk_builder = Box::new(VersionedChunkBuilder::<()>::new(inner_builder));
-    let mut config = Config::new(10, 9);
+    let mut config = Config::new(30, 29);
     config.dynamic_vertical_loading = true;
 
     let (chunk_object_tx, chunk_object_rx) = crossbeam_channel::unbounded::<ChunkObjectEvent>();
