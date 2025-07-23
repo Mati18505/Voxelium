@@ -83,6 +83,18 @@ impl ChunkManager {
         }
     }
 
+    pub fn change_chunk_loader_and_reload_all(&mut self, chunk_loader: chunk_loader::ChunkLoader) {
+        let chunks_in_world: Vec<ChunkPos> = self.world.chunk_states.keys().copied().collect();
+
+        for pos in chunks_in_world {
+            self.remove_chunk(pos);
+        }
+        
+        self.world = PhysicalWorld::default();
+        self.chunk_loader = chunk_loader;
+        self.update_chunk_states_in_world();
+    }
+
     /// Sets the callback used when a chunk is drawn or mesh is removed.
     pub fn set_chunk_object_tx(
         &mut self,

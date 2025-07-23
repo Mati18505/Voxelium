@@ -5,19 +5,19 @@ use crate::entities::{
     name_to_block_id, BlockID, BlockInChunkPos, BlockPos, BlockStorage, ChunkPos, CHUNK_SIZE,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TerrainConfig {
-    seed: i32,
-    freq: f32,
-    lacunarity: f32,
-    octaves: u8,
+    pub seed: i32,
+    pub freq: f32,
+    pub lacunarity: f32,
+    pub octaves: u8,
 }
 
 impl Default for TerrainConfig {
     fn default() -> Self {
         Self {
             seed: 1337,
-            freq: 0.5,
+            freq: 0.17,
             lacunarity: 0.5,
             octaves: 5,
         }
@@ -64,12 +64,14 @@ impl TerrainGenerator {
         let offset_y = chunk_pos.y as f32;
         let offset_z = chunk_pos.z as f32;
 
-        NoiseBuilder::fbm_3d_offset(offset_x, CHUNK_SIZE, offset_y, CHUNK_SIZE, offset_z, CHUNK_SIZE)
-            .with_freq(0.5)
-            .with_octaves(5)
-            .with_seed(1337)
-            .with_lacunarity(0.5)
-            .generate_scaled(0.0, 100.0)
+        NoiseBuilder::fbm_3d_offset(
+            offset_x, CHUNK_SIZE, offset_z, CHUNK_SIZE, offset_y, CHUNK_SIZE,
+        )
+        .with_freq(self.config.freq)
+        .with_octaves(self.config.octaves)
+        .with_seed(self.config.seed)
+        .with_lacunarity(self.config.lacunarity)
+        .generate_scaled(0.0, 100.0)
     }
 
     fn generate_voxel(&self, pos: BlockInChunkPos, world_pos: BlockPos, density: f32) -> BlockID {

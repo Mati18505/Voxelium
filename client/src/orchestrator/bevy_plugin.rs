@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::bevy_types::AppStates;
+use crate::{bevy_types::AppStates, orchestrator::systems::editor::EditorPlugin};
 
 use super::{
     events::LookedAtBlockChangedEvent,
@@ -11,7 +11,8 @@ pub struct OrchestratorPlugin;
 
 impl Plugin for OrchestratorPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, initialize_looked_at_block)
+        app.add_plugins(EditorPlugin)
+            .add_systems(Startup, initialize_looked_at_block)
             .add_systems(
                 Update,
                 update_looked_at_block.run_if(in_state(AppStates::InGame)),

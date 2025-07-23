@@ -1,5 +1,6 @@
 use super::bevy_controller_events::*;
-use bevy::prelude::*;
+use bevy::{log, prelude::*};
+use bevy_egui::input::{egui_wants_any_input, egui_wants_any_pointer_input};
 use bevy_flycam::*;
 
 pub struct ControllerPlugin;
@@ -13,7 +14,8 @@ impl Plugin for ControllerPlugin {
             .add_event::<PositionChangeEvent>()
             .add_event::<ActionEvent>()
             .add_systems(Startup, setup_controller)
-            .add_systems(Update, (update, player_action));
+            .add_systems(Update, (update))
+            .add_systems(Update, player_action.run_if(not(egui_wants_any_input)));
     }
 }
 
@@ -53,7 +55,7 @@ pub fn update(
     }
 }
 
-pub fn player_action(
+fn player_action(
     mut action_ev: EventWriter<ActionEvent>,
     mouse: Res<ButtonInput<MouseButton>>,
     q_fly_cam: Query<&Transform, With<FlyCam>>,

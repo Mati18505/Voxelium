@@ -2,14 +2,17 @@ use bevy::{
     prelude::*,
     tasks::{futures_lite::future, Task},
 };
-use std::{collections::HashMap, fmt};
+use std::{
+    collections::HashMap,
+    fmt::{self, Debug},
+};
 
 use crate::{
     chunk_io::pending_chunk_queue::PendingChunkQueue,
     entities::{Chunk, ChunkPos},
 };
 
-pub trait ChunkProvider: Send + Sync {
+pub trait ChunkProvider: Send + Sync + Debug {
     fn load_chunk(&mut self, pos: ChunkPos) -> Chunk;
 }
 
@@ -107,11 +110,12 @@ impl ChunkLoader {
     }
 }
 
-impl fmt::Debug for ChunkLoader {
+impl Debug for ChunkLoader {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ChunkLoader")
             .field("chunks_to_load", &self.chunks_to_load)
             .field("completed", &self.completed.len())
+            .field("provider", &self.chunk_provider)
             .finish()
     }
 }
