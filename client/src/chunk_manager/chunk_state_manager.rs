@@ -1,7 +1,7 @@
 use bevy::log::{self, info_span};
 use shared::{
     chunk_io::chunk_loader,
-    entities::{Chunk, ChunkPos, ChunkRepository, CHUNK_SIZE},
+    entities::{Chunk, ChunkPos, ChunkPosGenerator2D, ChunkPosGenerator3D, ChunkRepository, CHUNK_SIZE},
 };
 use std::fmt;
 
@@ -149,14 +149,14 @@ impl ChunkManager {
 
     fn update_chunk_states_in_world(&mut self) {
         // Load missing chunks within the load distance.
-        Self::visit_chunks_in_distance(
-            self.controller_pos,
-            self.config.load_distance,
-            self.config.dynamic_vertical_loading,
-            |pos| {
-                self.load_chunk_if_is_empty(pos);
-            },
-        );
+        let generator: Box<dyn Iterator<Item = ChunkPos>> = match self.config.dynamic_vertical_loading {
+            true => Box::new(ChunkPosGenerator3D::new(self.controller_pos, self.config.load_distance)),
+            false => Box::new(ChunkPosGenerator2D::new(self.controller_pos, self.config.load_distance)),
+        };
+        
+        for pos in generator {
+            self.load_chunk_if_is_empty(pos);
+        }
 
         // Update all existing chunks in the world.
         let chunks_in_world: Vec<ChunkPos> = self.world.chunk_states.keys().copied().collect();
@@ -171,46 +171,6 @@ impl ChunkManager {
 
         for pos in empty_chunks_in_world {
             self.world.remove_chunk(pos);
-        }
-    }
-
-    fn visit_chunks_in_distance<F: FnMut(ChunkPos)>(
-        controller_pos: ChunkPos,
-        dist: usize,
-        vertical: bool,
-        mut func: F,
-    ) {
-        let controller_pos = *controller_pos / CHUNK_SIZE as isize;
-
-        let z_start = controller_pos.z - dist as isize;
-        let z_end = controller_pos.z + dist as isize;
-        let y_start = controller_pos.y - dist as isize;
-        let y_end = controller_pos.y + dist as isize;
-        let x_start = controller_pos.x - dist as isize;
-        let x_end = controller_pos.x + dist as isize;
-
-        if vertical {
-            for y in y_start..=y_end {
-                for z in z_start..=z_end {
-                    for x in x_start..=x_end {
-                        let pos = ChunkPos::new(
-                            x * CHUNK_SIZE as isize,
-                            y * CHUNK_SIZE as isize,
-                            z * CHUNK_SIZE as isize,
-                        );
-
-                        func(pos)
-                    }
-                }
-            }
-        } else {
-            for z in z_start..=z_end {
-                for x in x_start..=x_end {
-                    let pos = ChunkPos::new(x * CHUNK_SIZE as isize, 0, z * CHUNK_SIZE as isize);
-
-                    func(pos)
-                }
-            }
         }
     }
 
@@ -426,31 +386,5 @@ impl fmt::Debug for ChunkManager {
             // .field("chunk_builder", &self.chunk_builder)
             .field("chunk_loader", &self.chunk_loader)
             .finish()
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use std::collections::HashSet;
-
-    use super::*;
-
-    #[test]
-    fn test_for_each_chunk_in_distance() {
-        let mut actual_positions: HashSet<ChunkPos> = HashSet::new();
-
-        ChunkManager::visit_chunks_in_distance(ChunkPos::new(0, 0, 0), 2, false, |pos| {
-            actual_positions.insert(pos);
-        });
-
-        let expected_positions: HashSet<ChunkPos> = (-2..=2)
-            .flat_map(|z| {
-                (-2..=2).map(move |x| {
-                    ChunkPos::new(x * CHUNK_SIZE as isize, 0, z * CHUNK_SIZE as isize)
-                })
-            })
-            .collect();
-
-        assert_eq!(actual_positions, expected_positions);
     }
 }
