@@ -55,8 +55,6 @@ impl From<ChunkMesh> for BevyChunkMesh {
             bevy_mesh.layers.insert(material_name, mesh);
         }
 
-        bevy_mesh.transform =
-            Transform::from_rotation(Quat::from_axis_angle(Vec3::X, f32::to_radians(-90.0)));
         bevy_mesh
     }
 }

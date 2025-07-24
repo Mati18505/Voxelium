@@ -190,8 +190,8 @@ impl ChunkManager {
         let x_end = controller_pos.x + dist as isize;
 
         if vertical {
-            for z in z_start..=z_end {
-                for y in y_start..=y_end {
+            for y in y_start..=y_end {
+                for z in z_start..=z_end {
                     for x in x_start..=x_end {
                         let pos = ChunkPos::new(
                             x * CHUNK_SIZE as isize,
@@ -204,9 +204,9 @@ impl ChunkManager {
                 }
             }
         } else {
-            for y in y_start..=y_end {
+            for z in z_start..=z_end {
                 for x in x_start..=x_end {
-                    let pos = ChunkPos::new(x * CHUNK_SIZE as isize, y * CHUNK_SIZE as isize, 0);
+                    let pos = ChunkPos::new(x * CHUNK_SIZE as isize, 0, z * CHUNK_SIZE as isize);
 
                     func(pos)
                 }
@@ -444,9 +444,9 @@ mod test {
         });
 
         let expected_positions: HashSet<ChunkPos> = (-2..=2)
-            .flat_map(|y| {
+            .flat_map(|z| {
                 (-2..=2).map(move |x| {
-                    ChunkPos::new(x * CHUNK_SIZE as isize, y * CHUNK_SIZE as isize, 0)
+                    ChunkPos::new(x * CHUNK_SIZE as isize, 0, z * CHUNK_SIZE as isize)
                 })
             })
             .collect();

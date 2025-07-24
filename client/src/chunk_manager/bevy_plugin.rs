@@ -80,15 +80,15 @@ fn update(
 ) {
     for e in controller_events.read() {
         let new_pos = e.new_pos;
-        // Convert bevy direction to our direction
+        dbg!(&new_pos);
         let new_block_pos =
-            BlockPos::new(new_pos.x as isize, -new_pos.z as isize, new_pos.y as isize);
+            BlockPos::new(new_pos.x as isize, new_pos.y as isize, new_pos.z as isize);
         let new_chunk_pos = ChunkPos::from(new_block_pos);
 
         chunk_manager_resources
             .chunk_manager
             .update_controller_pos(new_chunk_pos);
-        dbg!(&chunk_manager_resources.chunk_manager);
+        // dbg!(&chunk_manager_resources.chunk_manager);
     }
 
     chunk_manager_resources.chunk_manager.check_loaded_chunks();
