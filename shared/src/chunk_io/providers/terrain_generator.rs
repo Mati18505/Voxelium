@@ -1,7 +1,8 @@
+use bevy::picking::hover::generate_hovermap;
 use rand::{rngs::ThreadRng, Rng};
 
 use crate::entities::{
-    name_to_block_id, BlockID, BlockInChunkPos, BlockStorage, ChunkPos, CHUNK_SIZE,
+    block_in_chunk_pos_generator::BlockInChunkPosGenerator, name_to_block_id, BlockID, BlockInChunkPos, BlockStorage, ChunkPos, CHUNK_SIZE
 };
 
 #[derive(Debug, Clone)]
@@ -18,29 +19,38 @@ impl TerrainGenerator {
 
     pub fn generate_terrain(&mut self, chunk_pos: ChunkPos) -> BlockStorage {
         let mut blocks = BlockStorage::default().get_blocks().to_owned();
+        let height_map = self.generate_height_map();
 
-        for z in 0..CHUNK_SIZE {
-            for x in 0..CHUNK_SIZE {
-                let world_x: isize = x as isize + chunk_pos.x;
-                let world_z: isize = z as isize + chunk_pos.z;
+        for pos in BlockInChunkPosGenerator::new() {
+            let world_x: isize = pos.x as isize + chunk_pos.x;
+            let world_y: isize = pos.y as isize + chunk_pos.y;
+            let world_z: isize = pos.z as isize + chunk_pos.z;
 
-                let generated_height: i64 = self.generate_height(world_x, world_z);
+            let height_map_index = Self::index_height_map(pos.x, pos.z);
+            let generated_height: i64 = height_map[height_map_index];
+            let block_id = self.generate_voxel(world_y as i64, generated_height);
 
-                for y in 0..CHUNK_SIZE {
-                    let world_y: isize = y as isize + chunk_pos.y;
-                    let block_id = self.generate_voxel(world_y as i64, generated_height);
-                    let pos = BlockInChunkPos::new(x, y, z);
-
-                    blocks[pos.index()] = block_id;
-                }
-            }
+            blocks[pos.index()] = block_id;
         }
 
         BlockStorage::new(blocks)
     }
 
-    fn generate_height(&mut self, _world_x: isize, _world_z: isize) -> i64 {
-        self.engine.random_range(5..16)
+    fn generate_height_map(&mut self) -> Vec<i64> {
+        let mut result = Vec::with_capacity(CHUNK_SIZE * CHUNK_SIZE);
+
+        for z in 0..CHUNK_SIZE {
+            for x in 0..CHUNK_SIZE {
+                let height = self.engine.random_range(5..16);
+                result.push(height);
+            }
+        }
+
+        result
+    }
+
+    fn index_height_map(x: usize, z: usize) -> usize {
+        z * CHUNK_SIZE + x
     }
 
     fn generate_voxel(&mut self, world_y: i64, generated_height: i64) -> BlockID {
