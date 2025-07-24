@@ -1,3 +1,4 @@
+pub mod block_in_chunk_pos_generator;
 pub mod block_registry;
 pub mod block_storage;
 pub mod block_type;

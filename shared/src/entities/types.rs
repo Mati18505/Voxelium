@@ -10,7 +10,7 @@ pub type Direction = Vector3<isize>;
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
 pub struct ChunkPos(Vector3<isize>);
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct BlockInChunkPos(Vector3<usize>);
 
 impl ChunkPos {
