@@ -23,7 +23,7 @@ impl ChunkPosGenerator2D {
         let (cx, cz) = (center.x, center.z);
         let start_x = cx - dist as isize;
         let start_z = cz - dist as isize;
-        let end_x =  cx + dist as isize;
+        let end_x = cx + dist as isize;
         let end_z = cz + dist as isize;
 
         let chunks_per_axis = dist / CHUNK_SIZE * 2 + 1;
@@ -89,7 +89,7 @@ impl ChunkPosGenerator3D {
         let start_x = cx - dist as isize;
         let start_y = cy - dist as isize;
         let start_z = cz - dist as isize;
-        let end_x =  cx + dist as isize;
+        let end_x = cx + dist as isize;
         let end_y = cy + dist as isize;
         let end_z = cz + dist as isize;
 

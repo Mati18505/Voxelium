@@ -1,5 +1,7 @@
 use bevy::{
-    log, prelude::*, tasks::{futures_lite::future, Task}
+    log,
+    prelude::*,
+    tasks::{futures_lite::future, Task},
 };
 use std::{collections::HashMap, fmt};
 

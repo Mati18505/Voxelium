@@ -1,112 +1,72 @@
-/// Represents the current state of a chunk in the world generation and rendering pipeline.
+use crate::chunk_mesh_builder::ChunkMesh;
+
+/// State of Chunk data.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ChunkState {
-    /// No chunk data or mesh exists in world.
+    /// The `Chunk` does not exist.
     Empty,
-    /// Chunk data is currently being loaded into memory.
+    /// The `Chunk` is in loader queue.
     Loading,
-    /// Chunk is already loaded, but mesh has not yet been built.
+    /// The `Chunk` is fully loaded and stored in the world.
     Loaded,
-    /// Mesh is currently being built and will be added to the world once complete.
-    ToDraw,
-    /// Mesh has been built and is currently in the world.
-    Drawn,
 }
 
+/// External inputs for determining next `ChunkState`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ChunkStatus {
-    pub is_within_render: bool,
+pub struct ChunkDataStatus {
+    /// Whether the chunk is within the current load range.
     pub is_within_load: bool,
+
+    /// Whether the chunk has been fully loaded and is ready to use.
+    /// This usually indicates that asynchronous loading (e.g. from disk or generator) has completed.
     pub loaded: bool,
-    pub mesh_built: bool,
-    pub needs_rebuild: bool,
 }
 
-pub fn get_next_chunk_state(curr_state: ChunkState, status: ChunkStatus) -> ChunkState {
-    use ChunkState::*;
 
-    match curr_state {
-        Empty => {
-            if status.is_within_load {
-                Loading
-            } else {
-                Empty
-            }
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ChunkTransition {
+    pub from: ChunkState,
+    pub to: ChunkState,
+}
+
+impl ChunkState {
+    pub fn get_next_chunk_state(&self, status: ChunkDataStatus) -> ChunkState {
+        use ChunkState::*;
+
+        let curr_state = self;
+
+        if !status.is_within_load {
+            return Empty;
         }
-        Loading => {
-            if status.is_within_load {
+
+        match curr_state {
+            Empty => {
+                Loading
+            }
+            Loading => {
                 if status.loaded {
                     Loaded
                 } else {
                     curr_state
                 }
-            } else {
-                Empty
             }
-        }
-        Loaded => {
-            if status.is_within_render {
-                ToDraw
-            } else if status.is_within_load {
+            Loaded => {
                 curr_state
-            } else {
-                Empty
-            }
-        }
-        ToDraw => {
-            if status.is_within_render {
-                if status.needs_rebuild {
-                    Loaded
-                } else if status.mesh_built {
-                    Drawn
-                } else {
-                    curr_state
-                }
-            } else {
-                Loaded
-            }
-        }
-        Drawn => {
-            if status.is_within_render {
-                if status.needs_rebuild {
-                    ToDraw
-                } else {
-                    curr_state
-                }
-            } else {
-                Loaded
             }
         }
     }
-}
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum ChunkTransition {
-    EmptyToLoading,
-    LoadingToEmpty,
-    LoadingToLoaded,
-    LoadedToEmpty,
-    LoadedToToDraw,
-    ToDrawToLoaded,
-    ToDrawToDrawn,
-    DrawnToToDraw,
-    DrawnToLoaded,
-}
+    pub fn get_chunk_transition(&self, to: ChunkState) -> Option<ChunkTransition> {
+        use ChunkState::*;
+        
+        let from = self;
 
-pub fn get_chunk_transition(from: ChunkState, to: ChunkState) -> Option<ChunkTransition> {
-    use ChunkState::*;
-    use ChunkTransition::*;
-
-    match (from, to) {
-        (Empty, Loading) => Some(EmptyToLoading),
-        (Loading, Empty) => Some(LoadingToEmpty),
-        (Loading, Loaded) => Some(LoadingToLoaded),
-        (Loaded, Empty) => Some(LoadedToEmpty),
-        (Loaded, ToDraw) => Some(LoadedToToDraw),
-        (ToDraw, Loaded) => Some(ToDrawToLoaded),
-        (ToDraw, Drawn) => Some(ToDrawToDrawn),
-        (Drawn, ToDraw) => Some(DrawnToToDraw),
-        (Drawn, Loaded) => Some(DrawnToLoaded),
-        _ => None,
+        match (from, to) {
+            (Empty, Loading)
+            | (Loading, Empty)
+            | (Loading, Loaded)
+            | (Loaded, Empty) => Some(ChunkTransition{ from, to }),
+            _ => None,
+        }
     }
 }

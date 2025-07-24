@@ -1,6 +1,6 @@
 use crate::entities::{BlockInChunkPos, CHUNK_SIZE};
 
-/// Generates all BlockInChunkPos positions in chunk, 
+/// Generates all BlockInChunkPos positions in chunk,
 /// Positions are ordered in a way, that BlockInChunkPos.index() indexes them in optimal (cache-friendly) way.
 #[derive(Debug, Clone)]
 pub struct BlockInChunkPosGenerator {
@@ -24,7 +24,7 @@ impl Iterator for BlockInChunkPosGenerator {
         if self.remaining == 0 {
             return None;
         }
-              
+
         let result = self.current;
 
         self.current.x += 1;
