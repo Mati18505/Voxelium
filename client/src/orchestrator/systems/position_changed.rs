@@ -45,11 +45,10 @@ pub fn update_chunk_pos_data(
     };
 
     for ev in controller_pos_changed_ev.read() {
-        // Convert bevy direction to our direction
         let block_pos = BlockPos::new(
             ev.new_pos.x as isize,
-            -ev.new_pos.z as isize,
             ev.new_pos.y as isize,
+            ev.new_pos.z as isize,
         );
         let chunk_pos = ChunkPos::from(block_pos);
 
