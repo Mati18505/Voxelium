@@ -5,15 +5,15 @@ use std::{
 
 use shared::entities::{world::World, Chunk, ChunkPos, ChunkRepository};
 
-use crate::chunk_mesh_builder::ChunkMesh;
+use crate::{chunk_manager::MeshState, chunk_mesh_builder::ChunkMesh};
 
 use super::ChunkState;
 
 #[derive(Default, Clone, PartialEq)]
 pub struct PhysicalWorld {
-    pub world: World,
+    world: World,
     pub chunk_meshes: HashMap<ChunkPos, ChunkMesh>,
-    pub chunk_states: HashMap<ChunkPos, ChunkState>,
+    pub chunk_states: HashMap<ChunkPos, MeshState>,
     chunks_need_rebuild: HashSet<ChunkPos>,
 }
 

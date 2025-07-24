@@ -25,7 +25,7 @@ use shared::{
 
 use crate::{
     bevy_resources::BevyBlockTypeStorageResource,
-    chunk_manager::ChunkManagerPlugin,
+    chunk_manager::{ChunkManagerConfig, ChunkManagerPlugin},
     controller::ActionType,
     gui::GUIPlugin,
     orchestrator::{utils::raycast_from_controller, OrchestratorPlugin},
@@ -62,7 +62,11 @@ fn main() {
             JsonAssetPlugin::<BevyBlockTypeStorageResource>::new(&["server_blocks.json"]),
             ControllerPlugin,
             VoxelRenderPlugin,
-            ChunkManagerPlugin,
+            ChunkManagerPlugin::new(ChunkManagerConfig {
+                load_distance: 20,
+                render_distance: 19,
+                dynamic_vertical_loading: false,
+            }),
             OrchestratorPlugin,
             GUIPlugin,
         ))

@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 
-use crate::chunk_manager::physical_world::PhysicalWorld;
-use shared::entities::ChunkPos;
+use shared::entities::*;
 
 #[derive(Resource)]
 pub struct ChunkManagerResource {
@@ -15,9 +14,4 @@ impl Default for ChunkManagerResource {
             controller_pos: ChunkPos::new(0, 0, 0),
         }
     }
-}
-
-#[derive(Resource, Default)]
-pub struct PhysicalWorldResource {
-    pub world: PhysicalWorld,
 }

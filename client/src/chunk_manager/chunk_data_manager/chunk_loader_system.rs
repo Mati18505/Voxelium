@@ -2,9 +2,11 @@ use bevy::prelude::*;
 
 use crate::{
     bevy_types::AppStates,
-    chunk_manager::{events::*, resources::ChunkManagerResource},
 };
 use shared::chunk_io::{ChunkLoader, ChunkProvider};
+
+use super::events::*;
+use super::resources::*;
 
 pub struct ChunkLoaderPlugin;
 impl Plugin for ChunkLoaderPlugin {

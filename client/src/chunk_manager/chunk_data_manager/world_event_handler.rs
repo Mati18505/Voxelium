@@ -1,18 +1,38 @@
 use bevy::{log, prelude::*};
-use shared::entities::{Chunk, ChunkPos, ChunkRepository};
+use shared::entities::*;
 
 use crate::bevy_types::AppStates;
-use crate::chunk_manager::ChunkTransition;
-use crate::chunk_manager::{
-    chunk_streamer::StreamerConfig, events::*, physical_world::PhysicalWorld, resources::*,
-    ChunkState, ChunkStatus,
-};
+use crate::chunk_manager::ChunkManagerConfig;
 
-pub struct WorldEventHandlerPlugin;
+use super::chunk_state::*;
+use super::chunk_storage::ChunkStorage;
+use super::chunk_streamer::StreamerConfig;
+use super::events::*;
+use super::resources::*;
+
+#[derive(Resource, Debug, Clone, PartialEq)]
+pub struct WorldEventHandlerConfig {
+    /// Horizontal radius (in chunks) within which chunks are loaded.
+    pub load_distance: usize,
+    /// If true, the engine dynamically loads chunks above and below the player based on vertical position.
+    pub dynamic_vertical_loading: bool,
+}
+
+pub struct WorldEventHandlerPlugin {
+    config: WorldEventHandlerConfig,
+}
+impl WorldEventHandlerPlugin {
+    pub fn new(config: WorldEventHandlerConfig) -> Self {
+        Self { config }
+    }
+}
+
 impl Plugin for WorldEventHandlerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<StateUpdateRequest>()
-            .insert_resource(PhysicalWorldResource::default())
+        app.insert_resource(self.config.clone())
+        .add_event::<StateUpdateRequest>()
+            .add_event::<ChunkStateTransition>()
+            .insert_resource(ChunkStorage::default())
             .add_systems(
                 Update,
                 (
@@ -26,11 +46,19 @@ impl Plugin for WorldEventHandlerPlugin {
 
 struct ChunkUpdateHandler<'a> {
     controller_pos: ChunkPos,
-    config: &'a StreamerConfig,
+    config: &'a WorldEventHandlerConfig,
+}
+
+/// `world_event_handler` request to update the chunk state based on its status.
+#[derive(Event, Debug)]
+struct StateUpdateRequest {
+    pub chunk_pos: ChunkPos,
+    pub curr_state: ChunkState,
+    pub chunk_status: ChunkDataStatus,
 }
 
 impl<'a> ChunkUpdateHandler<'a> {
-    fn new(controller_pos: ChunkPos, config: &'a StreamerConfig) -> Self {
+    fn new(controller_pos: ChunkPos, config: &'a WorldEventHandlerConfig) -> Self {
         Self {
             controller_pos,
             config,
@@ -44,31 +72,25 @@ impl<'a> ChunkUpdateHandler<'a> {
         }
     }
 
-    fn create_chunk_status(&self, pos: ChunkPos, world: &PhysicalWorld) -> ChunkStatus {
-        let is_within_render = self.is_player_within_distance(pos, self.config.render_distance);
+    fn create_chunk_status(&self, pos: ChunkPos, storage: &ChunkStorage) -> ChunkDataStatus {
         let is_within_load = self.is_player_within_distance(pos, self.config.load_distance);
-        let loaded = world.get_chunk(pos).is_some();
-        let mesh_built = world.get_chunk_mesh(pos).is_some();
-        let needs_rebuild = world.get_chunk_need_rebuild(pos);
+        let loaded = storage.is_loaded(pos);
 
-        ChunkStatus {
-            is_within_render,
+        ChunkDataStatus {
             is_within_load,
             loaded,
-            mesh_built,
-            needs_rebuild,
         }
     }
 
     fn create_state_update_request(
         &self,
         pos: ChunkPos,
-        world: &PhysicalWorld,
+        storage: &ChunkStorage,
     ) -> StateUpdateRequest {
-        let chunk_status = self.create_chunk_status(pos, world);
+        let chunk_status = self.create_chunk_status(pos, storage);
         StateUpdateRequest {
             chunk_pos: pos,
-            curr_state: world.get_chunk_state(pos),
+            curr_state: storage.get_chunk_state(pos),
             chunk_status,
         }
     }
@@ -76,161 +98,65 @@ impl<'a> ChunkUpdateHandler<'a> {
     fn create_load_chunk_request(
         &self,
         pos: ChunkPos,
-        world: &PhysicalWorld,
+        storage: &ChunkStorage,
     ) -> Option<StateUpdateRequest> {
-        if world.get_chunk_state(pos) != ChunkState::Empty {
+        if storage.get_chunk_state(pos) != ChunkState::Empty {
             return None;
         }
 
-        let mut chunk_status = self.create_chunk_status(pos, world);
+        let mut chunk_status = self.create_chunk_status(pos, storage);
         chunk_status.is_within_load = true;
         Some(StateUpdateRequest {
             chunk_pos: pos,
-            curr_state: world.get_chunk_state(pos),
+            curr_state: storage.get_chunk_state(pos),
             chunk_status,
         })
-    }
-
-    fn apply_chunk_loaded(&self, ev: &ChunkLoaded, world: &mut PhysicalWorld) {
-        if world.get_chunk_state(ev.chunk_pos) == ChunkState::Loading {
-            world.set_chunk(ev.chunk_pos, ev.chunk.clone());
-        }
-    }
-
-    fn apply_chunk_built(&self, ev: &ChunkBuilt, world: &mut PhysicalWorld) {
-        if world.get_chunk_state(ev.chunk_pos) == ChunkState::ToDraw {
-            world.add_chunk_mesh(ev.chunk_pos, ev.chunk_mesh.clone());
-        }
     }
 
     fn handle_streamer_request(
         &self,
         ev: &ChunkStreamerRequest,
-        world: &mut PhysicalWorld,
+        storage: &mut ChunkStorage,
     ) -> Option<StateUpdateRequest> {
         // TODO: remove only if state is `Empty`?
         match ev {
             ChunkStreamerRequest::Update(pos) => {
-                Some(self.create_state_update_request(*pos, world))
+                Some(self.create_state_update_request(*pos, storage))
             }
             ChunkStreamerRequest::Remove(pos) => {
-                world.remove_chunk(*pos);
+                storage.remove_chunk(*pos);
                 None
             }
-            ChunkStreamerRequest::Load(pos) => self.create_load_chunk_request(*pos, world),
+            ChunkStreamerRequest::Load(pos) => self.create_load_chunk_request(*pos, storage),
         }
-    }
-
-    fn get_chunk_to_draw(&self, pos: ChunkPos, world: &mut PhysicalWorld) -> Chunk {
-        world.remove_chunk_need_rebuild(pos);
-
-        world
-            .get_chunk(pos)
-            .expect("Chunk is passed to builder, but it is not loaded.")
-            .clone()
     }
 }
 
 // TODO: get those .clone() out
-/// Adds loaded chunks and built meshes to world.
+/// Adds loaded chunks and built meshes to storage.
 fn process_world_events(
-    mut world: ResMut<PhysicalWorldResource>,
+    mut storage: ResMut<ChunkStorage>,
     mut state_update_req_ev: EventWriter<StateUpdateRequest>,
     mut chunk_loaded_ev: EventReader<ChunkLoaded>,
-    mut chunk_built_ev: EventReader<ChunkBuilt>,
     mut chunk_streamer_ev: EventReader<ChunkStreamerRequest>,
-    config: Res<StreamerConfig>,
+    config: Res<WorldEventHandlerConfig>,
     chunk_manager_resources: Res<ChunkManagerResource>,
 ) {
     let mut chunk_update_handler =
         ChunkUpdateHandler::new(chunk_manager_resources.controller_pos, &config);
 
     for ev in chunk_loaded_ev.read() {
-        chunk_update_handler.apply_chunk_loaded(ev, &mut world.world);
+        storage.load(ev.chunk_pos, ev.chunk.clone());
 
-        let req = chunk_update_handler.create_state_update_request(ev.chunk_pos, &world.world);
-        state_update_req_ev.write(req);
-    }
-
-    for ev in chunk_built_ev.read() {
-        chunk_update_handler.apply_chunk_built(ev, &mut world.world);
-
-        let req = chunk_update_handler.create_state_update_request(ev.chunk_pos, &world.world);
+        let req = chunk_update_handler.create_state_update_request(ev.chunk_pos, &storage);
         state_update_req_ev.write(req);
     }
 
     for ev in chunk_streamer_ev.read() {
-        let maybe_req = chunk_update_handler.handle_streamer_request(ev, &mut world.world);
+        let maybe_req = chunk_update_handler.handle_streamer_request(ev, &mut storage);
 
         if let Some(req) = maybe_req {
             state_update_req_ev.write(req);
-        }
-    }
-}
-
-fn process_transition_events(
-    mut world: ResMut<PhysicalWorldResource>,
-    mut chunk_load_req_ev: EventWriter<ChunkLoaderRequest>,
-    mut chunk_build_req_ev: EventWriter<ChunkBuilderRequest>,
-    mut chunk_entity_req_ev: EventWriter<ChunkEntityEvent>,
-    mut state_update_req_ev: EventWriter<StateUpdateRequest>,
-    mut chunk_state_transition_ev: EventReader<ChunkStateTransition>,
-    config: Res<StreamerConfig>,
-    chunk_manager_resources: Res<ChunkManagerResource>,
-) {
-    log::info!("{:?}", chunk_manager_resources.controller_pos);
-
-    let mut chunk_update_handler =
-        ChunkUpdateHandler::new(chunk_manager_resources.controller_pos, &config);
-
-    for ev in chunk_state_transition_ev.read() {
-        let pos = ev.chunk_pos;
-        let mut world = &mut world.world;
-        world.set_chunk_state(pos, ev.new_state);
-
-        use ChunkTransition::*;
-
-        match ev.transition {
-            EmptyToLoading => {
-                log::debug!("Started loading chunk {:?}", pos);
-                chunk_load_req_ev.write(ChunkLoaderRequest::Load(pos));
-            }
-            LoadingToEmpty => {
-                log::debug!("Canceled loading chunk {:?}", pos);
-                chunk_load_req_ev.write(ChunkLoaderRequest::CancelLoading(pos));
-            }
-            LoadingToLoaded => {
-                log::debug!("Loaded chunk {:?}", pos);
-
-                // We need to check, if chunk is within render distance, or outside load distance or still in load distance.
-                let req = chunk_update_handler.create_state_update_request(pos, &world);
-                state_update_req_ev.write(req);
-            }
-            LoadedToEmpty => {
-                log::debug!("Removed chunk {:?}", pos);
-                world.remove_chunk(pos);
-            }
-            LoadedToToDraw => {
-                let chunk = chunk_update_handler.get_chunk_to_draw(pos, &mut world);
-                chunk_build_req_ev.write(ChunkBuilderRequest::Build(pos, chunk));
-            }
-            ToDrawToLoaded => {
-                chunk_build_req_ev.write(ChunkBuilderRequest::CancelBuilding(pos));
-            }
-            ToDrawToDrawn => {
-                log::debug!("Built chunk {:?}", pos);
-
-                let mesh = world.get_chunk_mesh(pos).unwrap();
-                chunk_entity_req_ev.write(ChunkEntityEvent::Create(pos, mesh.clone()));
-            }
-            DrawnToToDraw => {
-                let chunk = chunk_update_handler.get_chunk_to_draw(pos, &mut world);
-                chunk_build_req_ev.write(ChunkBuilderRequest::Build(pos, chunk));
-            }
-            DrawnToLoaded => {
-                world.chunk_meshes.remove(&pos);
-                chunk_entity_req_ev.write(ChunkEntityEvent::Remove(pos));
-            }
         }
     }
 }
@@ -242,8 +168,8 @@ fn process_state_update_requests(
     for ev in state_update_req_ev.read() {
         let chunk_pos = ev.chunk_pos;
         let prev_state = ev.curr_state;
-        let next_state = chunk_state::get_next_chunk_state(prev_state, ev.chunk_status);
-        let transition = chunk_state::get_chunk_transition(prev_state, next_state);
+        let next_state = prev_state.get_next_chunk_state(ev.chunk_status);
+        let transition = prev_state.get_chunk_transition(next_state);
 
         if let Some(transition) = transition {
             trace!("Chunk transition in chunk {chunk_pos:?}: {prev_state:?} -> {next_state:?}");
@@ -253,6 +179,48 @@ fn process_state_update_requests(
                 transition,
                 new_state: next_state,
             });
+        }
+    }
+}
+
+fn process_transition_events(
+    mut storage: ResMut<ChunkStorage>,
+    mut chunk_load_req_ev: EventWriter<ChunkLoaderRequest>,
+    mut chunk_state_transition_ev: EventReader<ChunkStateTransition>,
+    chunk_manager_resources: Res<ChunkManagerResource>,
+) {
+    log::info!("{:?}", chunk_manager_resources.controller_pos);
+
+    for ev in chunk_state_transition_ev.read() {
+        let pos = ev.chunk_pos;
+
+        use ChunkState::*;
+        let t: ChunkTransition = ev.transition;
+
+        if ev.transition.to != Loaded {
+            dbg!(ev.chunk_pos, ev.transition);
+            storage.change_state(pos, ev.transition);
+        }
+
+        match (t.from, t.to) {
+            (Empty, Loading) => {
+                log::debug!("Started loading chunk {:?}", pos);
+                chunk_load_req_ev.write(ChunkLoaderRequest::Load(pos));
+            }
+            (Loading, Empty) => {
+                log::debug!("Canceled loading chunk {:?}", pos);
+                chunk_load_req_ev.write(ChunkLoaderRequest::CancelLoading(pos));
+            }
+            (_, Loaded) => {
+                log::debug!("Loaded chunk {:?}", pos);
+
+                // TODO: send event to ChunkMesh manager.
+            }
+            (_, Empty) => {
+                log::debug!("Removed chunk {:?}", pos);
+                // TODO: send event to ChunkMesh manager.
+            }
+            _ => unreachable!(),
         }
     }
 }

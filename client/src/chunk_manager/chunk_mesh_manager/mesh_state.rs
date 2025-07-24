@@ -47,9 +47,7 @@ impl MeshState {
         }
 
         match curr_state {
-            Empty => {
-                WaitingToBuild
-            }
+            Empty => WaitingToBuild,
             WaitingToBuild => {
                 if status.can_start_building {
                     Building

@@ -1,34 +1,21 @@
 use bevy::log;
 use bevy::prelude::*;
-use shared::entities::ChunkPos;
-use shared::entities::ChunkPosGenerator2D;
+use shared::entities::*;
 
+use super::chunk_storage::ChunkStorage;
+use super::events::*;
+use super::resources::*;
+
+use super::chunk_state::*;
 use crate::bevy_types::AppStates;
-use crate::chunk_manager::events::*;
-use crate::chunk_manager::resources::*;
-use crate::chunk_manager::ChunkState;
 use crate::orchestrator::ChunkPosChangedEvent;
 
 #[derive(Resource, Debug, Clone, PartialEq)]
 pub struct StreamerConfig {
     /// Horizontal radius (in chunks) within which chunks are loaded.
     pub load_distance: usize,
-    /// Horizontal radius (in chunks) within which chunks are rendered.
-    pub render_distance: usize,
     /// If true, the engine dynamically loads chunks above and below the player based on vertical position.
     pub dynamic_vertical_loading: bool,
-}
-
-impl StreamerConfig {
-    pub fn new(load_distance: usize, render_distance: usize) -> Self {
-        assert!(render_distance <= load_distance);
-
-        StreamerConfig {
-            load_distance,
-            render_distance,
-            dynamic_vertical_loading: false,
-        }
-    }
 }
 
 pub struct ChunkStreamerPlugin {
@@ -69,18 +56,16 @@ fn update_controller_pos(
 fn chunk_streamer(
     mut chunk_pos_changed_ev: EventReader<ChunkPosChangedEvent>,
     mut chunk_streamer_ev: EventWriter<ChunkStreamerRequest>,
-    mut world: ResMut<PhysicalWorldResource>,
+    mut storage: ResMut<ChunkStorage>,
     config: Res<StreamerConfig>,
 ) {
-    let mut world = &mut world.world;
-
     for ev in chunk_pos_changed_ev.read() {
         info!("chunk pos: {:?}", ev.chunk_pos);
 
         let player_pos = ev.chunk_pos;
 
         // Remove all chunks that are still empty.
-        let empty_chunks_in_world: Vec<ChunkPos> = world.get_chunks_with_state(ChunkState::Empty);
+        let empty_chunks_in_world = storage.get_chunks_with_state(ChunkState::Empty);
 
         for pos in empty_chunks_in_world {
             chunk_streamer_ev.write(ChunkStreamerRequest::Remove(pos));
@@ -93,9 +78,7 @@ fn chunk_streamer(
         }
 
         // Update all existing chunks in the world.
-        let chunks_in_world: Vec<ChunkPos> = world.chunk_states.keys().copied().collect();
-
-        for pos in chunks_in_world {
+        for pos in storage.get_all_chunks() {
             chunk_streamer_ev.write(ChunkStreamerRequest::Update(pos));
         }
     }

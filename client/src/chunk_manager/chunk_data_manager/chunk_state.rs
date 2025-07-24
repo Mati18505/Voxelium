@@ -22,7 +22,6 @@ pub struct ChunkDataStatus {
     pub loaded: bool,
 }
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ChunkTransition {
     pub from: ChunkState,
@@ -33,16 +32,14 @@ impl ChunkState {
     pub fn get_next_chunk_state(&self, status: ChunkDataStatus) -> ChunkState {
         use ChunkState::*;
 
-        let curr_state = self;
+        let curr_state = *self;
 
         if !status.is_within_load {
             return Empty;
         }
 
         match curr_state {
-            Empty => {
-                Loading
-            }
+            Empty => Loading,
             Loading => {
                 if status.loaded {
                     Loaded
@@ -50,22 +47,19 @@ impl ChunkState {
                     curr_state
                 }
             }
-            Loaded => {
-                curr_state
-            }
+            Loaded => curr_state,
         }
     }
 
     pub fn get_chunk_transition(&self, to: ChunkState) -> Option<ChunkTransition> {
         use ChunkState::*;
-        
-        let from = self;
+
+        let from = *self;
 
         match (from, to) {
-            (Empty, Loading)
-            | (Loading, Empty)
-            | (Loading, Loaded)
-            | (Loaded, Empty) => Some(ChunkTransition{ from, to }),
+            (Empty, Loading) | (Loading, Empty) | (Loading, Loaded) | (Loaded, Empty) => {
+                Some(ChunkTransition { from, to })
+            }
             _ => None,
         }
     }
