@@ -3,7 +3,7 @@ use cgmath::Vector2;
 use crate::entities::{ChunkPos, CHUNK_SIZE};
 
 /// Generates square of chunk positions around center.
-/// Generated square is 2D (without height (Z axis)).
+/// Generated square is 2D (without height (Y axis)).
 #[derive(Debug, Clone)]
 pub struct ChunkPosGenerator2D {
     center: ChunkPos,
@@ -20,11 +20,11 @@ impl ChunkPosGenerator2D {
     pub fn new(center: ChunkPos, dist: usize) -> Self {
         let dist = dist * CHUNK_SIZE;
         // 0, 16, 32 -> 0, 1, 2
-        let (cx, cy) = (center.x, center.y);
+        let (cx, cz) = (center.x, center.z);
         let start_x = cx - dist as isize;
-        let start_y = cy - dist as isize;
+        let start_z = cz - dist as isize;
         let end_x =  cx + dist as isize;
-        let end_y = cy + dist as isize;
+        let end_z = cz + dist as isize;
 
         let chunks_per_axis = dist / CHUNK_SIZE * 2 + 1;
         let remaining = chunks_per_axis.pow(2);
@@ -33,9 +33,9 @@ impl ChunkPosGenerator2D {
             center,
             dist,
             remaining,
-            current: ChunkPos::new(start_x, start_y, 0),
-            start: ChunkPos::new(start_x, start_y, 0),
-            end: ChunkPos::new(end_x, end_y, 0),
+            current: ChunkPos::new(start_x, 0, start_z),
+            start: ChunkPos::new(start_x, 0, start_z),
+            end: ChunkPos::new(end_x, 0, end_z),
         }
     }
 }
@@ -44,7 +44,7 @@ impl Iterator for ChunkPosGenerator2D {
     type Item = ChunkPos;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.current.y > self.end.y {
+        if self.current.z > self.end.z {
             return None;
         }
 
@@ -53,7 +53,7 @@ impl Iterator for ChunkPosGenerator2D {
         self.current.x += CHUNK_SIZE as isize;
         if self.current.x > self.end.x {
             self.current.x = self.start.x;
-            self.current.y += CHUNK_SIZE as isize;
+            self.current.z += CHUNK_SIZE as isize;
         }
 
         self.remaining -= 1;
@@ -152,9 +152,9 @@ mod test {
 
         let actual_positions: HashSet<ChunkPos> = generator.collect();
         let expected_positions: HashSet<ChunkPos> = (-2..=2)
-            .flat_map(|y| {
+            .flat_map(|z| {
                 (-2..=2).map(move |x| {
-                    ChunkPos::new(x * CHUNK_SIZE as isize, y * CHUNK_SIZE as isize, 0)
+                    ChunkPos::new(x * CHUNK_SIZE as isize, 0, z * CHUNK_SIZE as isize)
                 })
             })
             .collect();
