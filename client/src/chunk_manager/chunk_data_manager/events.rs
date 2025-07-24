@@ -7,14 +7,6 @@ use shared::entities::*;
 
 use super::chunk_state::*;
 
-/// Chunk is changing it's state.
-#[derive(Event, Debug)]
-pub struct ChunkStateTransition {
-    pub chunk_pos: ChunkPos,
-    pub transition: ChunkTransition,
-    pub new_state: ChunkState,
-}
-
 /// `chunk_streamer` requests to change world state.
 #[derive(Event, Debug)]
 pub enum ChunkStreamerRequest {

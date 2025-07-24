@@ -36,8 +36,20 @@ impl ChunkStorage {
 
         self.chunk_states.insert(pos, ChunkState::Loaded);
         self.world.chunks.insert(pos, chunk);
+    }
 
-        dbg!(pos, "loaded");
+    /// Changes the chunk state based on state transition.
+    /// If current chunk state is different than that of the transition, function panics.
+    /// If `transition.to` is equal to ChunkState::Loaded - this function panics - instead use method Load.
+    pub fn change_state(&mut self, pos: ChunkPos, transition: ChunkTransition) {
+        assert_eq!(transition.from, self.get_chunk_state(pos));
+        assert_ne!(transition.to, ChunkState::Loaded);
+
+        if transition.to == ChunkState::Empty {
+            self.remove_chunk(pos);
+        } else {
+            self.chunk_states.insert(pos, transition.to);
+        }
     }
 
     /// Returns chunk state.
@@ -56,29 +68,6 @@ impl ChunkStorage {
         self.world.chunks.contains_key(&pos)
     }
 
-    /// Changes the chunk state based on state transition.
-    /// If current chunk state is different than that of the transition, function panics.
-    /// If `transition.to` is equal to ChunkState::Loaded - this function panics - instead use method Load.
-    pub fn change_state(&mut self, pos: ChunkPos, transition: ChunkTransition) {
-        assert_eq!(transition.from, self.get_chunk_state(pos));
-        assert_ne!(transition.to, ChunkState::Loaded);
-
-        if transition.to == ChunkState::Empty {
-            self.remove_chunk(pos);
-        } else {
-            self.chunk_states.insert(pos, transition.to);
-        }
-    }
-
-    /// Removes chunk from storage only if transition from current state to ChunkState::Empty is allowed.
-    pub fn remove_chunk(&mut self, pos: ChunkPos) {
-        let transition_allowed = self.get_chunk_state(pos).get_chunk_transition(ChunkState::Empty).is_some();
-        assert!(transition_allowed);
-
-        self.world.chunks.remove(&pos);
-        self.chunk_states.remove(&pos);
-    }
-
     /// Returns iterator of all chunk positions in storage that chunk have state equal to provided.
     pub fn get_chunks_with_state(&self, state: ChunkState) -> impl Iterator<Item = ChunkPos> + '_ {
         self.chunk_states
@@ -90,6 +79,15 @@ impl ChunkStorage {
     /// Returns all chunk positions in storage.
     pub fn get_all_chunks(&self) -> impl Iterator<Item = ChunkPos> + '_ {
         self.chunk_states.keys().copied()
+    }
+
+    /// Removes chunk from storage only if transition from current state to ChunkState::Empty is allowed.
+    fn remove_chunk(&mut self, pos: ChunkPos) {
+        let transition_allowed = self.get_chunk_state(pos).get_chunk_transition(ChunkState::Empty).is_some();
+        assert!(transition_allowed);
+
+        self.world.chunks.remove(&pos);
+        self.chunk_states.remove(&pos);
     }
 }
 
