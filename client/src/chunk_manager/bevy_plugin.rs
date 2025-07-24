@@ -12,22 +12,12 @@ use crate::{
     bevy_render::VoxelMaterial,
     bevy_types::{AppStates, GameResources},
     chunk_manager::{
-        chunk_builder_system::{ChunkBuilderPlugin, ChunkBuilderResource},
-        chunk_entities_manager::{ChunkEntitiesManagerPlugin, ChunkEntitiesManagerResource},
-        chunk_loader_system::{ChunkLoaderPlugin, ChunkLoaderResource},
-        chunk_state_manager::ChunkStateManagerPlugin,
-        chunk_streamer::{ChunkStreamerPlugin, StreamerConfig},
-        physical_world::PhysicalWorld,
-        world_event_handler::WorldEventHandlerPlugin,
-        ChunkState,
+        chunk_builder_system::{ChunkBuilderPlugin, ChunkBuilderResource}, chunk_data_manager::{chunk_loader_system::ChunkLoaderPlugin, world_event_handler::WorldEventHandlerPlugin}, chunk_entities_manager::{ChunkEntitiesManagerPlugin, ChunkEntitiesManagerResource}, chunk_loader_system::{ChunkLoaderPlugin, ChunkLoaderResource}, chunk_mesh_manager::{chunk_builder_system::ChunkBuilderPlugin, chunk_entities_manager::ChunkEntitiesManagerPlugin}, chunk_state_manager::ChunkStateManagerPlugin, chunk_streamer::{ChunkStreamerPlugin, StreamerConfig}, physical_world::PhysicalWorld, world_event_handler::WorldEventHandlerPlugin, ChunkState
     },
-    chunk_mesh_builder::{
-        builders::{self, async_chunk_builder::AsyncChunkBuilder, ChunkBuilder, Versioned},
-        meshers::{naive_mesher::NaiveMesher, ChunkMesher},
-        ChunkMesh,
-    },
+    chunk_mesh_builder::
+        meshers::naive_mesher::NaiveMesher
+    ,
     controller,
-    orchestrator::ChunkPosChangedEvent,
 };
 
 // TODO: change to plugin group
