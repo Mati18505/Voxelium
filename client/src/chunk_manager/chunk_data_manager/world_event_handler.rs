@@ -79,36 +79,21 @@ impl<'a> ChunkUpdateHandler<'a> {
             loaded,
         }
     }
-
-    fn create_state_update_request(
-        &self,
-        pos: ChunkPos,
-        storage: &ChunkStorage,
-    ) -> StateUpdateRequest {
-        let chunk_status = self.create_chunk_status(pos, storage);
-        StateUpdateRequest { chunk_pos: pos }
-    }
 }
 
 // TODO: get those .clone() out
 /// Adds loaded chunks and built meshes to storage.
 fn process_world_events(
-    storage: Res<ChunkStorage>,
     mut state_update_req_ev: EventWriter<StateUpdateRequest>,
     mut chunk_loaded_ev: EventReader<ChunkLoaded>,
     mut chunk_streamer_ev: EventReader<ChunkStreamerRequest>,
-    config: Res<WorldEventHandlerConfig>,
-    chunk_manager_resources: Res<ChunkManagerResource>,
 ) {
-    let mut chunk_update_handler =
-        ChunkUpdateHandler::new(chunk_manager_resources.controller_pos, &config);
-
     let mut chunks_to_update = HashSet::<ChunkPos>::default();
     chunks_to_update.extend(chunk_loaded_ev.read().map(|loaded| loaded.chunk_pos));
     chunks_to_update.extend(chunk_streamer_ev.read().map(|rq| rq.chunk_pos));
 
-    for pos_to_update in chunks_to_update {
-        let req = chunk_update_handler.create_state_update_request(pos_to_update, &storage);
+    for chunk_pos in chunks_to_update {
+        let req = StateUpdateRequest { chunk_pos };
 
         state_update_req_ev.write(req);
     }
@@ -150,8 +135,7 @@ fn process_transition(
     if transition.to != Loaded {
         storage.change_state(pos, transition);
     } else {
-        // TODO:
-        // storage.load(ev.chunk_pos, ev.chunk.clone());
+        storage.load(pos, Chunk::default());
     }
 
     match (transition.from, transition.to) {
