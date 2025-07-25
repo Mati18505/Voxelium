@@ -87,8 +87,9 @@ fn process_world_events(
     mut state_update_req_ev: EventWriter<StateUpdateRequest>,
     mut chunk_loaded_ev: EventReader<ChunkLoaded>,
     mut chunk_streamer_ev: EventReader<ChunkStreamerRequest>,
+    storage: Res<ChunkStorage>,
 ) {
-    let mut chunks_to_update = HashSet::<ChunkPos>::default();
+    let mut chunks_to_update: HashSet<ChunkPos> = storage.get_all_chunks().collect();
     chunks_to_update.extend(chunk_loaded_ev.read().map(|loaded| loaded.chunk_pos));
     chunks_to_update.extend(chunk_streamer_ev.read().map(|rq| rq.chunk_pos));
 
@@ -159,5 +160,5 @@ fn process_transition(
         _ => unreachable!(),
     }
 
-    // dbg!(storage);
+    dbg!(storage);
 }
