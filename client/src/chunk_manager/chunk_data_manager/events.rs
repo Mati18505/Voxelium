@@ -1,21 +1,14 @@
 use bevy::prelude::*;
 
-use crate::{
-    chunk_mesh_builder::ChunkMesh,
-};
+use crate::chunk_mesh_builder::ChunkMesh;
 use shared::entities::*;
 
 use super::chunk_state::*;
 
-/// `chunk_streamer` requests to change world state.
+/// `chunk_streamer` requests to update chunks in load distance.
 #[derive(Event, Debug)]
-pub enum ChunkStreamerRequest {
-    /// Request to update the chunk state based on its status.
-    Update(ChunkPos),
-    /// Request to load the chunk if it is empty.
-    Load(ChunkPos),
-    /// Request to remove chunk.
-    Remove(ChunkPos),
+pub struct ChunkStreamerRequest {
+    pub chunk_pos: ChunkPos,
 }
 
 /// Chunks requested to load by `ChunkLoader`.

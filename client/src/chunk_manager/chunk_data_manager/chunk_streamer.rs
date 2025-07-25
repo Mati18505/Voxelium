@@ -56,7 +56,6 @@ fn update_controller_pos(
 fn chunk_streamer(
     mut chunk_pos_changed_ev: EventReader<ChunkPosChangedEvent>,
     mut chunk_streamer_ev: EventWriter<ChunkStreamerRequest>,
-    mut storage: ResMut<ChunkStorage>,
     config: Res<StreamerConfig>,
 ) {
     for ev in chunk_pos_changed_ev.read() {
@@ -64,22 +63,10 @@ fn chunk_streamer(
 
         let player_pos = ev.chunk_pos;
 
-        // Remove all chunks that are still empty.
-        let empty_chunks_in_world = storage.get_chunks_with_state(ChunkState::Empty);
-
-        for pos in empty_chunks_in_world {
-            chunk_streamer_ev.write(ChunkStreamerRequest::Remove(pos));
-        }
-
-        // Load missing chunks within the load distance.
+        // Update all chunks within the load distance.
         let to_load = ChunkPosGenerator2D::new(player_pos, config.load_distance);
-        for pos in to_load {
-            chunk_streamer_ev.write(ChunkStreamerRequest::Load(pos));
-        }
-
-        // Update all existing chunks in the world.
-        for pos in storage.get_all_chunks() {
-            chunk_streamer_ev.write(ChunkStreamerRequest::Update(pos));
+        for chunk_pos in to_load {
+            chunk_streamer_ev.write(ChunkStreamerRequest { chunk_pos });
         }
     }
 }

@@ -1,8 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{
-    bevy_types::AppStates,
-};
+use crate::bevy_types::AppStates;
 use shared::chunk_io::{ChunkLoader, ChunkProvider};
 
 use super::events::*;

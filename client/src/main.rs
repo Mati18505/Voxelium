@@ -54,7 +54,7 @@ fn main() {
                     ..default()
                 })
                 .set(bevy::log::LogPlugin {
-                    // level: bevy::log::Level::TRACE,
+                    level: bevy::log::Level::DEBUG,
                     ..default()
                 }),
             WireframePlugin::default(),

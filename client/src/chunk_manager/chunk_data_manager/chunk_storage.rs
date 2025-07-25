@@ -1,5 +1,5 @@
-use std::{collections::HashMap, fmt::Debug};
 use bevy::prelude::*;
+use std::{collections::HashMap, fmt::Debug};
 
 use shared::entities::{Chunk, ChunkPos, ChunkRepository, World};
 
@@ -19,7 +19,11 @@ impl ChunkStorage {
         let chunk_in_storage = self.get_chunk(pos).is_some();
         let state_is_loaded = self.get_chunk_state(pos) == ChunkState::Loaded;
 
-        assert_eq!(chunk_in_storage, state_is_loaded, "Chunk-state mismatch at {:?}", pos);
+        assert_eq!(
+            chunk_in_storage, state_is_loaded,
+            "Chunk-state mismatch at {:?}",
+            pos
+        );
 
         match (chunk_in_storage, state_is_loaded) {
             (true, true) => true,
@@ -31,7 +35,10 @@ impl ChunkStorage {
 
     /// Inserts chunk into storage only if transition from current state to ChunkState::Loaded is allowed.
     pub fn load(&mut self, pos: ChunkPos, chunk: Chunk) {
-        let transition_allowed = self.get_chunk_state(pos).get_chunk_transition(ChunkState::Loaded).is_some();
+        let transition_allowed = self
+            .get_chunk_state(pos)
+            .get_chunk_transition(ChunkState::Loaded)
+            .is_some();
         assert!(transition_allowed);
 
         self.chunk_states.insert(pos, ChunkState::Loaded);
@@ -83,7 +90,10 @@ impl ChunkStorage {
 
     /// Removes chunk from storage only if transition from current state to ChunkState::Empty is allowed.
     fn remove_chunk(&mut self, pos: ChunkPos) {
-        let transition_allowed = self.get_chunk_state(pos).get_chunk_transition(ChunkState::Empty).is_some();
+        let transition_allowed = self
+            .get_chunk_state(pos)
+            .get_chunk_transition(ChunkState::Empty)
+            .is_some();
         assert!(transition_allowed);
 
         self.world.chunks.remove(&pos);

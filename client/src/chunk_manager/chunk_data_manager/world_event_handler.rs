@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use bevy::{log, prelude::*};
 use shared::entities::*;
 
@@ -30,7 +32,7 @@ impl WorldEventHandlerPlugin {
 impl Plugin for WorldEventHandlerPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(self.config.clone())
-        .add_event::<StateUpdateRequest>()
+            .add_event::<StateUpdateRequest>()
             .insert_resource(ChunkStorage::default())
             .add_systems(
                 Update,
@@ -84,50 +86,14 @@ impl<'a> ChunkUpdateHandler<'a> {
         storage: &ChunkStorage,
     ) -> StateUpdateRequest {
         let chunk_status = self.create_chunk_status(pos, storage);
-        StateUpdateRequest {
-            chunk_pos: pos,
-        }
-    }
-
-    fn create_load_chunk_request(
-        &self,
-        pos: ChunkPos,
-        storage: &ChunkStorage,
-    ) -> Option<StateUpdateRequest> {
-        if storage.get_chunk_state(pos) != ChunkState::Empty {
-            return None;
-        }
-
-        let mut chunk_status = self.create_chunk_status(pos, storage);
-        chunk_status.is_within_load = true;
-        Some(StateUpdateRequest {
-            chunk_pos: pos,
-        })
-    }
-
-    fn handle_streamer_request(
-        &self,
-        ev: &ChunkStreamerRequest,
-        storage: &ChunkStorage,
-    ) -> Option<StateUpdateRequest> {
-        // TODO: remove only if state is `Empty`?
-        match ev {
-            ChunkStreamerRequest::Update(pos) => {
-                Some(self.create_state_update_request(*pos, &storage))
-            }
-            ChunkStreamerRequest::Remove(pos) => {
-                // storage.remove_chunk(*pos);
-                None
-            }
-            ChunkStreamerRequest::Load(pos) => self.create_load_chunk_request(*pos, &storage),
-        }
+        StateUpdateRequest { chunk_pos: pos }
     }
 }
 
 // TODO: get those .clone() out
 /// Adds loaded chunks and built meshes to storage.
 fn process_world_events(
-    mut storage: ResMut<ChunkStorage>,
+    storage: Res<ChunkStorage>,
     mut state_update_req_ev: EventWriter<StateUpdateRequest>,
     mut chunk_loaded_ev: EventReader<ChunkLoaded>,
     mut chunk_streamer_ev: EventReader<ChunkStreamerRequest>,
@@ -137,19 +103,14 @@ fn process_world_events(
     let mut chunk_update_handler =
         ChunkUpdateHandler::new(chunk_manager_resources.controller_pos, &config);
 
-    for ev in chunk_loaded_ev.read() {
-        storage.load(ev.chunk_pos, ev.chunk.clone());
+    let mut chunks_to_update = HashSet::<ChunkPos>::default();
+    chunks_to_update.extend(chunk_loaded_ev.read().map(|loaded| loaded.chunk_pos));
+    chunks_to_update.extend(chunk_streamer_ev.read().map(|rq| rq.chunk_pos));
 
-        let req = chunk_update_handler.create_state_update_request(ev.chunk_pos, &storage);
+    for pos_to_update in chunks_to_update {
+        let req = chunk_update_handler.create_state_update_request(pos_to_update, &storage);
+
         state_update_req_ev.write(req);
-    }
-
-    for ev in chunk_streamer_ev.read() {
-        let maybe_req = chunk_update_handler.handle_streamer_request(ev, &storage);
-
-        if let Some(req) = maybe_req {
-            state_update_req_ev.write(req);
-        }
     }
 }
 
@@ -173,12 +134,12 @@ fn process_state_update_requests(
         if let Some(transition) = transition {
             trace!("Chunk transition in chunk {chunk_pos:?}: {prev_state:?} -> {next_state:?}");
 
-            process_transition_event(&mut storage, &mut chunk_load_req_ev, chunk_pos, transition);
+            process_transition(&mut storage, &mut chunk_load_req_ev, chunk_pos, transition);
         }
     }
 }
 
-fn process_transition_event(
+fn process_transition(
     mut storage: &mut ResMut<ChunkStorage>,
     mut chunk_load_req_ev: &mut EventWriter<ChunkLoaderRequest>,
     pos: ChunkPos,
@@ -188,6 +149,9 @@ fn process_transition_event(
 
     if transition.to != Loaded {
         storage.change_state(pos, transition);
+    } else {
+        // TODO:
+        // storage.load(ev.chunk_pos, ev.chunk.clone());
     }
 
     match (transition.from, transition.to) {
@@ -210,4 +174,6 @@ fn process_transition_event(
         }
         _ => unreachable!(),
     }
+
+    // dbg!(storage);
 }

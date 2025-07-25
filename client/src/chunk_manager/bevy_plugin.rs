@@ -9,7 +9,15 @@ use shared::{
 };
 
 use crate::{
-    bevy_render::VoxelMaterial, bevy_types::{AppStates, GameResources}, chunk_manager::chunk_data_manager::{chunk_loader_system::{ChunkLoaderPlugin, ChunkLoaderResource}, chunk_streamer::{ChunkStreamerPlugin, StreamerConfig}, world_event_handler::{WorldEventHandlerConfig, WorldEventHandlerPlugin}}, chunk_mesh_builder::meshers::naive_mesher::NaiveMesher, controller
+    bevy_render::VoxelMaterial,
+    bevy_types::{AppStates, GameResources},
+    chunk_manager::chunk_data_manager::{
+        chunk_loader_system::{ChunkLoaderPlugin, ChunkLoaderResource},
+        chunk_streamer::{ChunkStreamerPlugin, StreamerConfig},
+        world_event_handler::{WorldEventHandlerConfig, WorldEventHandlerPlugin},
+    },
+    chunk_mesh_builder::meshers::naive_mesher::NaiveMesher,
+    controller,
 };
 
 #[derive(Resource, Debug, Clone, PartialEq)]
