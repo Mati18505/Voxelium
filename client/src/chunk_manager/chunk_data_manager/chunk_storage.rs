@@ -106,6 +106,9 @@ impl Debug for ChunkStorage {
         f.debug_struct("ChunkStorage")
             .field("chunks", &self.world.chunks.len())
             .field("chunk_states", &self.chunk_states.len())
+            .field("empty_chunks", &self.get_chunks_with_state(ChunkState::Empty).collect::<Vec<ChunkPos>>().len())
+            .field("loading_chunks", &self.get_chunks_with_state(ChunkState::Loading).collect::<Vec<ChunkPos>>().len())
+            .field("loaded_chunks", &self.get_chunks_with_state(ChunkState::Loaded).collect::<Vec<ChunkPos>>().len())
             .finish()
     }
 }
