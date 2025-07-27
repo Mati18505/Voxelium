@@ -269,7 +269,7 @@ mod tests {
         );
 
         builder.update(player_pos);
-        assert_eq!(builder.is_chunk_with_latest_version_built(chunk_pos), true);
+        assert!(builder.is_chunk_with_latest_version_built(chunk_pos));
 
         builder.force_build(
             chunk_pos,
@@ -280,9 +280,9 @@ mod tests {
             },
         );
 
-        assert_eq!(builder.is_chunk_with_latest_version_built(chunk_pos), false);
+        assert!(!builder.is_chunk_with_latest_version_built(chunk_pos));
         builder.update(player_pos);
-        assert_eq!(builder.is_chunk_with_latest_version_built(chunk_pos), true);
+        assert!(builder.is_chunk_with_latest_version_built(chunk_pos));
     }
 
     #[test]
