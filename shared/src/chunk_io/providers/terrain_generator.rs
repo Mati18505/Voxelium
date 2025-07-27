@@ -18,7 +18,7 @@ impl Default for TerrainConfig {
     fn default() -> Self {
         Self {
             seed: 1337,
-            freq: 0.17,
+            freq: 0.630,
             lacunarity: 0.5,
             octaves: 5,
             add_flat_noise: true,
@@ -39,7 +39,7 @@ impl TerrainGenerator {
     pub fn generate_terrain(&mut self, chunk_pos: ChunkPos) -> BlockStorage {
         let my_span = info_span!("generate_terrain", name = "generate_terrain").entered();
         let density_noise = self.generate_density_map(chunk_pos);
-        let flat_noise = self.generate_density_map(chunk_pos);
+        let flat_noise = self.generate_flat_map(chunk_pos);
 
         let mut blocks = vec![0; CHUNK_SIZE.pow(3)];
 
@@ -71,7 +71,7 @@ impl TerrainGenerator {
     }
 
     fn index_2d(pos: BlockInChunkPos) -> usize {
-        pos.y * CHUNK_SIZE + pos.x
+        pos.z * CHUNK_SIZE + pos.x
     }
 
     fn generate_density_map(&self, chunk_pos: ChunkPos) -> Vec<f32> {
@@ -80,7 +80,7 @@ impl TerrainGenerator {
         let offset_z = chunk_pos.z as f32;
 
         NoiseBuilder::fbm_3d_offset(
-            offset_x, CHUNK_SIZE, offset_z, CHUNK_SIZE, offset_y, CHUNK_SIZE,
+            offset_x, CHUNK_SIZE, offset_y, CHUNK_SIZE, offset_z, CHUNK_SIZE,
         )
         .with_freq(self.config.freq)
         .with_octaves(self.config.octaves)
@@ -91,9 +91,9 @@ impl TerrainGenerator {
 
     fn generate_flat_map(&self, chunk_pos: ChunkPos) -> Vec<f32> {
         let offset_x = chunk_pos.x as f32;
-        let offset_y = chunk_pos.y as f32;
+        let offset_z = chunk_pos.z as f32;
 
-        NoiseBuilder::fbm_2d_offset(offset_x, CHUNK_SIZE, offset_y, CHUNK_SIZE)
+        NoiseBuilder::fbm_2d_offset(offset_x, CHUNK_SIZE, offset_z, CHUNK_SIZE)
             .with_freq(self.config.freq)
             .with_octaves(self.config.octaves)
             .with_seed(self.config.seed)
@@ -108,7 +108,7 @@ impl TerrainGenerator {
         density: f32,
         flat: f32,
     ) -> BlockID {
-        if world_pos.z < flat.round() as isize {
+        if world_pos.y < flat.round() as isize {
             if density < 20.0 {
                 name_to_block_id("stone")
             } else if density < 40.0 {
