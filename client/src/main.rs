@@ -163,8 +163,16 @@ fn create_resources(
 
     init_block_names(server_block_type_storage_asset.into());
 
-    if let Err(err) = vox_importer::import("assets/vox/character/chr_bow.vox") {
-        log::error!("{err}");
+    let result = vox_importer::import("assets/vox/test.vox");
+
+    match result {
+        Ok(models) => {
+            dbg!(models.len());
+            for model in models {
+                dbg!(model);
+            }
+        }
+        Err(err) => log::error!("{err}"),
     }
 }
 

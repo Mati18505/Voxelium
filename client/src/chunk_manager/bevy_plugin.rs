@@ -79,6 +79,7 @@ fn update(
 ) {
     for e in controller_events.read() {
         let new_pos = e.new_pos;
+        // dbg!(&new_pos);
         let new_block_pos =
             BlockPos::new(new_pos.x as isize, new_pos.y as isize, new_pos.z as isize);
         let new_chunk_pos = ChunkPos::from(new_block_pos);
