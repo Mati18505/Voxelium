@@ -1,7 +1,9 @@
 use bevy::log::{self, info_span};
 use shared::{
     chunk_io::chunk_loader,
-    entities::{Chunk, ChunkPos, ChunkPosGenerator2D, ChunkPosGenerator3D, ChunkRepository, CHUNK_SIZE},
+    entities::{
+        Chunk, ChunkPos, ChunkPosGenerator2D, ChunkPosGenerator3D, ChunkRepository, CHUNK_SIZE,
+    },
 };
 use std::fmt;
 
@@ -149,11 +151,18 @@ impl ChunkManager {
 
     fn update_chunk_states_in_world(&mut self) {
         // Load missing chunks within the load distance.
-        let generator: Box<dyn Iterator<Item = ChunkPos>> = match self.config.dynamic_vertical_loading {
-            true => Box::new(ChunkPosGenerator3D::new(self.controller_pos, self.config.load_distance)),
-            false => Box::new(ChunkPosGenerator2D::new(self.controller_pos, self.config.load_distance)),
-        };
-        
+        let generator: Box<dyn Iterator<Item = ChunkPos>> =
+            match self.config.dynamic_vertical_loading {
+                true => Box::new(ChunkPosGenerator3D::new(
+                    self.controller_pos,
+                    self.config.load_distance,
+                )),
+                false => Box::new(ChunkPosGenerator2D::new(
+                    self.controller_pos,
+                    self.config.load_distance,
+                )),
+            };
+
         for pos in generator {
             self.load_chunk_if_is_empty(pos);
         }
