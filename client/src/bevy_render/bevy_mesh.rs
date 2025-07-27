@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use bevy::{
     asset::RenderAssetUsages,
-    math::{Quat, Vec3},
     render::mesh::{Indices, Mesh, PrimitiveTopology},
     transform::components::Transform,
 };

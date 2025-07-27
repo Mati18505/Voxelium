@@ -8,6 +8,12 @@ pub struct BlockInChunkPosGenerator {
     remaining: usize,
 }
 
+impl Default for BlockInChunkPosGenerator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BlockInChunkPosGenerator {
     pub fn new() -> Self {
         Self {
@@ -64,7 +70,7 @@ mod test {
     /// Tests that the positions returned by the generator match the order of indicies returned by `pos.index()`, ensuring a cache-friendly memory layout.
     #[test]
     fn test_generator_index_order_matches_linear_memory_layout() {
-        let mut generator = BlockInChunkPosGenerator::new();
+        let generator = BlockInChunkPosGenerator::new();
         assert_eq!(generator.len(), CHUNK_SIZE.pow(3));
 
         for (i, pos) in generator.enumerate() {

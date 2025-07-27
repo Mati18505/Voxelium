@@ -1,6 +1,6 @@
 use once_cell::sync::OnceCell;
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use super::BlockID;
 

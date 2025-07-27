@@ -1,9 +1,7 @@
 use bevy::log::{self, info_span};
 use shared::{
     chunk_io::chunk_loader,
-    entities::{
-        Chunk, ChunkPos, ChunkPosGenerator2D, ChunkPosGenerator3D, ChunkRepository, CHUNK_SIZE,
-    },
+    entities::{Chunk, ChunkPos, ChunkPosGenerator2D, ChunkPosGenerator3D, ChunkRepository},
 };
 use std::fmt;
 
@@ -121,7 +119,7 @@ impl ChunkManager {
     /// Checks and processes chunks ready to be drawn.
     /// Should be called once per frame.
     pub fn check_built_chunks(&mut self) {
-        let my_span = info_span!("check_built_chunks", name = "check_built_chunks").entered();
+        let _ = info_span!("check_built_chunks", name = "check_built_chunks").entered();
 
         self.chunk_builder.update(self.controller_pos);
 

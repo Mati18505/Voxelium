@@ -51,7 +51,7 @@ impl ChunkLoader {
 
     /// Should be called once per frame.
     pub fn update(&mut self, player_pos: ChunkPos) {
-        let my_span = info_span!("update_chunk_loader", name = "update_chunk_loader").entered();
+        let _ = info_span!("update_chunk_loader", name = "update_chunk_loader").entered();
 
         let nearest_chunks = self
             .chunks_to_load

@@ -18,7 +18,7 @@ pub struct NaiveMesher {
 
 impl ChunkMesher for NaiveMesher {
     fn create_mesh(&self, chunk: &Chunk) -> MesherOutput {
-        let my_span = info_span!(
+        let _ = info_span!(
             "naive_mesher_create_mesh",
             name = "naive_mesher_create_mesh"
         )
