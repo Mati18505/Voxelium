@@ -138,6 +138,7 @@ fn from_glam_to_cgmath_matrix(matrix: glam::Mat3) -> cgmath::Matrix3<f32> {
     )
 }
 
+#[allow(unused)]
 fn main() -> Result<(), ImportError> {
     let vox_tree = dot_vox::load("src/resources/axes.vox")
         .map_err(|err| ImportError::LoaderError(err.to_string()))?;
