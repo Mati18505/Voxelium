@@ -1,10 +1,12 @@
+use std::fmt::{self, Debug};
+
 use cgmath::Vector3;
 use dot_vox::{DotVoxData, Model, Rotation, SceneNode};
 use thiserror::Error;
 
 type FilePath = String;
 
-#[derive(Debug, Error, Clone, PartialEq)]
+#[derive(Debug, Error)]
 pub enum ImportError {
     #[error("Invalid vox file error: {0}")]
     InvalidFileError(String),
@@ -13,10 +15,30 @@ pub enum ImportError {
     FileLoadError(String, FilePath),
 }
 
+#[derive(Clone, PartialEq)]
+pub struct VoxModel {
+    pub model: Model,
+    pub position: Vector3<f32>,
+    pub model_size: Vector3<f32>,
+}
+
+impl Debug for VoxModel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("VoxModel")
+            .field("model::size", &self.model.size)
+            .field("model::voxels len", &self.model.voxels.len())
+            .field("position", &self.position)
+            .field("model_size", &self.model_size)
+            .finish()
+    }
+}
+
 #[allow(unused)]
-pub fn import(file: &str) -> Result<(), ImportError> {
+pub fn import(file: &str) -> Result<Vec<VoxModel>, ImportError> {
     let vox_data = dot_vox::load(file)
         .map_err(|err| ImportError::FileLoadError(err.to_string(), file.to_string()))?;
+
+    let mut models = Vec::default();
 
     iterate_vox_data(&vox_data, |model, position, orientation| {
         //conversion to Vector3<i32> is required, because orientation might negate the
@@ -36,14 +58,19 @@ pub fn import(file: &str) -> Result<(), ImportError> {
 
         // The global position points to the middle of the model, the element at
         // [0][0][0] is at the bottom left corner
-        println!("model size: {model_size:?} position of element[0][0][0]: {min_corner:?}",);
+
+        models.push(VoxModel {
+            model: model.clone(),
+            position,
+            model_size,
+        });
     });
 
-    Ok(())
+    Ok(models)
 
     // for each block in model:
-        // if chunk does not exist - create it
-        // voxel_ops::set_block()
+    // if chunk does not exist - create it
+    // voxel_ops::set_block()
 }
 
 fn iterate_vox_data(
@@ -55,7 +82,7 @@ fn iterate_vox_data(
         let identity = Rotation::IDENTITY;
 
         for model in &vox_data.models {
-            func(model, &zero, &identity);
+            func(&model, &zero, &identity);
         }
 
         Ok(())
@@ -83,7 +110,9 @@ fn iterate_vox_tree(
             Rotation::IDENTITY,
             &mut func,
         ),
-        _ => Err(InvalidFileError("The root node for a magicka voxel DAG should be a Transform node!".to_string())),
+        _ => Err(InvalidFileError(
+            "The root node for a magicka voxel DAG should be a Transform node!".to_string(),
+        )),
     }
 }
 
