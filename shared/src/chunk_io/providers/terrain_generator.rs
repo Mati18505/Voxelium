@@ -2,7 +2,7 @@ use rand::{rngs::ThreadRng, Rng};
 
 use crate::entities::{
     block_in_chunk_pos_generator::BlockInChunkPosGenerator, name_to_block_id, BlockID,
-    BlockInChunkPos, BlockStorage, ChunkPos, CHUNK_SIZE,
+    BlockStorage, ChunkPos, CHUNK_SIZE,
 };
 
 #[derive(Debug, Clone)]
