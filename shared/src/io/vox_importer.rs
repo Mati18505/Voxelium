@@ -2,16 +2,15 @@ use cgmath::Vector3;
 use dot_vox::{DotVoxData, Model, Rotation, SceneNode};
 use thiserror::Error;
 
+type FilePath = String;
+
 #[derive(Debug, Error, Clone, PartialEq)]
 pub enum ImportError {
-    #[error("The root node for a magicka voxel DAG should be a Transform node!")]
-    WrongRootNode(),
+    #[error("Invalid vox file error: {0}")]
+    InvalidFileError(String),
 
-    #[error("Parse error: {0}")]
-    ParseError(String),
-
-    #[error("Vox file loader error: {0}")]
-    LoaderError(String),
+    #[error("Vox file loader error: {0}, while loading file: {1}")]
+    FileLoadError(String, FilePath),
 }
 
 fn iterate_vox_tree(
@@ -33,7 +32,7 @@ fn iterate_vox_tree(
             Rotation::IDENTITY,
             &mut fun,
         ),
-        _ => Err(WrongRootNode()),
+        _ => Err(InvalidFileError("The root node for a magicka voxel DAG should be a Transform node!".to_string())),
     }
 }
 
@@ -41,14 +40,14 @@ fn parse_translation_delta(t: &str) -> Result<Vec<i32>, ImportError> {
     t.split_whitespace()
         .map(|x| {
             x.parse::<i32>()
-                .map_err(|err| ImportError::ParseError(format!("Not an integer: {err}")))
+                .map_err(|err| ImportError::InvalidFileError(format!("Not an integer: {err}")))
         })
         .collect()
 }
 
 fn parse_rotation(r: &str) -> Result<Rotation, ImportError> {
     Ok(Rotation::from_byte(r.parse().map_err(|err| {
-        ImportError::ParseError(format!(
+        ImportError::InvalidFileError(format!(
             "Expected valid u8 byte to parse rotation matrix: {err}"
         ))
     })?))
@@ -77,7 +76,7 @@ fn iterate_vox_tree_inner(
                     let translation_delta = parse_translation_delta(t)?;
 
                     if translation_delta.len() != 3 {
-                        return Err(ParseError(
+                        return Err(InvalidFileError(
                             "Translation data should have 3 values!".to_string(),
                         ));
                     }
@@ -139,9 +138,9 @@ fn from_glam_to_cgmath_matrix(matrix: glam::Mat3) -> cgmath::Matrix3<f32> {
 }
 
 #[allow(unused)]
-fn main() -> Result<(), ImportError> {
-    let vox_tree = dot_vox::load("src/resources/axes.vox")
-        .map_err(|err| ImportError::LoaderError(err.to_string()))?;
+pub fn import(file: &str) -> Result<(), ImportError> {
+    let vox_tree = dot_vox::load(file)
+        .map_err(|err| ImportError::FileLoadError(err.to_string(), file.to_string()))?;
 
     iterate_vox_tree(&vox_tree, |model, position, orientation| {
         //conversion to Vector3<i32> is required, because orientation might negate the
@@ -155,8 +154,9 @@ fn main() -> Result<(), ImportError> {
         );
 
         let model_size: Vector3<f32> = orientation_matrix * size_vec;
-        let min_corner = (position.map(|e| e as f32)) - model_size / 2.0;
-        let max_corner = (position.map(|e| e as f32)) + model_size / 2.0;
+        let position = position.map(|e| e as f32);
+        let min_corner = position - model_size / 2.0;
+        let max_corner = position + model_size / 2.0;
 
         // The global position points to the middle of the model, the element at
         // [0][0][0] is at the bottom left corner
@@ -164,4 +164,8 @@ fn main() -> Result<(), ImportError> {
     });
 
     Ok(())
+
+    // for each block in model:
+        // if chunk does not exist - create it
+        // voxel_ops::set_block()
 }

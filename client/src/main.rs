@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use bevy::{
     color::palettes::css::WHITE,
+    log,
     pbr::wireframe::{WireframeConfig, WireframePlugin},
     prelude::*,
     render::{
@@ -20,6 +21,7 @@ use chunk_mesh_builder::*;
 use controller::ControllerPlugin;
 use shared::{
     entities::{init_block_names, name_to_block_id, BlockID, BlockPos, BlockTypeStorage},
+    io::vox_importer,
     physics::RaycastResult,
 };
 
@@ -135,6 +137,10 @@ fn create_resources(
     });
 
     init_block_names(server_block_type_storage_asset.into());
+
+    if let Err(err) = vox_importer::import("assets/vox/character/chr_bow.vox") {
+        log::error!("{err}");
+    }
 }
 
 fn init_level(
