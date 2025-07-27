@@ -13,9 +13,60 @@ pub enum ImportError {
     FileLoadError(String, FilePath),
 }
 
+#[allow(unused)]
+pub fn import(file: &str) -> Result<(), ImportError> {
+    let vox_data = dot_vox::load(file)
+        .map_err(|err| ImportError::FileLoadError(err.to_string(), file.to_string()))?;
+
+    iterate_vox_data(&vox_data, |model, position, orientation| {
+        //conversion to Vector3<i32> is required, because orientation might negate the
+        // sign of the size components
+        let orientation_matrix = glam::Mat3::from_cols_array_2d(&orientation.to_cols_array_2d());
+        let orientation_matrix = from_glam_to_cgmath_matrix(orientation_matrix);
+        let size_vec = Vector3::new(
+            model.size.x as f32,
+            model.size.y as f32,
+            model.size.z as f32,
+        );
+
+        let model_size: Vector3<f32> = orientation_matrix * size_vec;
+        let position = position.map(|e| e as f32);
+        let min_corner = position - model_size / 2.0;
+        let max_corner = position + model_size / 2.0;
+
+        // The global position points to the middle of the model, the element at
+        // [0][0][0] is at the bottom left corner
+        println!("model size: {model_size:?} position of element[0][0][0]: {min_corner:?}",);
+    });
+
+    Ok(())
+
+    // for each block in model:
+        // if chunk does not exist - create it
+        // voxel_ops::set_block()
+}
+
+fn iterate_vox_data(
+    vox_data: &DotVoxData,
+    mut func: impl FnMut(&Model, &Vector3<i32>, &Rotation),
+) -> Result<(), ImportError> {
+    if vox_data.scenes.len() == 0 {
+        let zero = Vector3::new(0, 0, 0);
+        let identity = Rotation::IDENTITY;
+
+        for model in &vox_data.models {
+            func(model, &zero, &identity);
+        }
+
+        Ok(())
+    } else {
+        iterate_vox_tree(vox_data, func)
+    }
+}
+
 fn iterate_vox_tree(
     vox_tree: &DotVoxData,
-    mut fun: impl FnMut(&Model, &Vector3<i32>, &Rotation),
+    mut func: impl FnMut(&Model, &Vector3<i32>, &Rotation),
 ) -> Result<(), ImportError> {
     use ImportError::*;
 
@@ -30,7 +81,7 @@ fn iterate_vox_tree(
             *child,
             Vector3::new(0, 0, 0),
             Rotation::IDENTITY,
-            &mut fun,
+            &mut func,
         ),
         _ => Err(InvalidFileError("The root node for a magicka voxel DAG should be a Transform node!".to_string())),
     }
@@ -135,37 +186,4 @@ fn from_glam_to_cgmath_matrix(matrix: glam::Mat3) -> cgmath::Matrix3<f32> {
         Vector3::new(cols[1][0], cols[1][1], cols[1][2]),
         Vector3::new(cols[2][0], cols[2][1], cols[2][2]),
     )
-}
-
-#[allow(unused)]
-pub fn import(file: &str) -> Result<(), ImportError> {
-    let vox_tree = dot_vox::load(file)
-        .map_err(|err| ImportError::FileLoadError(err.to_string(), file.to_string()))?;
-
-    iterate_vox_tree(&vox_tree, |model, position, orientation| {
-        //conversion to Vector3<i32> is required, because orientation might negate the
-        // sign of the size components
-        let orientation_matrix = glam::Mat3::from_cols_array_2d(&orientation.to_cols_array_2d());
-        let orientation_matrix = from_glam_to_cgmath_matrix(orientation_matrix);
-        let size_vec = Vector3::new(
-            model.size.x as f32,
-            model.size.y as f32,
-            model.size.z as f32,
-        );
-
-        let model_size: Vector3<f32> = orientation_matrix * size_vec;
-        let position = position.map(|e| e as f32);
-        let min_corner = position - model_size / 2.0;
-        let max_corner = position + model_size / 2.0;
-
-        // The global position points to the middle of the model, the element at
-        // [0][0][0] is at the bottom left corner
-        println!("model size: {model_size:?} position of element[0][0][0]: {min_corner:?}",);
-    });
-
-    Ok(())
-
-    // for each block in model:
-        // if chunk does not exist - create it
-        // voxel_ops::set_block()
 }
