@@ -27,7 +27,7 @@ pub struct VoxModel {
     /// The local dimensions of the model in voxels. (width, height, depth)
     pub size: Vector3<u32>,
 
-    /// Points at element [0][0][0], which is at the bottom left corner.
+    /// Points at element {0, 0, 0}, which is at the bottom left corner.
     /// In world space.
     pub min_corner: Vector3<i32>,
 
