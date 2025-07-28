@@ -15,14 +15,16 @@ pub enum ImportError {
 /// Represents one MagicaVoxel model.
 #[derive(Clone, PartialEq)]
 pub struct VoxModel {
-    /// Global model position in world.
-    /// Position is in model's center.
+    /// Global model position in world space.
+    /// Represents the center point in the model.
+    /// Coordinates are in voxel units.
     pub global_position: Vector3<i32>,
 
-    /// 
+    /// The global dimensions of the model in voxels.
+    /// Calculated as: `rotation * size`. May contain negative components, depending on rotation.
     pub global_size: Vector3<f32>,
 
-    /// The dimensions of the model in voxels. (width, height, depth)
+    /// The local dimensions of the model in voxels. (width, height, depth)
     pub size: Vector3<u32>,
 
     /// The voxels to be displayed.
@@ -41,8 +43,8 @@ impl Debug for VoxModel {
 }
 
 pub fn import(bytes: &[u8]) -> Result<Vec<VoxModel>, ImportError> {
-    let vox_data = dot_vox::load_bytes(bytes)
-        .map_err(|err| ImportError::InvalidFileError(err.to_string()))?;
+    let vox_data =
+        dot_vox::load_bytes(bytes).map_err(|err| ImportError::InvalidFileError(err.to_string()))?;
 
     let mut models = Vec::default();
 
