@@ -27,6 +27,14 @@ pub struct VoxModel {
     /// The local dimensions of the model in voxels. (width, height, depth)
     pub size: Vector3<u32>,
 
+    /// Points at element [0][0][0], which is at the bottom left corner.
+    /// In world space.
+    pub min_corner: Vector3<i32>,
+
+    /// Points which is at the top right corner.
+    /// In world space.
+    pub max_corner: Vector3<i32>,
+
     /// The voxels to be displayed.
     pub voxels: Vec<Voxel>,
 }
@@ -64,10 +72,18 @@ pub fn import(bytes: &[u8]) -> Result<Vec<VoxModel>, ImportError> {
         let size = model.size;
         let size = Vector3::new(size.x, size.y, size.z);
 
+        let half = (size.map(|v| v as i32) / 2);
+        let min_corner = global_position - half;
+        let max_corner = global_position + half;
+
+        assert_size_consistent(max_corner, min_corner, size);
+
         models.push(VoxModel {
             global_position,
             global_size,
             size,
+            min_corner,
+            max_corner,
             voxels: model.voxels.clone(),
         });
     });
@@ -218,3 +234,17 @@ fn from_glam_to_cgmath_matrix(matrix: glam::Mat3) -> cgmath::Matrix3<f32> {
         Vector3::new(cols[2][0], cols[2][1], cols[2][2]),
     )
 }
+
+fn vector3_geq(a: Vector3<i32>, b: Vector3<i32>) -> bool {
+    a.x >= b.x && a.y >= b.y && a.z >= b.z
+}
+
+fn assert_size_consistent(max_corner: Vector3<i32>, min_corner: Vector3<i32>, size: Vector3<u32>) {
+    assert!(vector3_geq(max_corner, min_corner), "max_corner must be >= min_corner element-wise");
+
+    let diff = max_corner - min_corner;
+    let diff_u32 = Vector3::new(diff.x as u32, diff.y as u32, diff.z as u32);
+
+    assert!(diff_u32 == size, "Difference between corners must equal size");
+}
+
