@@ -1,7 +1,7 @@
 use std::fmt::{self, Debug};
 
 use cgmath::Vector3;
-use dot_vox::{DotVoxData, Model, Rotation, SceneNode};
+use dot_vox::{DotVoxData, Model, Rotation, SceneNode, Voxel};
 use thiserror::Error;
 
 type FilePath = String;
@@ -10,37 +10,43 @@ type FilePath = String;
 pub enum ImportError {
     #[error("Invalid vox file error: {0}")]
     InvalidFileError(String),
-
-    #[error("Vox file loader error: {0}, while loading file: {1}")]
-    FileLoadError(String, FilePath),
 }
 
+/// Represents one MagicaVoxel model.
 #[derive(Clone, PartialEq)]
 pub struct VoxModel {
-    pub model: Model,
-    pub position: Vector3<f32>,
-    pub model_size: Vector3<f32>,
+    /// Global model position in world.
+    /// Position is in model's center.
+    pub global_position: Vector3<i32>,
+
+    /// 
+    pub global_size: Vector3<f32>,
+
+    /// The dimensions of the model in voxels. (width, height, depth)
+    pub size: Vector3<u32>,
+
+    /// The voxels to be displayed.
+    pub voxels: Vec<Voxel>,
 }
 
 impl Debug for VoxModel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("VoxModel")
-            .field("model::size", &self.model.size)
-            .field("model::voxels len", &self.model.voxels.len())
-            .field("position", &self.position)
-            .field("model_size", &self.model_size)
+            .field("global_position", &self.global_position)
+            .field("global_size", &self.global_size)
+            .field("size", &self.size)
+            .field("voxels len", &self.voxels.len())
             .finish()
     }
 }
 
-#[allow(unused)]
-pub fn import(file: &str) -> Result<Vec<VoxModel>, ImportError> {
-    let vox_data = dot_vox::load(file)
-        .map_err(|err| ImportError::FileLoadError(err.to_string(), file.to_string()))?;
+pub fn import(bytes: &[u8]) -> Result<Vec<VoxModel>, ImportError> {
+    let vox_data = dot_vox::load_bytes(bytes)
+        .map_err(|err| ImportError::InvalidFileError(err.to_string()))?;
 
     let mut models = Vec::default();
 
-    iterate_vox_data(&vox_data, |model, position, orientation| {
+    iterate_vox_data(&vox_data, |model, global_position, orientation| {
         //conversion to Vector3<i32> is required, because orientation might negate the
         // sign of the size components
         let orientation_matrix = glam::Mat3::from_cols_array_2d(&orientation.to_cols_array_2d());
@@ -51,26 +57,20 @@ pub fn import(file: &str) -> Result<Vec<VoxModel>, ImportError> {
             model.size.z as f32,
         );
 
-        let model_size: Vector3<f32> = orientation_matrix * size_vec;
-        let position = position.map(|e| e as f32);
-        let min_corner = position - model_size / 2.0;
-        let max_corner = position + model_size / 2.0;
-
-        // The global position points to the middle of the model, the element at
-        // [0][0][0] is at the bottom left corner
+        let global_position = *global_position;
+        let global_size: Vector3<f32> = orientation_matrix * size_vec;
+        let size = model.size;
+        let size = Vector3::new(size.x, size.y, size.z);
 
         models.push(VoxModel {
-            model: model.clone(),
-            position,
-            model_size,
+            global_position,
+            global_size,
+            size,
+            voxels: model.voxels.clone(),
         });
     });
 
     Ok(models)
-
-    // for each block in model:
-    // if chunk does not exist - create it
-    // voxel_ops::set_block()
 }
 
 fn iterate_vox_data(

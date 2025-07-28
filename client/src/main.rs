@@ -163,8 +163,9 @@ fn create_resources(
 
     init_block_names(server_block_type_storage_asset.into());
 
-    let result = vox_importer::import("assets/vox/test.vox");
+    // let result = vox_importer::import("assets/vox/test.vox");
 
+    /*
     match result {
         Ok(models) => {
             dbg!(models.len());
@@ -174,6 +175,7 @@ fn create_resources(
         }
         Err(err) => log::error!("{err}"),
     }
+ */
 }
 
 fn create_1d_color_palette(color_palette_2d: Image) -> Image {
