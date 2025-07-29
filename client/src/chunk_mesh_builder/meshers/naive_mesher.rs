@@ -5,7 +5,7 @@ use cgmath::Vector3;
 use shared::entities::{BlockID, BlockInChunkPos, BlockSide, BlockStorage, Chunk, Direction};
 
 use crate::chunk_mesh_builder::{
-    ChunkMesh, LayerMesh, TexturedBlockType, RenderBlockTypeStorage, TextureDictionary,
+    ChunkMesh, LayerMesh, RenderBlockType, RenderBlockTypeStorage, TextureDictionary, TexturedBlockType
 };
 
 use super::{ChunkMesher, MesherOutput, MesherWarning};
@@ -36,7 +36,7 @@ impl ChunkMesher for NaiveMesher {
                 Some(block_type) => {
                     let layer_mesh: &mut LayerMesh = chunk_mesh
                         .layers
-                        .entry(block_type.material_name.clone())
+                        .entry(block_type.material().clone())
                         .or_insert(LayerMesh::default());
 
                     self.create_block(
@@ -73,7 +73,7 @@ impl NaiveMesher {
 
     fn create_block(
         &self,
-        block_type: &TexturedBlockType,
+        block_type: &dyn RenderBlockType,
         pos: BlockInChunkPos,
         mesh: &mut LayerMesh,
         block_storage: &BlockStorage,
@@ -131,7 +131,7 @@ impl NaiveMesher {
         &self,
         side: BlockSide,
         block_pos: BlockInChunkPos,
-        block_type: &TexturedBlockType,
+        block_type: &dyn RenderBlockType,
         mesh: &mut LayerMesh,
         warnings: &mut Vec<MesherWarning>,
     ) {

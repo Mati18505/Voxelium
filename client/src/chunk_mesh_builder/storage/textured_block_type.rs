@@ -1,6 +1,6 @@
 use shared::entities::BlockSide;
 
-use crate::chunk_mesh_builder::MaterialName;
+use crate::chunk_mesh_builder::{MaterialName, RenderBlockType};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TexturedBlockType {
@@ -22,6 +22,20 @@ impl TexturedBlockType {
             BlockSide::Bottom => self.bottom_texture.as_deref().unwrap_or(&self.side_texture),
             _ => &self.side_texture,
         }
+    }
+}
+
+impl RenderBlockType for TexturedBlockType {
+    fn get_server_block_type_name(&self) -> &str {
+        &self.block_type
+    }
+
+    fn visible(&self) -> bool {
+        self.is_visible
+    }
+
+    fn translucent(&self) -> bool {
+        self.is_translucent
     }
 }
 
