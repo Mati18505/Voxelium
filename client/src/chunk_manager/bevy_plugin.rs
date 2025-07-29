@@ -2,8 +2,7 @@ use std::sync::Arc;
 
 use bevy::prelude::*;
 use shared::{
-    chunk_io::{providers::generated_chunk_provider::GeneratedChunkProvider, ChunkLoader},
-    entities::{BlockPos, ChunkPos},
+    chunk_io::{providers::generated_chunk_provider::GeneratedChunkProvider, ChunkLoader}, entities::{BlockPos, ChunkPos, Prefab}, io::PrefabAsset, voxel_edits::voxel_ops
 };
 
 use crate::{
@@ -16,7 +15,7 @@ use crate::{
         },
         meshers::naive_mesher::NaiveMesher,
     },
-    controller,
+    controller, VoxelAssets,
 };
 
 use super::{
@@ -38,6 +37,7 @@ pub struct ChunkManagerResources {
     pub chunk_manager: ChunkManager,
     chunk_entities_manager: ChunkEntitiesManager,
     event_manager: EventManager,
+    is_instance_created: bool,
 }
 
 fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>) {
@@ -65,6 +65,7 @@ fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>
         chunk_manager,
         chunk_entities_manager: ChunkEntitiesManager::new(chunk_object_rx),
         event_manager: EventManager::new(event_rx),
+        is_instance_created: false,
     };
     commands.insert_resource(chunk_manager_resources);
 }
@@ -76,6 +77,8 @@ fn update(
     mut chunk_manager_resources: ResMut<ChunkManagerResources>,
     mut controller_events: EventReader<controller::PositionChangeEvent>,
     chunk_manager_events: EventWriter<WorldChunkUpdateEvent>,
+    voxel_assets: Res<VoxelAssets>,
+    prefab_assets: Res<Assets<PrefabAsset>>,
 ) {
     for e in controller_events.read() {
         let new_pos = e.new_pos;
@@ -102,4 +105,18 @@ fn update(
     chunk_manager_resources
         .event_manager
         .process_pending(chunk_manager_events);
+
+    if !chunk_manager_resources.is_instance_created {
+
+        let prefab_asset = prefab_assets
+            .get(&voxel_assets.prefab)
+            .expect("Failed to get prefab asset")
+            .to_owned();
+
+
+        let prefab: Prefab = prefab_asset.into();
+        voxel_ops::instantiate_prefab(&mut chunk_manager_resources.chunk_manager, prefab);
+
+        chunk_manager_resources.is_instance_created = true;
+    }
 }

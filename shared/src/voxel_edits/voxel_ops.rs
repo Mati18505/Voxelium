@@ -1,4 +1,4 @@
-use shared::entities::{BlockID, BlockInChunkPos, BlockPos, Chunk, ChunkPos, ChunkRepository};
+use crate::entities::{BlockID, BlockInChunkPos, BlockPos, Chunk, ChunkPos, ChunkRepository, Prefab};
 
 pub fn set_block_and_update_chunk<T: ChunkRepository>(
     chunk_repository: &mut T,
@@ -17,3 +17,19 @@ pub fn set_block_and_update_chunk<T: ChunkRepository>(
         chunk_repository.set_chunk(chunk_pos, new_chunk);
     }
 }
+
+pub fn instantiate_prefab<T: ChunkRepository>(
+    chunk_repository: &mut T,
+    prefab: Prefab,
+) {
+    for voxel in prefab.get_voxels() {
+        let chunk_pos = ChunkPos::from(voxel.pos);
+
+        if let None = chunk_repository.get_chunk(chunk_pos) {
+            chunk_repository.set_chunk(chunk_pos, Chunk::default());
+        }
+
+        set_block_and_update_chunk(chunk_repository, voxel.pos, voxel.id);
+    }
+}
+

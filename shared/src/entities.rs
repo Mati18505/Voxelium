@@ -5,6 +5,7 @@ pub mod block_type;
 pub mod block_type_storage;
 pub mod chunk;
 pub mod chunk_pos_generators;
+pub mod prefab;
 pub mod types;
 pub mod world;
 
@@ -14,5 +15,6 @@ pub use block_type::*;
 pub use block_type_storage::*;
 pub use chunk::*;
 pub use chunk_pos_generators::*;
+pub use prefab::*;
 pub use types::*;
 pub use world::*;

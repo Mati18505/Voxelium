@@ -25,8 +25,8 @@ use chunk_mesh_builder::*;
 use controller::ControllerPlugin;
 use shared::{
     entities::{init_block_names, name_to_block_id, BlockID, BlockPos, BlockTypeStorage},
-    io::vox_importer,
-    physics::RaycastResult,
+    io::{vox_importer, PrefabAsset, PrefabLoaderPlugin},
+    physics::RaycastResult, voxel_edits,
 };
 
 use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
@@ -50,7 +50,6 @@ mod chunk_mesh_builder;
 mod controller;
 mod gui;
 mod orchestrator;
-mod voxel_edits;
 
 fn main() {
     App::new()
@@ -76,6 +75,7 @@ fn main() {
             ChunkManagerPlugin,
             OrchestratorPlugin,
             GUIPlugin,
+            PrefabLoaderPlugin,
         ))
         .insert_resource(WireframeConfig {
             global: false,
@@ -111,6 +111,8 @@ struct VoxelAssets {
     server_blocks: Handle<BevyBlockTypeStorageResource>,
     #[asset(path = "textures/palette.png")]
     color_palette: Handle<Image>,
+    #[asset(path = "vox/character/chr_bow.vox")]
+    prefab: Handle<PrefabAsset>,
 }
 
 fn create_resources(
@@ -162,60 +164,6 @@ fn create_resources(
     });
 
     init_block_names(server_block_type_storage_asset.into());
-
-    // let result = vox_importer::import("assets/vox/test.vox");
-
-    /*
-    match result {
-        Ok(models) => {
-            dbg!(models.len());
-            for model in models {
-                dbg!(model);
-            }
-        }
-        Err(err) => log::error!("{err}"),
-    }
- */
-}
-
-fn create_1d_color_palette(color_palette_2d: Image) -> Image {
-    assert_eq!(color_palette_2d.width(), 256);
-    assert_eq!(color_palette_2d.height(), 1);
-
-    let extend = Extent3d {
-        width: 256,
-        height: 1,
-        ..default()
-    };
-
-    let data = color_palette_2d.data.unwrap();
-    let format = color_palette_2d.texture_descriptor.format;
-
-    Image::new(extend, TextureDimension::D1, data, format, RenderAssetUsages::default())
-}
-
-fn create_material_storage(
-    textured_materials: &mut ResMut<Assets<TexturedCubeMaterial>>,
-    colored_materials: &mut ResMut<Assets<ColoredCubeMaterial>>,
-    opaque_texture: Handle<Image>,
-    color_palette: Handle<Image>,
-) -> Arc<MaterialStorage> {
-    let mut material_storage = MaterialStorage::default();
-
-    let textured_mat = TexturedCubeMaterial {
-        array_texture: opaque_texture,
-    };
-    let textured_mat_handle = textured_materials.add(textured_mat);
-
-    let colored_mat = ColoredCubeMaterial {
-        color_palette,
-    };
-    let colored_mat_handle = colored_materials.add(colored_mat);
-
-    material_storage.add(0, MaterialHandle::TexturedCube(textured_mat_handle));
-    material_storage.add(1, MaterialHandle::ColoredCube(colored_mat_handle));
-
-    Arc::new(material_storage)
 }
 
 fn create_1d_color_palette(color_palette_2d: Image) -> Image {
