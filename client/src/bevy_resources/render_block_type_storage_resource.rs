@@ -5,21 +5,22 @@ use thiserror::Error;
 
 use bevy::asset::{io::Reader, AssetLoader, LoadContext};
 
-use crate::bevy_resources::{RenderBlockType, RenderBlockTypeStorage, TexturedBlockType, TexturedBlockTypeBuilder};
+use crate::bevy_resources::{
+    RenderBlockType, RenderBlockTypeStorage, TexturedBlockTypeBuilder,
+};
 
 #[derive(bevy::asset::Asset, bevy::reflect::TypePath, Debug, Clone, PartialEq)]
 pub struct RenderBlockTypeStorageResource {
-    block_types: Vec<TexturedBlockType>,
+    block_types: Vec<RenderBlockType>,
 }
 
 impl From<RenderBlockTypeStorageResource> for RenderBlockTypeStorage {
     fn from(resource: RenderBlockTypeStorageResource) -> Self {
-        let block_types: HashMap<BlockID, Box<dyn RenderBlockType>> = resource
+        let block_types: HashMap<BlockID, RenderBlockType> = resource
             .block_types
             .into_iter()
             .enumerate()
             .map(|(i, e)| (i as BlockID, e))
-            .map(|(id, block_type)| (id, Box::new(block_type) as Box<dyn RenderBlockType>))
             .collect();
 
         RenderBlockTypeStorage::new(block_types)

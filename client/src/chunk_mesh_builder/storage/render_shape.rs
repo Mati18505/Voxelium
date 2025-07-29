@@ -35,12 +35,7 @@ impl RenderShape {
     ) -> RenderShape {
         let textures: HashMap<BlockSide, TextureIndex> = BlockSide::iterator()
             .copied()
-            .map(|side| {
-                (
-                    side,
-                    textures.remove(&side).unwrap_or(default_texture),
-                )
-            })
+            .map(|side| (side, textures.remove(&side).unwrap_or(default_texture)))
             .collect();
 
         assert_eq!(textures.len(), BlockSide::iterator().len());

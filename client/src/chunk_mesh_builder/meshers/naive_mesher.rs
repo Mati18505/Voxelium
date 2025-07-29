@@ -4,10 +4,7 @@ use bevy::log::info_span;
 use cgmath::Vector3;
 use shared::entities::{BlockID, BlockInChunkPos, BlockSide, BlockStorage, Chunk, Direction};
 
-use crate::chunk_mesh_builder::{
-    ChunkMesh, LayerMesh, TextureDictionary,
-    TexturedBlockType,
-};
+use crate::chunk_mesh_builder::{ChunkMesh, LayerMesh, TextureDictionary, TexturedBlockType};
 
 use super::{ChunkMesher, MesherOutput, MesherWarning};
 
