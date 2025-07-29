@@ -5,14 +5,14 @@ use cgmath::Vector3;
 use shared::entities::{BlockID, BlockInChunkPos, BlockSide, BlockStorage, Chunk, Direction};
 
 use crate::chunk_mesh_builder::{
-    ChunkMesh, LayerMesh, TexturedBlockType, MeshBlockTypeStorage, TextureDictionary,
+    ChunkMesh, LayerMesh, TexturedBlockType, RenderBlockTypeStorage, TextureDictionary,
 };
 
 use super::{ChunkMesher, MesherOutput, MesherWarning};
 
 #[derive(Debug, Clone)]
 pub struct NaiveMesher {
-    block_type_storage: Arc<MeshBlockTypeStorage>,
+    block_type_storage: Arc<RenderBlockTypeStorage>,
     texture_dictionary: Arc<TextureDictionary>,
 }
 
@@ -62,7 +62,7 @@ impl ChunkMesher for NaiveMesher {
 
 impl NaiveMesher {
     pub fn new(
-        block_type_storage: Arc<MeshBlockTypeStorage>,
+        block_type_storage: Arc<RenderBlockTypeStorage>,
         texture_dictionary: Arc<TextureDictionary>,
     ) -> Self {
         NaiveMesher {

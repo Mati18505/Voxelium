@@ -5,15 +5,15 @@ use thiserror::Error;
 
 use bevy::asset::{io::Reader, AssetLoader, LoadContext};
 
-use crate::chunk_mesh_builder::{TexturedBlockType, MeshBlockTypeBuilder, MeshBlockTypeStorage};
+use crate::chunk_mesh_builder::{TexturedBlockType, MeshBlockTypeBuilder, RenderBlockTypeStorage};
 
 #[derive(bevy::asset::Asset, bevy::reflect::TypePath, Debug, Clone, PartialEq)]
-pub struct MeshBlockTypeStorageResource {
+pub struct RenderBlockTypeStorageResource {
     block_types: Vec<TexturedBlockType>,
 }
 
-impl From<MeshBlockTypeStorageResource> for MeshBlockTypeStorage {
-    fn from(resource: MeshBlockTypeStorageResource) -> Self {
+impl From<RenderBlockTypeStorageResource> for RenderBlockTypeStorage {
+    fn from(resource: RenderBlockTypeStorageResource) -> Self {
         let block_types: HashMap<BlockID, TexturedBlockType> = resource
             .block_types
             .into_iter()
@@ -21,12 +21,12 @@ impl From<MeshBlockTypeStorageResource> for MeshBlockTypeStorage {
             .map(|(i, e)| (i as u8, e))
             .collect();
 
-        MeshBlockTypeStorage::new(block_types)
+        RenderBlockTypeStorage::new(block_types)
     }
 }
 
 #[derive(Default)]
-pub struct MeshBlockTypeStorageLoader;
+pub struct RenderBlockTypeStorageLoader;
 
 #[derive(Debug, Clone, Error)]
 pub enum BlockStorageParseError {
@@ -46,12 +46,12 @@ pub enum BlockStorageLoaderError {
     Parse(#[from] BlockStorageParseError),
 }
 
-impl AssetLoader for MeshBlockTypeStorageLoader {
+impl AssetLoader for RenderBlockTypeStorageLoader {
     fn extensions(&self) -> &[&str] {
         &["blocks.json"]
     }
 
-    type Asset = MeshBlockTypeStorageResource;
+    type Asset = RenderBlockTypeStorageResource;
     type Settings = ();
     type Error = BlockStorageLoaderError;
 
@@ -73,7 +73,7 @@ impl AssetLoader for MeshBlockTypeStorageLoader {
             .as_array()
             .ok_or(InvalidConfig("blocks should be array"))?;
 
-        let mut block_type_storage = MeshBlockTypeStorageResource {
+        let mut block_type_storage = RenderBlockTypeStorageResource {
             block_types: Vec::new(),
         };
 

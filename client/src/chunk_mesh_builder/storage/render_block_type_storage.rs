@@ -4,13 +4,13 @@ use super::TexturedBlockType;
 use shared::entities::BlockID;
 
 #[derive(Debug, Default, Clone, PartialEq)]
-pub struct MeshBlockTypeStorage {
+pub struct RenderBlockTypeStorage {
     block_types: HashMap<BlockID, TexturedBlockType>,
 }
 
-impl MeshBlockTypeStorage {
-    pub fn new(block_types: HashMap<BlockID, TexturedBlockType>) -> MeshBlockTypeStorage {
-        MeshBlockTypeStorage { block_types }
+impl RenderBlockTypeStorage {
+    pub fn new(block_types: HashMap<BlockID, TexturedBlockType>) -> RenderBlockTypeStorage {
+        RenderBlockTypeStorage { block_types }
     }
 
     #[allow(dead_code)]

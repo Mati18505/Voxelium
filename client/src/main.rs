@@ -14,7 +14,7 @@ use bevy_common_assets::json::JsonAssetPlugin;
 use bevy_common_assets::yaml::YamlAssetPlugin;
 
 use bevy_render::VoxelRenderPlugin;
-use bevy_resources::{MeshBlockTypeStorageLoader, MeshBlockTypeStorageResource, TextureConfig};
+use bevy_resources::{RenderBlockTypeStorageLoader, RenderBlockTypeStorageResource, TextureConfig};
 use bevy_types::{AppStates, GameResources};
 use chunk_mesh_builder::*;
 use controller::ControllerPlugin;
@@ -71,8 +71,8 @@ fn main() {
             global: false,
             default_color: WHITE.into(),
         })
-        .init_asset_loader::<MeshBlockTypeStorageLoader>()
-        .init_asset::<MeshBlockTypeStorageResource>()
+        .init_asset_loader::<RenderBlockTypeStorageLoader>()
+        .init_asset::<RenderBlockTypeStorageResource>()
         .init_asset::<BevyBlockTypeStorageResource>()
         .init_state::<AppStates>()
         .add_loading_state(
@@ -92,7 +92,7 @@ fn main() {
 #[derive(AssetCollection, Resource)]
 struct VoxelAssets {
     #[asset(path = "global.blocks.json")]
-    block_type_storage: Handle<MeshBlockTypeStorageResource>,
+    block_type_storage: Handle<RenderBlockTypeStorageResource>,
     #[asset(key = "opaque")]
     opaque_texture: Handle<Image>,
     #[asset(path = "textures.config.yaml")]
@@ -103,7 +103,7 @@ struct VoxelAssets {
 
 fn create_resources(
     mut commands: Commands,
-    block_type_assets: Res<Assets<MeshBlockTypeStorageResource>>,
+    block_type_assets: Res<Assets<RenderBlockTypeStorageResource>>,
     server_block_type_assets: Res<Assets<BevyBlockTypeStorageResource>>,
     textures_assets: Res<Assets<TextureConfig>>,
     voxel_assets: Res<VoxelAssets>,
@@ -112,7 +112,7 @@ fn create_resources(
         .get(&voxel_assets.block_type_storage)
         .unwrap()
         .to_owned();
-    let block_type_storage: Arc<MeshBlockTypeStorage> = Arc::new(block_type_storage.into());
+    let block_type_storage: Arc<RenderBlockTypeStorage> = Arc::new(block_type_storage.into());
 
     let texture_dictionary: TextureConfig = textures_assets
         .get(&voxel_assets.texture_config)
