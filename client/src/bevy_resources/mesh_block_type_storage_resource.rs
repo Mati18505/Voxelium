@@ -5,16 +5,16 @@ use thiserror::Error;
 
 use bevy::asset::{io::Reader, AssetLoader, LoadContext};
 
-use crate::chunk_mesh_builder::{MeshBlockType, MeshBlockTypeBuilder, MeshBlockTypeStorage};
+use crate::chunk_mesh_builder::{TexturedBlockType, MeshBlockTypeBuilder, MeshBlockTypeStorage};
 
 #[derive(bevy::asset::Asset, bevy::reflect::TypePath, Debug, Clone, PartialEq)]
 pub struct MeshBlockTypeStorageResource {
-    block_types: Vec<MeshBlockType>,
+    block_types: Vec<TexturedBlockType>,
 }
 
 impl From<MeshBlockTypeStorageResource> for MeshBlockTypeStorage {
     fn from(resource: MeshBlockTypeStorageResource) -> Self {
-        let block_types: HashMap<BlockID, MeshBlockType> = resource
+        let block_types: HashMap<BlockID, TexturedBlockType> = resource
             .block_types
             .into_iter()
             .enumerate()

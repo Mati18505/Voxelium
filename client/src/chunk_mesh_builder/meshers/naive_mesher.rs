@@ -5,7 +5,7 @@ use cgmath::Vector3;
 use shared::entities::{BlockID, BlockInChunkPos, BlockSide, BlockStorage, Chunk, Direction};
 
 use crate::chunk_mesh_builder::{
-    ChunkMesh, LayerMesh, MeshBlockType, MeshBlockTypeStorage, TextureDictionary,
+    ChunkMesh, LayerMesh, TexturedBlockType, MeshBlockTypeStorage, TextureDictionary,
 };
 
 use super::{ChunkMesher, MesherOutput, MesherWarning};
@@ -73,7 +73,7 @@ impl NaiveMesher {
 
     fn create_block(
         &self,
-        block_type: &MeshBlockType,
+        block_type: &TexturedBlockType,
         pos: BlockInChunkPos,
         mesh: &mut LayerMesh,
         block_storage: &BlockStorage,
@@ -110,7 +110,7 @@ impl NaiveMesher {
     ) -> Result<bool, MesherWarning> {
         if let Some(neighbor_pos) = self.get_neighbor_pos(pos, side) {
             let neighbor_id: BlockID = block_storage.get_block(neighbor_pos);
-            let neighbor_block_type: &MeshBlockType = self
+            let neighbor_block_type: &TexturedBlockType = self
                 .block_type_storage
                 .get_block_type_from_id(neighbor_id)
                 .ok_or(MesherWarning::UnknownBlockType(neighbor_id, pos))?;
@@ -131,7 +131,7 @@ impl NaiveMesher {
         &self,
         side: BlockSide,
         block_pos: BlockInChunkPos,
-        block_type: &MeshBlockType,
+        block_type: &TexturedBlockType,
         mesh: &mut LayerMesh,
         warnings: &mut Vec<MesherWarning>,
     ) {

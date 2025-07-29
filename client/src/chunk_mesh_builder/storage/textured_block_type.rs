@@ -3,7 +3,7 @@ use shared::entities::BlockSide;
 use crate::chunk_mesh_builder::MaterialName;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct MeshBlockType {
+pub struct TexturedBlockType {
     pub block_type: String,
 
     pub is_visible: bool,
@@ -15,7 +15,7 @@ pub struct MeshBlockType {
     bottom_texture: Option<String>,
 }
 
-impl MeshBlockType {
+impl TexturedBlockType {
     pub fn get_block_side_texture(&self, side: BlockSide) -> &str {
         match side {
             BlockSide::Top => self.top_texture.as_deref().unwrap_or(&self.side_texture),
@@ -25,7 +25,7 @@ impl MeshBlockType {
     }
 }
 
-impl Default for MeshBlockType {
+impl Default for TexturedBlockType {
     fn default() -> Self {
         Self {
             block_type: "none".to_owned(),
@@ -42,12 +42,12 @@ impl Default for MeshBlockType {
 
 #[derive(Default)]
 pub struct MeshBlockTypeBuilder {
-    block_type: MeshBlockType,
+    block_type: TexturedBlockType,
 }
 
 impl MeshBlockTypeBuilder {
     pub fn new(block_type: &str) -> MeshBlockTypeBuilder {
-        let mesh_block_type = MeshBlockType {
+        let mesh_block_type = TexturedBlockType {
             block_type: block_type.to_owned(),
             ..Default::default()
         };
@@ -83,7 +83,7 @@ impl MeshBlockTypeBuilder {
         self
     }
 
-    pub fn build(self) -> MeshBlockType {
+    pub fn build(self) -> TexturedBlockType {
         self.block_type
     }
 }
