@@ -1,16 +1,13 @@
 use std::fmt::Debug;
 use thiserror::Error;
 
-use crate::chunk_mesh_builder::{ChunkMesh, TextureName};
+use crate::chunk_mesh_builder::{ChunkMesh, TextureIndex};
 use shared::entities::{BlockID, BlockInChunkPos, Chunk};
 
 #[derive(Debug, Error, Clone, PartialEq)]
 pub enum MesherWarning {
     #[error("Mesher encountered unknown block type id: {0}, on position: {1:?}")]
     UnknownBlockType(BlockID, BlockInChunkPos),
-
-    #[error("Mesher encountered unknown texture name: {0}, on position: {1:?}")]
-    UnknownTextureName(TextureName, BlockInChunkPos),
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]

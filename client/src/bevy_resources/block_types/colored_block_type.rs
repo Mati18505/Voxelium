@@ -1,4 +1,4 @@
-use crate::chunk_mesh_builder::VoxelColor;
+use shared::entities::VoxelColor;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ColoredBlockType {

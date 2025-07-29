@@ -6,7 +6,6 @@ use std::{
 use shared::entities::BlockID;
 
 use crate::chunk_mesh_builder::RenderShape;
-pub type MaterialName = String;
 
 pub trait RenderBlockType: Send + Sync + Debug {
     fn get_server_block_type_name(&self) -> &str;

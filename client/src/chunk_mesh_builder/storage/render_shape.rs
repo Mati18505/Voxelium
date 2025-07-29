@@ -1,4 +1,4 @@
-use shared::entities::BlockSide;
+use shared::entities::{BlockSide, VoxelColor};
 use std::collections::HashMap;
 
 use crate::chunk_mesh_builder::{MaterialId, TextureIndex, TextureName};
@@ -50,12 +50,4 @@ impl RenderShape {
             textures,
         }
     }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub struct VoxelColor {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
-    pub a: u8,
 }

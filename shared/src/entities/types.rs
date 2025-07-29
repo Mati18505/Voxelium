@@ -319,3 +319,11 @@ mod test {
         assert!(pos1.is_within_distance(pos2, 8));
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct VoxelColor {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+    pub a: u8,
+}

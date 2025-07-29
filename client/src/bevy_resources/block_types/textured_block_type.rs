@@ -1,9 +1,9 @@
 use shared::entities::BlockSide;
 use std::collections::HashMap;
 
-use crate::chunk_mesh_builder::{MaterialName, RenderBlockType, RenderShape, TextureName};
+use crate::{chunk_mesh_builder::{RenderShape, VoxelRenderData}};
 
-use super::VoxelRenderData;
+use crate::bevy_resources::{MaterialName, TextureName, RenderBlockType};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TexturedBlockType {
@@ -32,7 +32,7 @@ impl RenderBlockType for TexturedBlockType {
         self.is_translucent
     }
 
-    fn get_render_shape(&self) -> &super::RenderShape {
+    fn get_render_shape(&self) -> &RenderShape {
         &self.render_shape
     }
 }

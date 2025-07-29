@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
-use super::TextureIndex;
-
+pub type TextureIndex = u32;
 pub type MaterialId = u8;
 
 #[derive(Debug, Default, Clone, PartialEq)]

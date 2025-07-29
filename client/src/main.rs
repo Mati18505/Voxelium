@@ -26,7 +26,7 @@ use shared::{
 use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
 
 use crate::{
-    bevy_resources::BevyBlockTypeStorageResource,
+    bevy_resources::{BevyBlockTypeStorageResource, RenderBlockTypeStorage, TextureDictionary},
     controller::ActionType,
     gui::GUIPlugin,
     orchestrator::{utils::raycast_from_controller, OrchestratorPlugin},
