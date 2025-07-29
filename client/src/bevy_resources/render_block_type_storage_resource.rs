@@ -5,9 +5,7 @@ use thiserror::Error;
 
 use bevy::asset::{io::Reader, AssetLoader, LoadContext};
 
-use crate::bevy_resources::{
-    RenderBlockType, RenderBlockTypeStorage, TexturedBlockTypeBuilder,
-};
+use crate::bevy_resources::{RenderBlockType, RenderBlockTypeStorage, TexturedBlockTypeBuilder};
 
 #[derive(bevy::asset::Asset, bevy::reflect::TypePath, Debug, Clone, PartialEq)]
 pub struct RenderBlockTypeStorageResource {
