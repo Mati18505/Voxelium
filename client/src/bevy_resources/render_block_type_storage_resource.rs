@@ -5,7 +5,7 @@ use thiserror::Error;
 
 use bevy::asset::{io::Reader, AssetLoader, LoadContext};
 
-use crate::chunk_mesh_builder::{TexturedBlockType, MeshBlockTypeBuilder, RenderBlockTypeStorage};
+use crate::chunk_mesh_builder::{TexturedBlockType, TexturedBlockTypeBuilder, RenderBlockTypeStorage};
 
 #[derive(bevy::asset::Asset, bevy::reflect::TypePath, Debug, Clone, PartialEq)]
 pub struct RenderBlockTypeStorageResource {
@@ -105,7 +105,7 @@ impl AssetLoader for RenderBlockTypeStorageLoader {
                 None => !visible,
             };
 
-            let mut builder = MeshBlockTypeBuilder::new(&block_type)
+            let mut builder = TexturedBlockTypeBuilder::new(&block_type)
                 .visible(visible)
                 .material(material_name)
                 .translucent(translucent);

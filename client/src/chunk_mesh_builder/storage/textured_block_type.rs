@@ -41,19 +41,19 @@ impl Default for TexturedBlockType {
 }
 
 #[derive(Default)]
-pub struct MeshBlockTypeBuilder {
+pub struct TexturedBlockTypeBuilder {
     block_type: TexturedBlockType,
 }
 
-impl MeshBlockTypeBuilder {
-    pub fn new(block_type: &str) -> MeshBlockTypeBuilder {
-        let mesh_block_type = TexturedBlockType {
+impl TexturedBlockTypeBuilder {
+    pub fn new(block_type: &str) -> TexturedBlockTypeBuilder {
+        let textured_block_type = TexturedBlockType {
             block_type: block_type.to_owned(),
             ..Default::default()
         };
 
-        MeshBlockTypeBuilder {
-            block_type: mesh_block_type,
+        TexturedBlockTypeBuilder {
+            block_type: textured_block_type,
         }
     }
 
