@@ -2,7 +2,10 @@ pub type BlockID = u8;
 pub const CHUNK_SIZE: usize = 16;
 
 use cgmath::Vector3;
-use std::{ops::{Deref, DerefMut}, slice::Iter};
+use std::{
+    ops::{Deref, DerefMut},
+    slice::Iter,
+};
 
 pub type BlockPos = Vector3<isize>;
 pub type Direction = Vector3<isize>;

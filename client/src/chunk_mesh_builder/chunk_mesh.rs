@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use super::TextureIndex;
 
-pub type MaterialName = String;
+pub type MaterialId = u8;
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct LayerMesh {
@@ -16,5 +16,5 @@ pub struct LayerMesh {
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct ChunkMesh {
-    pub layers: HashMap<MaterialName, LayerMesh>,
+    pub layers: HashMap<MaterialId, LayerMesh>,
 }

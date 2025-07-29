@@ -1,7 +1,9 @@
-use std::collections::HashMap;
 use shared::entities::BlockSide;
+use std::collections::HashMap;
 
 use crate::chunk_mesh_builder::{MaterialName, RenderBlockType, RenderShape, TextureName};
+
+use super::VoxelRenderData;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TexturedBlockType {
@@ -38,6 +40,15 @@ impl RenderBlockType for TexturedBlockType {
 impl Default for TexturedBlockType {
     fn default() -> Self {
         let side_texture = "default".to_owned();
+        let render_data = VoxelRenderData {
+            visible: false,
+            material: 0,
+        };
+        let render_shape = RenderShape::create_textured_cube(
+            render_data,
+            side_texture.clone(),
+            HashMap::default(),
+        );
 
         Self {
             block_type: "none".to_owned(),
@@ -46,9 +57,9 @@ impl Default for TexturedBlockType {
             material_name: "default".to_owned(),
 
             top_texture: None,
-            side_texture: side_texture.clone(),
+            side_texture,
             bottom_texture: None,
-            render_shape: RenderShape::create_textured_cube(side_texture, HashMap::default()),
+            render_shape,
         }
     }
 }
@@ -105,6 +116,11 @@ impl TexturedBlockTypeBuilder {
     }
 
     fn create_render_shape(textured_block_type: &mut TexturedBlockType) {
+        let render_data = VoxelRenderData {
+            visible: textured_block_type.visible(),
+            material: 0,
+        };
+
         let mut textures = HashMap::<BlockSide, TextureName>::default();
 
         if let Some(top_texture) = textured_block_type.top_texture.clone() {
@@ -114,6 +130,7 @@ impl TexturedBlockTypeBuilder {
             textures.insert(BlockSide::Top, bottom_texture);
         }
 
-        textured_block_type.render_shape = RenderShape::create_textured_cube(textured_block_type.side_texture.clone(), textures);
+        textured_block_type.render_shape =
+            RenderShape::create_textured_cube(render_data, textured_block_type.side_texture.clone(), textures);
     }
 }

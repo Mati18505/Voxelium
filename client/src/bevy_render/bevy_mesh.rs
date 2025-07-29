@@ -6,11 +6,11 @@ use bevy::{
     transform::components::Transform,
 };
 
-use crate::chunk_mesh_builder::{ChunkMesh, MaterialName};
+use crate::chunk_mesh_builder::{ChunkMesh, MaterialId};
 
 #[derive(Debug, Default, Clone)]
 pub struct BevyChunkMesh {
-    pub layers: HashMap<MaterialName, Mesh>,
+    pub layers: HashMap<MaterialId, Mesh>,
     pub transform: Transform,
 }
 
