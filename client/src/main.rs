@@ -21,8 +21,8 @@ use chunk_mesh_builder::*;
 use controller::ControllerPlugin;
 use shared::{
     entities::{init_block_names, name_to_block_id, BlockID, BlockPos, BlockTypeStorage},
-    io::vox_importer,
-    physics::RaycastResult,
+    io::{vox_importer, PrefabAsset, PrefabLoaderPlugin},
+    physics::RaycastResult, voxel_edits,
 };
 
 use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
@@ -42,7 +42,6 @@ mod chunk_mesh_builder;
 mod controller;
 mod gui;
 mod orchestrator;
-mod voxel_edits;
 
 fn main() {
     App::new()
@@ -68,6 +67,7 @@ fn main() {
             ChunkManagerPlugin,
             OrchestratorPlugin,
             GUIPlugin,
+            PrefabLoaderPlugin,
         ))
         .insert_resource(WireframeConfig {
             global: false,
@@ -92,7 +92,7 @@ fn main() {
 }
 
 #[derive(AssetCollection, Resource)]
-struct VoxelAssets {
+pub struct VoxelAssets {
     #[asset(path = "global.blocks.json")]
     block_type_storage: Handle<MeshBlockTypeStorageResource>,
     #[asset(key = "opaque")]
@@ -101,6 +101,8 @@ struct VoxelAssets {
     texture_config: Handle<TextureConfig>,
     #[asset(path = "global.server_blocks.json")]
     server_blocks: Handle<BevyBlockTypeStorageResource>,
+    #[asset(path = "vox/character/chr_bow.vox")]
+    prefab: Handle<PrefabAsset>,
 }
 
 fn create_resources(
@@ -137,20 +139,6 @@ fn create_resources(
     });
 
     init_block_names(server_block_type_storage_asset.into());
-
-    // let result = vox_importer::import("assets/vox/test.vox");
-
-    /*
-    match result {
-        Ok(models) => {
-            dbg!(models.len());
-            for model in models {
-                dbg!(model);
-            }
-        }
-        Err(err) => log::error!("{err}"),
-    }
- */
 }
 
 fn init_level(
