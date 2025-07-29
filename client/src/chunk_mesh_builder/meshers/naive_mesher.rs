@@ -1,14 +1,14 @@
-use std::sync::Arc;
 use bevy::log::info_span;
 use cgmath::Vector3;
+use std::sync::Arc;
 
-use shared::entities::*;
-use crate::chunk_mesh_builder::{ChunkMesh, LayerMesh, RenderShape, RenderShapeStorage};
 use super::{ChunkMesher, MesherOutput, MesherWarning};
+use crate::chunk_mesh_builder::{ChunkMesh, LayerMesh, RenderShape, RenderShapeStorage};
+use shared::entities::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct NaiveMesher {
-    render_shape_storage: Arc<RenderShapeStorage>,
+    render_shape_storage: RenderShapeStorage,
 }
 
 impl ChunkMesher for NaiveMesher {
@@ -25,7 +25,9 @@ impl ChunkMesher for NaiveMesher {
 
         for (index, block_id) in block_storage.iter().enumerate() {
             let pos = BlockInChunkPos::from_index(index);
-            let result = self.render_shape_storage.get_render_shape_from_id(*block_id);
+            let result = self
+                .render_shape_storage
+                .get_render_shape_from_id(*block_id);
 
             match result {
                 Some(render_shape) => {
@@ -56,9 +58,7 @@ impl ChunkMesher for NaiveMesher {
 }
 
 impl NaiveMesher {
-    pub fn new(
-        render_shape_storage: Arc<RenderShapeStorage>,
-    ) -> Self {
+    pub fn new(render_shape_storage: RenderShapeStorage) -> Self {
         Self {
             render_shape_storage,
         }
@@ -78,7 +78,7 @@ impl NaiveMesher {
             return;
         }
 
-        for side in BlockSide::iterator() {
+        for side in BlockSide::iterator().copied() {
             let result = self.has_translucent_neighbor(side, pos, block_storage);
 
             let has_transparent_neighbor = match result {
@@ -243,7 +243,17 @@ impl NaiveMesher {
         }
 
         for _ in 0..4 {
-            mesh.texture_indexes.push(render_shape.get_vertex_attribute(side));
+            match render_shape {
+                RenderShape::TexturedCube {
+                    render_data,
+                    textures,
+                } => {
+                    let texture_index = *textures.get(&side).unwrap();
+
+                    mesh.texture_indexes.push(texture_index);
+                }
+                _ => (),
+            }
         }
 
         for t in triangles {

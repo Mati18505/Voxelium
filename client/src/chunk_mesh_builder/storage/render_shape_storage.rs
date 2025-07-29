@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
-use shared::entities::BlockID;
 use crate::chunk_mesh_builder::RenderShape;
+use shared::entities::BlockID;
 
 #[derive(Debug, Default)]
 pub struct RenderShapeStorage {
@@ -15,7 +15,6 @@ impl RenderShapeStorage {
     }
 
     pub fn get_render_shape_from_id(&self, id: BlockID) -> Option<&RenderShape> {
-        self.render_shapes.get(id)
+        self.render_shapes.get(id as usize)
     }
 }
-

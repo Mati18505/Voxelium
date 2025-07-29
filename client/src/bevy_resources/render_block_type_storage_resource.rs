@@ -7,21 +7,14 @@ use bevy::asset::{io::Reader, AssetLoader, LoadContext};
 
 use crate::bevy_resources::{RenderBlockType, RenderBlockTypeStorage, TexturedBlockTypeBuilder};
 
-#[derive(bevy::asset::Asset, bevy::reflect::TypePath, Debug, Clone, PartialEq)]
+#[derive(bevy::asset::Asset, bevy::reflect::TypePath, Debug, Clone)]
 pub struct RenderBlockTypeStorageResource {
     block_types: Vec<RenderBlockType>,
 }
 
 impl From<RenderBlockTypeStorageResource> for RenderBlockTypeStorage {
     fn from(resource: RenderBlockTypeStorageResource) -> Self {
-        let block_types: HashMap<BlockID, RenderBlockType> = resource
-            .block_types
-            .into_iter()
-            .enumerate()
-            .map(|(i, e)| (i as BlockID, e))
-            .collect();
-
-        RenderBlockTypeStorage::new(block_types)
+        RenderBlockTypeStorage::new(resource.block_types)
     }
 }
 

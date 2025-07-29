@@ -12,9 +12,13 @@ pub struct VoxelRenderData {
     pub material: MaterialId,
 }
 
-impl Default for VoxelRenderData {
-    fn default() -> Self {
-        Self { visible: false, translucent: false, material: MaterialId::default() }
+impl VoxelRenderData {
+    pub const fn const_default() -> Self {
+        Self {
+            visible: false,
+            translucent: false,
+            material: 0,
+        }
     }
 }
 
@@ -53,20 +57,19 @@ impl RenderShape {
         }
     }
 
-    pub fn render_data(&self) -> VoxelRenderData {
-        match self {
-            RenderShape::TexturedCube { render_data, textures } => render_data,
-            RenderShape::ColoredCube { render_data, palette } => render_data,
-            RenderShape::Invisible => VoxelRenderData::default(),
-        }
-    }
+    pub fn render_data(&self) -> &VoxelRenderData {
+        static DEFAULT_RENDER_DATA: VoxelRenderData = VoxelRenderData::const_default();
 
-    pub fn get_vertex_attribute(&self, side: BlockSide) -> u32 {
         match self {
-            RenderShape::TexturedCube { render_data, textures } => textures.get(&side).unwrap().copy(),
-            // TODO: get palette index from index stored in Block
-            RenderShape::ColoredCube { render_data, palette } => palette.get(0).copied(),
-            RenderShape::Invisible => 0,
+            RenderShape::TexturedCube {
+                render_data,
+                textures,
+            } => render_data,
+            RenderShape::ColoredCube {
+                render_data,
+                palette,
+            } => render_data,
+            RenderShape::Invisible => &DEFAULT_RENDER_DATA,
         }
     }
 }
