@@ -5,7 +5,8 @@ use cgmath::Vector3;
 use shared::entities::{BlockID, BlockInChunkPos, BlockSide, BlockStorage, Chunk, Direction};
 
 use crate::chunk_mesh_builder::{
-    ChunkMesh, LayerMesh, RenderBlockType, RenderBlockTypeStorage, TextureDictionary, TexturedBlockType
+    ChunkMesh, LayerMesh, RenderBlockType, RenderBlockTypeStorage, TextureDictionary,
+    TexturedBlockType,
 };
 
 use super::{ChunkMesher, MesherOutput, MesherWarning};

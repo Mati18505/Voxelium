@@ -1,6 +1,7 @@
+use std::collections::HashMap;
 use shared::entities::BlockSide;
 
-use crate::chunk_mesh_builder::{MaterialName, RenderBlockType};
+use crate::chunk_mesh_builder::{MaterialName, RenderBlockType, RenderShape, TextureName};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TexturedBlockType {
@@ -10,19 +11,10 @@ pub struct TexturedBlockType {
     pub is_translucent: bool,
     pub material_name: String,
 
+    render_shape: RenderShape,
     top_texture: Option<String>,
     side_texture: String,
     bottom_texture: Option<String>,
-}
-
-impl TexturedBlockType {
-    pub fn get_block_side_texture(&self, side: BlockSide) -> &str {
-        match side {
-            BlockSide::Top => self.top_texture.as_deref().unwrap_or(&self.side_texture),
-            BlockSide::Bottom => self.bottom_texture.as_deref().unwrap_or(&self.side_texture),
-            _ => &self.side_texture,
-        }
-    }
 }
 
 impl RenderBlockType for TexturedBlockType {
@@ -37,10 +29,16 @@ impl RenderBlockType for TexturedBlockType {
     fn translucent(&self) -> bool {
         self.is_translucent
     }
+
+    fn get_render_shape(&self) -> &super::RenderShape {
+        &self.render_shape
+    }
 }
 
 impl Default for TexturedBlockType {
     fn default() -> Self {
+        let side_texture = "default".to_owned();
+
         Self {
             block_type: "none".to_owned(),
             is_visible: false,
@@ -48,8 +46,9 @@ impl Default for TexturedBlockType {
             material_name: "default".to_owned(),
 
             top_texture: None,
-            side_texture: "default".to_owned(),
+            side_texture: side_texture.clone(),
             bottom_texture: None,
+            render_shape: RenderShape::create_textured_cube(side_texture, HashMap::default()),
         }
     }
 }
@@ -98,6 +97,23 @@ impl TexturedBlockTypeBuilder {
     }
 
     pub fn build(self) -> TexturedBlockType {
-        self.block_type
+        let mut result = self.block_type;
+
+        Self::create_render_shape(&mut result);
+
+        result
+    }
+
+    fn create_render_shape(textured_block_type: &mut TexturedBlockType) {
+        let mut textures = HashMap::<BlockSide, TextureName>::default();
+
+        if let Some(top_texture) = textured_block_type.top_texture.clone() {
+            textures.insert(BlockSide::Top, top_texture);
+        }
+        if let Some(bottom_texture) = textured_block_type.bottom_texture.clone() {
+            textures.insert(BlockSide::Top, bottom_texture);
+        }
+
+        textured_block_type.render_shape = RenderShape::create_textured_cube(textured_block_type.side_texture.clone(), textures);
     }
 }

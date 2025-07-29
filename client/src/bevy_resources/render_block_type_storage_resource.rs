@@ -5,7 +5,9 @@ use thiserror::Error;
 
 use bevy::asset::{io::Reader, AssetLoader, LoadContext};
 
-use crate::chunk_mesh_builder::{RenderBlockType, RenderBlockTypeStorage, TexturedBlockType, TexturedBlockTypeBuilder};
+use crate::chunk_mesh_builder::{
+    RenderBlockType, RenderBlockTypeStorage, TexturedBlockType, TexturedBlockTypeBuilder,
+};
 
 #[derive(bevy::asset::Asset, bevy::reflect::TypePath, Debug, Clone, PartialEq)]
 pub struct RenderBlockTypeStorageResource {
@@ -19,12 +21,7 @@ impl From<RenderBlockTypeStorageResource> for RenderBlockTypeStorage {
             .into_iter()
             .enumerate()
             .map(|(i, e)| (i as BlockID, e))
-            .map(|(id, block_type)| {
-                (
-                    id,
-                    Box::new(block_type) as Box<dyn RenderBlockType>,
-                )
-            })
+            .map(|(id, block_type)| (id, Box::new(block_type) as Box<dyn RenderBlockType>))
             .collect();
 
         RenderBlockTypeStorage::new(block_types)

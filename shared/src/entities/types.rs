@@ -2,7 +2,7 @@ pub type BlockID = u8;
 pub const CHUNK_SIZE: usize = 16;
 
 use cgmath::Vector3;
-use std::ops::{Deref, DerefMut};
+use std::{ops::{Deref, DerefMut}, slice::Iter};
 
 pub type BlockPos = Vector3<isize>;
 pub type Direction = Vector3<isize>;
@@ -157,7 +157,7 @@ impl From<BlockPos> for BlockInChunkPos {
     }
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BlockSide {
     Front,
     Back,
@@ -165,6 +165,15 @@ pub enum BlockSide {
     Right,
     Top,
     Bottom,
+}
+
+impl BlockSide {
+    pub fn iterator() -> Iter<'static, BlockSide> {
+        use BlockSide::*;
+
+        static SIDES: [BlockSide; 6] = [Front, Back, Left, Right, Top, Bottom];
+        SIDES.iter()
+    }
 }
 
 // Y=up, right handed (like Bevy)
