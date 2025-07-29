@@ -57,6 +57,7 @@ impl RenderDesc {
         // TODO: get material from material dictionary
         let render_data = VoxelRenderData {
             visible: rd.visible,
+            translucent: rd.translucent,
             material: 0,
         };
 
@@ -75,6 +76,7 @@ impl RenderDesc {
     fn compile_colored_cube(rd: RenderData, palette: Vec<VoxelColor>) -> RenderShape {
         let render_data = VoxelRenderData {
             visible: rd.visible,
+            translucent: rd.translucent,
             material: 0,
         };
 

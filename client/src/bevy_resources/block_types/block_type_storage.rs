@@ -19,7 +19,7 @@ impl RenderBlockTypeStorage {
         self.block_types.insert(block_id, block_type);
     }
 
-    pub fn get_block_type_from_id(&self, id: BlockID) -> Option<RenderBlockType> {
+    pub fn get_block_type_from_id(&self, id: BlockID) -> Option<&RenderBlockType> {
         self.block_types.get(&id)
     }
 }
