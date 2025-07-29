@@ -30,15 +30,15 @@ impl RenderShape {
     /// Default texture is used if HashMap doesn't have texture for this block side.
     pub fn create_textured_cube(
         render_data: VoxelRenderData,
-        default_texture: TextureName,
-        mut textures: HashMap<BlockSide, TextureName>,
+        default_texture: TextureIndex,
+        mut textures: HashMap<BlockSide, TextureIndex>,
     ) -> RenderShape {
-        let textures: HashMap<BlockSide, TextureName> = BlockSide::iterator()
+        let textures: HashMap<BlockSide, TextureIndex> = BlockSide::iterator()
             .copied()
             .map(|side| {
                 (
                     side,
-                    textures.remove(&side).unwrap_or(default_texture.clone()),
+                    textures.remove(&side).unwrap_or(default_texture),
                 )
             })
             .collect();
