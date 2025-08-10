@@ -1,4 +1,4 @@
-use bevy::log::info_span;
+use bevy::{log::info_span, render::Render};
 use cgmath::Vector3;
 use std::sync::Arc;
 
@@ -250,7 +250,10 @@ impl NaiveMesher {
                 } => {
                     let texture_index = *textures.get(&side).unwrap();
 
-                    mesh.texture_indexes.push(texture_index);
+                    mesh.indexes.push(texture_index);
+                }
+                RenderShape::ColoredCube { render_data, palette_index } => {
+                    mesh.indexes.push(*palette_index);
                 }
                 _ => (),
             }

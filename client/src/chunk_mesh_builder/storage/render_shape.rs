@@ -1,7 +1,7 @@
 use shared::entities::{BlockSide, VoxelColor};
 use std::collections::HashMap;
 
-use crate::chunk_mesh_builder::{MaterialId, TextureIndex};
+use crate::chunk_mesh_builder::{MaterialId, PaletteIndex, TextureIndex};
 
 /// Stores rendering data of BlockType.
 /// Shared by multiple RenderShapes.
@@ -31,7 +31,7 @@ pub enum RenderShape {
     },
     ColoredCube {
         render_data: VoxelRenderData,
-        palette: Vec<VoxelColor>,
+        palette_index: PaletteIndex,
     },
     Invisible,
 }
@@ -67,7 +67,7 @@ impl RenderShape {
             } => render_data,
             RenderShape::ColoredCube {
                 render_data,
-                palette,
+                palette_index,
             } => render_data,
             RenderShape::Invisible => &DEFAULT_RENDER_DATA,
         }

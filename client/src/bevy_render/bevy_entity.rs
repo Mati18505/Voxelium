@@ -28,7 +28,7 @@ impl BevyChunkEntity {
         let mut render_resource = BevyChunkEntity::default();
 
         // TODO: Support multiple materials.
-        for (_material_name, mesh) in chunk_mesh.layers {
+        for (_material_id, mesh) in chunk_mesh.layers {
             let mesh_handle = meshes.add(mesh);
             let material_handle = materials.add(VoxelMaterial {
                 array_texture: base_color_texture.clone(),

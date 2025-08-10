@@ -35,8 +35,8 @@ impl From<ChunkMesh> for BevyChunkMesh {
                 .map(|e| [e[0] as f32, e[1] as f32, e[2] as f32])
                 .collect();
             let triangles: Vec<u32> = layer.triangles.iter().map(|e| *e as u32).collect();
-            let texture_indexes: Vec<[f32; 2]> = layer
-                .texture_indexes
+            let indexes: Vec<[f32; 2]> = layer
+                .indexes
                 .iter()
                 .map(|e| [*e as f32, 0.0])
                 .collect();
@@ -47,7 +47,7 @@ impl From<ChunkMesh> for BevyChunkMesh {
             )
             .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, layer.vertices)
             .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, layer.uvs)
-            .with_inserted_attribute(Mesh::ATTRIBUTE_UV_1, texture_indexes)
+            .with_inserted_attribute(Mesh::ATTRIBUTE_UV_1, indexes)
             .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, normals)
             .with_inserted_indices(Indices::U32(triangles));
 
