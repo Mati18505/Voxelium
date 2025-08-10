@@ -5,7 +5,7 @@ use crate::chunk_mesh_builder::{MaterialId, TextureIndex};
 
 /// Stores rendering data of BlockType.
 /// Shared by multiple RenderShapes.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy)]
 pub struct VoxelRenderData {
     pub visible: bool,
     pub translucent: bool,
@@ -23,7 +23,7 @@ impl VoxelRenderData {
 }
 
 /// Stores rendering data of particular BlockType.
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub enum RenderShape {
     TexturedCube {
         render_data: VoxelRenderData,

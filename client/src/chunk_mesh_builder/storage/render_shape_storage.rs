@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use crate::chunk_mesh_builder::RenderShape;
 use shared::entities::BlockID;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct RenderShapeStorage {
     /// Map from index ([`BlockID`]) to RenderShape.
     render_shapes: Vec<RenderShape>,
