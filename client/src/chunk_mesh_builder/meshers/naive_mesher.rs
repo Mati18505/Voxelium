@@ -242,20 +242,9 @@ impl NaiveMesher {
             mesh.uvs.push(uv);
         }
 
-        for _ in 0..4 {
-            match render_shape {
-                RenderShape::TexturedCube {
-                    render_data,
-                    textures,
-                } => {
-                    let texture_index = *textures.get(&side).unwrap();
-
-                    mesh.indexes.push(texture_index);
-                }
-                RenderShape::ColoredCube { render_data, palette_index } => {
-                    mesh.indexes.push(*palette_index);
-                }
-                _ => (),
+        if let Some(storage_index) = render_shape.get_storage_index(side) {
+            for _ in 0..4 {
+                mesh.indexes.push(storage_index);
             }
         }
 
