@@ -9,7 +9,7 @@ use bevy::{
     render::mesh::{Mesh, Mesh3d},
 };
 
-use super::bevy_voxel_render::VoxelMaterial;
+use super::bevy_voxel_render::TexturedCubeMaterial;
 use super::BevyChunkMesh;
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -22,7 +22,8 @@ impl BevyChunkEntity {
         chunk_mesh: BevyChunkMesh,
         commands: &mut Commands,
         meshes: &mut ResMut<Assets<Mesh>>,
-        materials: &mut ResMut<Assets<VoxelMaterial>>,
+        //TODO: Get material storage instead
+        materials: &mut ResMut<Assets<TexturedCubeMaterial>>,
         base_color_texture: Handle<Image>,
     ) -> Self {
         let mut render_resource = BevyChunkEntity::default();
@@ -30,7 +31,8 @@ impl BevyChunkEntity {
         // TODO: Support multiple materials.
         for (_material_id, mesh) in chunk_mesh.layers {
             let mesh_handle = meshes.add(mesh);
-            let material_handle = materials.add(VoxelMaterial {
+            // TODO: How to get Material Type from its id?
+            let material_handle = materials.add(TexturedCubeMaterial {
                 array_texture: base_color_texture.clone(),
             });
             let entity = commands

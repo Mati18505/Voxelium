@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use shared::entities::ChunkPos;
 
 use super::ChunkObjectEvent;
-use crate::bevy_render::{BevyChunkEntity, BevyChunkMesh, VoxelMaterial};
+use crate::bevy_render::{BevyChunkEntity, BevyChunkMesh, TexturedCubeMaterial};
 use crate::chunk_mesh_builder::ChunkMesh;
 
 #[derive(Debug, Clone)]
@@ -25,7 +25,7 @@ impl ChunkEntitiesManager {
         commands: &mut Commands,
         meshes: &mut ResMut<Assets<Mesh>>,
         opaque_texture: Handle<Image>,
-        voxel_materials: &mut ResMut<Assets<VoxelMaterial>>,
+        voxel_materials: &mut ResMut<Assets<TexturedCubeMaterial>>,
     ) {
         while let Ok(chunk_obj_ev) = self.rx.try_recv() {
             match chunk_obj_ev {
@@ -54,7 +54,7 @@ impl ChunkEntitiesManager {
         commands: &mut Commands,
         meshes: &mut ResMut<Assets<Mesh>>,
         opaque_texture: Handle<Image>,
-        voxel_materials: &mut ResMut<Assets<VoxelMaterial>>,
+        voxel_materials: &mut ResMut<Assets<TexturedCubeMaterial>>,
     ) {
         assert!(
             !self.chunk_entities.contains_key(&pos),

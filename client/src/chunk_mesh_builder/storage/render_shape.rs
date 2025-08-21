@@ -78,12 +78,11 @@ impl RenderShape {
             RenderShape::TexturedCube {
                 render_data,
                 textures,
-            } => {
-                Some(*textures.get(&side).unwrap())
-            }
-            RenderShape::ColoredCube { render_data, palette_index } => {
-                Some(*palette_index)
-            }
+            } => Some(*textures.get(&side).unwrap()),
+            RenderShape::ColoredCube {
+                render_data,
+                palette_index,
+            } => Some(*palette_index),
             _ => None,
         }
     }
