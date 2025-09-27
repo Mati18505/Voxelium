@@ -99,7 +99,7 @@ impl RenderDesc {
         let render_data = VoxelRenderData {
             visible: rd.visible,
             translucent: rd.translucent,
-            material: 0,
+            material: 1,
         };
 
         RenderShape::ColoredCube {

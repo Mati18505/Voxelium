@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use shared::entities::{BlockID, BlockSide};
 use thiserror::Error;
 
-use bevy::asset::{io::Reader, AssetLoader, LoadContext};
+use bevy::{asset::{AssetLoader, LoadContext, io::Reader}, render::Render};
 
-use crate::bevy_resources::{RenderBlockType, RenderBlockTypeStorage, TexturedBlockTypeBuilder};
+use crate::bevy_resources::{RenderBlockType, RenderBlockTypeStorage, RenderData, RenderDesc, TexturedBlockTypeBuilder};
 
 #[derive(bevy::asset::Asset, bevy::reflect::TypePath, Debug, Clone)]
 pub struct RenderBlockTypeStorageResource {
@@ -24,7 +24,7 @@ pub struct RenderBlockTypeStorageLoader;
 #[derive(Debug, Clone, Error)]
 pub enum BlockStorageParseError {
     #[error("Invalid config: {0}")]
-    InvalidConfig(&'static str),
+    InvalidConfig(String),
 }
 
 #[derive(Debug, Error)]
@@ -62,9 +62,9 @@ impl AssetLoader for RenderBlockTypeStorageLoader {
         let parsed: serde_json::Value = serde_json::from_slice(&bytes)?;
         let blocks: &Vec<serde_json::Value> = parsed
             .get("blocks")
-            .ok_or(InvalidConfig("missing blocks array"))?
+            .ok_or(InvalidConfig("missing blocks array".to_string()))?
             .as_array()
-            .ok_or(InvalidConfig("blocks should be array"))?;
+            .ok_or(InvalidConfig("blocks should be array".to_string()))?;
 
         let mut block_type_storage = RenderBlockTypeStorageResource {
             block_types: Vec::new(),
@@ -74,49 +74,85 @@ impl AssetLoader for RenderBlockTypeStorageLoader {
             let block_type: String = match block.get("block_type") {
                 Some(v) => v
                     .as_str()
-                    .ok_or(InvalidConfig("block_type parameter should be string"))?,
-                None => return Err(InvalidConfig("missing block_type parameter").into()),
+                    .ok_or(InvalidConfig("block_type parameter should be string".to_string()))?,
+                None => return Err(InvalidConfig("missing block_type parameter".to_string()).into()),
             }
             .to_owned();
             let material_name: String = match block.get("material") {
                 Some(v) => v
                     .as_str()
-                    .ok_or(InvalidConfig("material parameter should be string"))?,
+                    .ok_or(InvalidConfig("material parameter should be string".to_string()))?,
                 None => "default",
             }
             .to_owned();
             let visible: bool = match block.get("visible") {
                 Some(v) => v
                     .as_bool()
-                    .ok_or(InvalidConfig("visible parameter should be boolean"))?,
+                    .ok_or(InvalidConfig("visible parameter should be boolean".to_string()))?,
                 None => true,
             };
             let translucent: bool = match block.get("translucent") {
                 Some(v) => v
                     .as_bool()
-                    .ok_or(InvalidConfig("translucent paramterer should be boolean"))?,
+                    .ok_or(InvalidConfig("translucent paramterer should be boolean".to_string()))?,
                 None => !visible,
             };
 
-            let mut builder = TexturedBlockTypeBuilder::new(&block_type)
-                .visible(visible)
-                .material(material_name)
-                .translucent(translucent);
+            let render_data = RenderData {
+                visible,
+                translucent,
+                material: material_name.clone(),
+            };
 
-            if let Some(textures) = block.get("textures") {
-                if let Some(side_texture) = textures.get("side").and_then(|e| e.as_str()) {
-                    builder = builder.texture(BlockSide::Left, side_texture);
-                }
-                if let Some(top_texture) = textures.get("top").and_then(|e| e.as_str()) {
-                    builder = builder.texture(BlockSide::Top, top_texture);
-                }
-                if let Some(bottom_texture) = textures.get("bottom").and_then(|e| e.as_str()) {
-                    builder = builder.texture(BlockSide::Bottom, bottom_texture);
-                }
-            }
+            let render_block_type: RenderBlockType = match material_name.as_str() {
+                "default" => {
+                    let mut builder = TexturedBlockTypeBuilder::new(&block_type)
+                        .visible(visible)
+                        .material(material_name)
+                        .translucent(translucent);
 
-            block_type_storage.block_types.push(builder.build());
+                    if let Some(textures) = block.get("textures") {
+                        builder = add_textures(builder, textures);
+                    }
+
+                    Ok(builder.build())
+                },
+                "colored" => {
+                    let palette_index: u64 = match block.get("palette_index") {
+                        Some(v) => v
+                            .as_u64()
+                            .ok_or(InvalidConfig("palette_index parameter should be unsigned 32bit number".to_string()))?,
+                        None => 0,
+                    };
+
+                    Ok(RenderBlockType {
+                        block_type,
+                        render_desc: RenderDesc::ColoredCube { render_data, palette_index: palette_index as u32 }
+                    })
+                }
+
+                _ => Err(InvalidConfig(format!("unsupported material {material_name}"))),
+            }?;
+            
+            block_type_storage.block_types.push(render_block_type);
         }
+
         Ok(block_type_storage)
     }
+}
+
+fn add_textures(builder: TexturedBlockTypeBuilder, textures: &serde_json::Value) -> TexturedBlockTypeBuilder {
+    let mut builder = builder;
+
+    if let Some(side_texture) = textures.get("side").and_then(|e| e.as_str()) {
+        builder = builder.texture(BlockSide::Left, side_texture);
+    }
+    if let Some(top_texture) = textures.get("top").and_then(|e| e.as_str()) {
+        builder = builder.texture(BlockSide::Top, top_texture);
+    }
+    if let Some(bottom_texture) = textures.get("bottom").and_then(|e| e.as_str()) {
+        builder = builder.texture(BlockSide::Bottom, bottom_texture);
+    }
+
+    builder
 }

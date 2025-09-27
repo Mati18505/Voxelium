@@ -2,25 +2,46 @@ use bevy::{
     prelude::*,
     render::render_resource::{AsBindGroup, ShaderRef},
 };
-
-const SHADER_ASSET_PATH: &str = "shaders/array_texture.wgsl";
+use shared::entities::VoxelColor;
 
 pub struct VoxelRenderPlugin;
 impl Plugin for VoxelRenderPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(MaterialPlugin::<VoxelMaterial>::default());
+        app.add_plugins(MaterialPlugin::<TexturedCubeMaterial>::default())
+            .add_plugins(MaterialPlugin::<ColoredCubeMaterial>::default());
     }
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
-pub struct VoxelMaterial {
+pub struct TexturedCubeMaterial {
     #[texture(0, dimension = "2d_array")]
     #[sampler(1)]
     pub array_texture: Handle<Image>,
 }
 
-impl Material for VoxelMaterial {
+impl TexturedCubeMaterial {
+    const SHADER_ASSET_PATH: &str = "shaders/textured_cube.wgsl";
+}
+
+impl Material for TexturedCubeMaterial {
     fn fragment_shader() -> ShaderRef {
-        SHADER_ASSET_PATH.into()
+        Self::SHADER_ASSET_PATH.into()
+    }
+}
+
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+pub struct ColoredCubeMaterial {
+    #[texture(0, dimension = "1d")]
+    #[sampler(1)]
+    pub color_palette: Handle<Image>,
+}
+
+impl ColoredCubeMaterial {
+    const SHADER_ASSET_PATH: &str = "shaders/colored_cube.wgsl";
+}
+
+impl Material for ColoredCubeMaterial {
+    fn fragment_shader() -> ShaderRef {
+        Self::SHADER_ASSET_PATH.into()
     }
 }

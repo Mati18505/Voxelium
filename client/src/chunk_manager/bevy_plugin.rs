@@ -7,7 +7,6 @@ use shared::{
 };
 
 use crate::{
-    bevy_render::VoxelMaterial,
     bevy_resources::texture_dictionary,
     bevy_types::{AppStates, GameResources},
     chunk_manager::{ChunkObjectEvent, WorldChunkUpdate},
@@ -49,7 +48,7 @@ fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>
 
     let inner_builder = Box::new(AsyncChunkBuilder::new(Arc::new(voxel_mesher)));
     let chunk_builder = Box::new(VersionedChunkBuilder::<()>::new(inner_builder));
-    let mut config = Config::new(10, 9);
+    let mut config = Config::new(50, 49);
     config.dynamic_vertical_loading = false;
 
     let (chunk_object_tx, chunk_object_rx) = crossbeam_channel::unbounded::<ChunkObjectEvent>();
@@ -75,7 +74,6 @@ fn update(
     mut meshes: ResMut<Assets<Mesh>>,
     game_resources: Res<GameResources>,
     mut chunk_manager_resources: ResMut<ChunkManagerResources>,
-    mut voxel_materials: ResMut<Assets<VoxelMaterial>>,
     mut controller_events: EventReader<controller::PositionChangeEvent>,
     chunk_manager_events: EventWriter<WorldChunkUpdateEvent>,
 ) {
@@ -99,8 +97,7 @@ fn update(
         .process_pending(
             &mut commands,
             &mut meshes,
-            game_resources.opaque_texture.clone(),
-            &mut voxel_materials,
+            game_resources.material_storage.clone(),
         );
     chunk_manager_resources
         .event_manager

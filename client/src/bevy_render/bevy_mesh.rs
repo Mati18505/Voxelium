@@ -35,11 +35,7 @@ impl From<ChunkMesh> for BevyChunkMesh {
                 .map(|e| [e[0] as f32, e[1] as f32, e[2] as f32])
                 .collect();
             let triangles: Vec<u32> = layer.triangles.iter().map(|e| *e as u32).collect();
-            let indexes: Vec<[f32; 2]> = layer
-                .indexes
-                .iter()
-                .map(|e| [*e as f32, 0.0])
-                .collect();
+            let indexes: Vec<[f32; 2]> = layer.indexes.iter().map(|e| [*e as f32, 0.0]).collect();
 
             let mesh: Mesh = Mesh::new(
                 PrimitiveTopology::TriangleList,
