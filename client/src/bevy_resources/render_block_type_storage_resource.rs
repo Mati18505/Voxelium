@@ -111,17 +111,26 @@ impl AssetLoader for RenderBlockTypeStorageLoader {
                 material: material_name.clone(),
             };
 
+            if !visible {
+                let render_desc = RenderDesc::Invisible;
+                let render_block_type = RenderBlockType {
+                    block_type,
+                    render_desc,
+                };
+
+                block_type_storage.block_types.push(render_block_type);
+                continue;
+            }
+
             let render_block_type: RenderBlockType = match material_name.as_str() {
                 "default" => {
                     let mut builder =
                         TexturedBlockTypeBuilder::new(&block_type).render_data(render_data);
 
-                    if visible {
-                        let textures = block.get("textures").ok_or(InvalidConfig(
-                            "default block_type should have textures".to_string(),
-                        ))?;
-                        builder = add_textures(builder, textures);
-                    }
+                    let textures = block.get("textures").ok_or(InvalidConfig(
+                        "default block_type should have textures".to_string(),
+                    ))?;
+                    builder = add_textures(builder, textures);
 
                     Ok(builder.build())
                 }
