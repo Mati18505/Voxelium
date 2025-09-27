@@ -109,19 +109,17 @@ impl AssetLoader for RenderBlockTypeStorageLoader {
                     let mut builder = TexturedBlockTypeBuilder::new(&block_type)
                         .render_data(render_data);
 
-                    if let Some(textures) = block.get("textures") {
+                    if visible {
+                        let textures = block.get("textures").ok_or(InvalidConfig("default block_type should have textures".to_string()))?;
                         builder = add_textures(builder, textures);
                     }
 
                     Ok(builder.build())
                 },
                 "colored" => {
-                    let palette_index: u64 = match block.get("palette_index") {
-                        Some(v) => v
-                            .as_u64()
-                            .ok_or(InvalidConfig("palette_index parameter should be unsigned 32bit number".to_string()))?,
-                        None => 0,
-                    };
+                    let palette_index = block.get("palette_index").ok_or(InvalidConfig("colored block_type should have palette_index".to_string()))?;
+                    let palette_index: u64 = palette_index.as_u64()
+                            .ok_or(InvalidConfig("palette_index parameter should be unsigned 32bit number".to_string()))?;
 
                     Ok(RenderBlockType {
                         block_type,
