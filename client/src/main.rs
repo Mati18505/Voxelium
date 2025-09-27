@@ -61,7 +61,7 @@ fn main() {
                 }),
             WireframePlugin::default(),
             YamlAssetPlugin::<TextureConfig>::new(&["config.yaml"]),
-            JsonAssetPlugin::<BevyBlockTypeStorageResource>::new(&["server_blocks.json"]),
+            JsonAssetPlugin::<BevyBlockTypeStorageResource>::new(&["blocks.json"]),
             ControllerPlugin,
             VoxelRenderPlugin,
             ChunkManagerPlugin,
@@ -92,13 +92,13 @@ fn main() {
 
 #[derive(AssetCollection, Resource)]
 struct VoxelAssets {
-    #[asset(path = "global.blocks.json")]
+    #[asset(path = "global.render_desc.json")]
     block_type_storage: Handle<RenderBlockTypeStorageResource>,
     #[asset(key = "opaque")]
     opaque_texture: Handle<Image>,
     #[asset(path = "textures.config.yaml")]
     texture_config: Handle<TextureConfig>,
-    #[asset(path = "global.server_blocks.json")]
+    #[asset(path = "global.blocks.json")]
     server_blocks: Handle<BevyBlockTypeStorageResource>,
     #[asset(path = "textures/palette.png")]
     color_palette: Handle<Image>,

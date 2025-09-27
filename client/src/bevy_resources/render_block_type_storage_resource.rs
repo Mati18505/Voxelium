@@ -46,7 +46,7 @@ pub enum BlockStorageLoaderError {
 
 impl AssetLoader for RenderBlockTypeStorageLoader {
     fn extensions(&self) -> &[&str] {
-        &["blocks.json"]
+        &["render_desc.json"]
     }
 
     type Asset = RenderBlockTypeStorageResource;

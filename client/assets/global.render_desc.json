@@ -1,0 +1,54 @@
+{
+	"blocks": [
+		{
+			"block_type": "air",
+			"visible": false
+		},
+		{
+			"block_type": "dirt",
+			"textures": { "side": "dirt" }
+		},
+		{
+			"block_type": "stone",
+			"textures": { "side": "stone" }
+		},
+		{
+			"block_type": "wood",
+			"textures": {
+				"side": "wood_side",
+				"top": "wood_top",
+				"bottom": "wood_top"
+			}
+		},
+		{
+			"block_type": "grass",
+			"textures": {
+				"side": "grass_side",
+				"top": "grass",
+				"bottom": "dirt"
+			}
+		},
+		{
+			"block_type": "sand",
+			"textures": { "side": "sand" }
+		},
+		{
+			"block_type": "sandstone",
+			"textures": {
+				"side": "sandstone",
+				"top": "sandstone_top",
+				"bottom": "sandstone_bottom"
+			}
+		},
+		{
+			"block_type": "red",
+			"material": "colored",
+			"color_index": 0
+		},
+		{
+			"block_type": "green",
+			"material": "colored",
+			"color_index": 1
+		}
+	]
+}
