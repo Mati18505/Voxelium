@@ -41,16 +41,14 @@
 			}
 		},
 		{
-			"block_type": "glass",
-			"textures": { "side": "glass" },
-			"material": "translucent",
-			"translucent": true
+			"block_type": "red",
+			"material": "colored",
+			"color_index": 0
 		},
 		{
-			"block_type": "leaves",
-			"textures": { "side": "oak_leaves" },
-			"material": "biomeColoredTranslucent",
-			"translucent": true
+			"block_type": "green",
+			"material": "colored",
+			"color_index": 1
 		}
 	]
 }

@@ -1,36 +1,9 @@
-use bevy::{asset::Asset, reflect::TypePath};
-use shared::entities::{BlockID, BlockType, BlockTypeStorage};
+pub mod block_type_storage;
+pub mod render_block_type;
+pub mod render_desc;
+pub mod textured_block_type_builder;
 
-#[derive(serde::Deserialize, Asset, TypePath, Debug, Clone, PartialEq)]
-struct BevyBlockTypeResource {
-    name: String,
-    affect_raycast: bool,
-}
-
-#[derive(serde::Deserialize, Asset, TypePath, Debug, Clone, PartialEq)]
-pub struct BevyBlockTypeStorageResource {
-    blocks: Vec<BevyBlockTypeResource>,
-}
-
-impl From<BevyBlockTypeStorageResource> for BlockTypeStorage {
-    fn from(resource: BevyBlockTypeStorageResource) -> BlockTypeStorage {
-        let block_types = resource
-            .blocks
-            .into_iter()
-            .map(|e| BlockType::new(&e.name, e.affect_raycast))
-            .collect();
-
-        BlockTypeStorage::new(block_types)
-    }
-}
-
-impl From<BevyBlockTypeStorageResource> for Vec<(String, BlockID)> {
-    fn from(resource: BevyBlockTypeStorageResource) -> Self {
-        resource
-            .blocks
-            .into_iter()
-            .enumerate()
-            .map(|(i, e)| (e.name, i as BlockID))
-            .collect()
-    }
-}
+pub use block_type_storage::*;
+pub use render_block_type::*;
+pub use render_desc::*;
+pub use textured_block_type_builder::*;

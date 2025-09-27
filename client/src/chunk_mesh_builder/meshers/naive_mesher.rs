@@ -1,19 +1,14 @@
+use bevy::{log::info_span, render::Render};
+use cgmath::Vector3;
 use std::sync::Arc;
 
-use bevy::log::info_span;
-use cgmath::Vector3;
-use shared::entities::{BlockID, BlockInChunkPos, BlockSide, BlockStorage, Chunk, Direction};
-
-use crate::chunk_mesh_builder::{
-    ChunkMesh, LayerMesh, TexturedBlockType, RenderBlockTypeStorage, TextureDictionary,
-};
-
 use super::{ChunkMesher, MesherOutput, MesherWarning};
+use crate::chunk_mesh_builder::{ChunkMesh, LayerMesh, RenderShape, RenderShapeStorage};
+use shared::entities::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct NaiveMesher {
-    block_type_storage: Arc<RenderBlockTypeStorage>,
-    texture_dictionary: Arc<TextureDictionary>,
+    render_shape_storage: RenderShapeStorage,
 }
 
 impl ChunkMesher for NaiveMesher {
@@ -30,17 +25,19 @@ impl ChunkMesher for NaiveMesher {
 
         for (index, block_id) in block_storage.iter().enumerate() {
             let pos = BlockInChunkPos::from_index(index);
-            let result = self.block_type_storage.get_block_type_from_id(*block_id);
+            let result = self
+                .render_shape_storage
+                .get_render_shape_from_id(*block_id);
 
             match result {
-                Some(block_type) => {
+                Some(render_shape) => {
                     let layer_mesh: &mut LayerMesh = chunk_mesh
                         .layers
-                        .entry(block_type.material_name.clone())
+                        .entry(render_shape.render_data().material)
                         .or_insert(LayerMesh::default());
 
                     self.create_block(
-                        block_type,
+                        render_shape,
                         BlockInChunkPos::new(pos.x, pos.y, pos.z),
                         layer_mesh,
                         block_storage,
@@ -48,7 +45,7 @@ impl ChunkMesher for NaiveMesher {
                     );
                 }
                 None => {
-                    warnings.push(MesherWarning::UnknownBlockType(*block_id, pos));
+                    warnings.push(MesherWarning::UnknownRenderShape(*block_id, pos));
                 }
             }
         }
@@ -61,19 +58,15 @@ impl ChunkMesher for NaiveMesher {
 }
 
 impl NaiveMesher {
-    pub fn new(
-        block_type_storage: Arc<RenderBlockTypeStorage>,
-        texture_dictionary: Arc<TextureDictionary>,
-    ) -> Self {
-        NaiveMesher {
-            block_type_storage,
-            texture_dictionary,
+    pub fn new(render_shape_storage: RenderShapeStorage) -> Self {
+        Self {
+            render_shape_storage,
         }
     }
 
     fn create_block(
         &self,
-        block_type: &TexturedBlockType,
+        render_shape: &RenderShape,
         pos: BlockInChunkPos,
         mesh: &mut LayerMesh,
         block_storage: &BlockStorage,
@@ -81,11 +74,11 @@ impl NaiveMesher {
     ) {
         use BlockSide::*;
 
-        if !block_type.is_visible {
+        if !render_shape.render_data().visible {
             return;
         }
 
-        for side in [Top, Bottom, Left, Right, Front, Back] {
+        for side in BlockSide::iterator().copied() {
             let result = self.has_translucent_neighbor(side, pos, block_storage);
 
             let has_transparent_neighbor = match result {
@@ -97,7 +90,7 @@ impl NaiveMesher {
             };
 
             if has_transparent_neighbor {
-                self.create_block_side(side, pos, block_type, mesh, warnings);
+                self.create_block_side(side, pos, render_shape, mesh, warnings);
             }
         }
     }
@@ -110,12 +103,12 @@ impl NaiveMesher {
     ) -> Result<bool, MesherWarning> {
         if let Some(neighbor_pos) = self.get_neighbor_pos(pos, side) {
             let neighbor_id: BlockID = block_storage.get_block(neighbor_pos);
-            let neighbor_block_type: &TexturedBlockType = self
-                .block_type_storage
-                .get_block_type_from_id(neighbor_id)
-                .ok_or(MesherWarning::UnknownBlockType(neighbor_id, pos))?;
+            let neighbor_render_shape: &RenderShape = self
+                .render_shape_storage
+                .get_render_shape_from_id(neighbor_id)
+                .ok_or(MesherWarning::UnknownRenderShape(neighbor_id, pos))?;
 
-            return Ok(neighbor_block_type.is_translucent);
+            return Ok(neighbor_render_shape.render_data().translucent);
         }
 
         Ok(true)
@@ -131,7 +124,7 @@ impl NaiveMesher {
         &self,
         side: BlockSide,
         block_pos: BlockInChunkPos,
-        block_type: &TexturedBlockType,
+        render_shape: &RenderShape,
         mesh: &mut LayerMesh,
         warnings: &mut Vec<MesherWarning>,
     ) {
@@ -249,24 +242,10 @@ impl NaiveMesher {
             mesh.uvs.push(uv);
         }
 
-        for _ in 0..4 {
-            let texture_name = block_type.get_block_side_texture(side);
-            let result = self
-                .texture_dictionary
-                .get_texture_index_from_name(texture_name);
-
-            let texture_index: u32 = match result {
-                Some(index) => index,
-                None => {
-                    warnings.push(MesherWarning::UnknownTextureName(
-                        texture_name.to_owned(),
-                        block_pos,
-                    ));
-                    0
-                }
-            };
-
-            mesh.texture_indexes.push(texture_index);
+        if let Some(storage_index) = render_shape.get_storage_index(side) {
+            for _ in 0..4 {
+                mesh.indexes.push(storage_index);
+            }
         }
 
         for t in triangles {

@@ -7,7 +7,7 @@ use shared::{
 };
 
 use crate::{
-    bevy_render::VoxelMaterial,
+    bevy_resources::texture_dictionary,
     bevy_types::{AppStates, GameResources},
     chunk_manager::{ChunkObjectEvent, WorldChunkUpdate},
     chunk_mesh_builder::{
@@ -41,14 +41,14 @@ pub struct ChunkManagerResources {
 }
 
 fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>) {
-    let voxel_mesher = NaiveMesher::new(
-        game_resources.block_type_storage.clone(),
-        game_resources.texture_dictionary.clone(),
-    );
+    let render_shapes = game_resources
+        .block_type_storage
+        .compile(&game_resources.texture_dictionary);
+    let voxel_mesher = NaiveMesher::new(render_shapes);
 
     let inner_builder = Box::new(AsyncChunkBuilder::new(Arc::new(voxel_mesher)));
     let chunk_builder = Box::new(VersionedChunkBuilder::<()>::new(inner_builder));
-    let mut config = Config::new(10, 9);
+    let mut config = Config::new(20, 19);
     config.dynamic_vertical_loading = false;
 
     let (chunk_object_tx, chunk_object_rx) = crossbeam_channel::unbounded::<ChunkObjectEvent>();
@@ -74,13 +74,11 @@ fn update(
     mut meshes: ResMut<Assets<Mesh>>,
     game_resources: Res<GameResources>,
     mut chunk_manager_resources: ResMut<ChunkManagerResources>,
-    mut voxel_materials: ResMut<Assets<VoxelMaterial>>,
     mut controller_events: EventReader<controller::PositionChangeEvent>,
     chunk_manager_events: EventWriter<WorldChunkUpdateEvent>,
 ) {
     for e in controller_events.read() {
         let new_pos = e.new_pos;
-        dbg!(&new_pos);
         let new_block_pos =
             BlockPos::new(new_pos.x as isize, new_pos.y as isize, new_pos.z as isize);
         let new_chunk_pos = ChunkPos::from(new_block_pos);
@@ -98,8 +96,7 @@ fn update(
         .process_pending(
             &mut commands,
             &mut meshes,
-            game_resources.opaque_texture.clone(),
-            &mut voxel_materials,
+            game_resources.material_storage.clone(),
         );
     chunk_manager_resources
         .event_manager

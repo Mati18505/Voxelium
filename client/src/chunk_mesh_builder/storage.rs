@@ -1,7 +1,5 @@
-pub mod textured_block_type;
-pub mod render_block_type_storage;
-pub mod texture_dictionary;
+pub mod render_shape;
+pub mod render_shape_storage;
 
-pub use textured_block_type::*;
-pub use render_block_type_storage::*;
-pub use texture_dictionary::*;
+pub use render_shape::*;
+pub use render_shape_storage::*;

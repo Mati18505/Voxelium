@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-pub type TextureName = String;
-pub type TextureIndex = u32;
+use crate::bevy_resources::TextureName;
+use crate::chunk_mesh_builder::TextureIndex;
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct TextureDictionary {

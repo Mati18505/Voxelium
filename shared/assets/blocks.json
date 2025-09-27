@@ -29,11 +29,11 @@
 			"affect_raycast": true
 		},
 		{
-			"name": "glass",
+			"name": "red",
 			"affect_raycast": true
 		},
 		{
-			"name": "leaves",
+			"name": "green",
 			"affect_raycast": true
 		}
 	]

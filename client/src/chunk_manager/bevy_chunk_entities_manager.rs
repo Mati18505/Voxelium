@@ -1,10 +1,12 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use bevy::prelude::*;
 use shared::entities::ChunkPos;
 
 use super::ChunkObjectEvent;
-use crate::bevy_render::{BevyChunkEntity, BevyChunkMesh, VoxelMaterial};
+use crate::bevy_render::{BevyChunkEntity, BevyChunkMesh};
+use crate::bevy_resources::MaterialStorage;
 use crate::chunk_mesh_builder::ChunkMesh;
 
 #[derive(Debug, Clone)]
@@ -24,8 +26,7 @@ impl ChunkEntitiesManager {
         &mut self,
         commands: &mut Commands,
         meshes: &mut ResMut<Assets<Mesh>>,
-        opaque_texture: Handle<Image>,
-        voxel_materials: &mut ResMut<Assets<VoxelMaterial>>,
+        material_storage: Arc<MaterialStorage>,
     ) {
         while let Ok(chunk_obj_ev) = self.rx.try_recv() {
             match chunk_obj_ev {
@@ -36,8 +37,7 @@ impl ChunkEntitiesManager {
                         chunk_mesh,
                         commands,
                         meshes,
-                        opaque_texture.clone(),
-                        voxel_materials,
+                        material_storage.clone(),
                     );
                 }
                 ChunkObjectEvent::Removed(chunk_pos) => {
@@ -53,8 +53,7 @@ impl ChunkEntitiesManager {
         mesh: ChunkMesh,
         commands: &mut Commands,
         meshes: &mut ResMut<Assets<Mesh>>,
-        opaque_texture: Handle<Image>,
-        voxel_materials: &mut ResMut<Assets<VoxelMaterial>>,
+        material_storage: Arc<MaterialStorage>,
     ) {
         assert!(
             !self.chunk_entities.contains_key(&pos),
@@ -68,8 +67,7 @@ impl ChunkEntitiesManager {
             pos.z as f32,
         ));
 
-        let chunk_entity =
-            BevyChunkEntity::new(mesh, commands, meshes, voxel_materials, opaque_texture);
+        let chunk_entity = BevyChunkEntity::new(mesh, commands, meshes, material_storage);
 
         self.chunk_entities.insert(pos, chunk_entity);
     }

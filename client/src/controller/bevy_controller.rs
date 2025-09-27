@@ -7,7 +7,7 @@ impl Plugin for ControllerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(NoCameraPlayerPlugin)
             .insert_resource(MovementSettings {
-                speed: 20.0,
+                speed: 100.0,
                 ..default()
             })
             .add_event::<PositionChangeEvent>()
