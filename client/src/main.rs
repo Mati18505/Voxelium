@@ -26,7 +26,14 @@ use shared::{
 use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
 
 use crate::{
-    bevy_render::{ColoredCubeMaterial, TexturedCubeMaterial}, bevy_resources::{BevyBlockTypeStorageResource, MaterialHandle, MaterialStorage, RenderBlockTypeStorage, TextureDictionary}, controller::ActionType, gui::GUIPlugin, orchestrator::{OrchestratorPlugin, utils::raycast_from_controller}
+    bevy_render::{ColoredCubeMaterial, TexturedCubeMaterial},
+    bevy_resources::{
+        BevyBlockTypeStorageResource, MaterialHandle, MaterialStorage, RenderBlockTypeStorage,
+        TextureDictionary,
+    },
+    controller::ActionType,
+    gui::GUIPlugin,
+    orchestrator::{utils::raycast_from_controller, OrchestratorPlugin},
 };
 
 mod bevy_render;
@@ -100,8 +107,8 @@ struct VoxelAssets {
 
 fn create_resources(
     mut commands: Commands,
-    mut textured_materials: ResMut<Assets<TexturedCubeMaterial>>, 
-    mut colored_materials: ResMut<Assets<ColoredCubeMaterial>>, 
+    mut textured_materials: ResMut<Assets<TexturedCubeMaterial>>,
+    mut colored_materials: ResMut<Assets<ColoredCubeMaterial>>,
     block_type_assets: Res<Assets<RenderBlockTypeStorageResource>>,
     server_block_type_assets: Res<Assets<BevyBlockTypeStorageResource>>,
     textures_assets: Res<Assets<TextureConfig>>,
@@ -126,7 +133,11 @@ fn create_resources(
     let server_block_type_storage: Arc<BlockTypeStorage> =
         Arc::new(server_block_type_storage_asset.clone().into());
 
-    let material_storage = create_material_storage(&mut textured_materials, &mut colored_materials, voxel_assets.opaque_texture.clone());
+    let material_storage = create_material_storage(
+        &mut textured_materials,
+        &mut colored_materials,
+        voxel_assets.opaque_texture.clone(),
+    );
 
     commands.insert_resource(GameResources {
         block_type_storage,
@@ -138,7 +149,11 @@ fn create_resources(
     init_block_names(server_block_type_storage_asset.into());
 }
 
-fn create_material_storage(textured_materials: &mut ResMut<Assets<TexturedCubeMaterial>>, colored_materials: &mut ResMut<Assets<ColoredCubeMaterial>>, opaque_texture: Handle<Image>, ) -> Arc<MaterialStorage> {
+fn create_material_storage(
+    textured_materials: &mut ResMut<Assets<TexturedCubeMaterial>>,
+    colored_materials: &mut ResMut<Assets<ColoredCubeMaterial>>,
+    opaque_texture: Handle<Image>,
+) -> Arc<MaterialStorage> {
     let mut material_storage = MaterialStorage::default();
 
     let textured_mat = TexturedCubeMaterial {

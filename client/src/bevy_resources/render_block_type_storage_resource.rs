@@ -3,9 +3,14 @@ use std::collections::HashMap;
 use shared::entities::{BlockID, BlockSide};
 use thiserror::Error;
 
-use bevy::{asset::{AssetLoader, LoadContext, io::Reader}, render::Render};
+use bevy::{
+    asset::{io::Reader, AssetLoader, LoadContext},
+    render::Render,
+};
 
-use crate::bevy_resources::{RenderBlockType, RenderBlockTypeStorage, RenderData, RenderDesc, TexturedBlockTypeBuilder};
+use crate::bevy_resources::{
+    RenderBlockType, RenderBlockTypeStorage, RenderData, RenderDesc, TexturedBlockTypeBuilder,
+};
 
 #[derive(bevy::asset::Asset, bevy::reflect::TypePath, Debug, Clone)]
 pub struct RenderBlockTypeStorageResource {
@@ -72,29 +77,31 @@ impl AssetLoader for RenderBlockTypeStorageLoader {
 
         for block in blocks {
             let block_type: String = match block.get("block_type") {
-                Some(v) => v
-                    .as_str()
-                    .ok_or(InvalidConfig("block_type parameter should be string".to_string()))?,
-                None => return Err(InvalidConfig("missing block_type parameter".to_string()).into()),
+                Some(v) => v.as_str().ok_or(InvalidConfig(
+                    "block_type parameter should be string".to_string(),
+                ))?,
+                None => {
+                    return Err(InvalidConfig("missing block_type parameter".to_string()).into())
+                }
             }
             .to_owned();
             let material_name: String = match block.get("material") {
-                Some(v) => v
-                    .as_str()
-                    .ok_or(InvalidConfig("material parameter should be string".to_string()))?,
+                Some(v) => v.as_str().ok_or(InvalidConfig(
+                    "material parameter should be string".to_string(),
+                ))?,
                 None => "default",
             }
             .to_owned();
             let visible: bool = match block.get("visible") {
-                Some(v) => v
-                    .as_bool()
-                    .ok_or(InvalidConfig("visible parameter should be boolean".to_string()))?,
+                Some(v) => v.as_bool().ok_or(InvalidConfig(
+                    "visible parameter should be boolean".to_string(),
+                ))?,
                 None => true,
             };
             let translucent: bool = match block.get("translucent") {
-                Some(v) => v
-                    .as_bool()
-                    .ok_or(InvalidConfig("translucent paramterer should be boolean".to_string()))?,
+                Some(v) => v.as_bool().ok_or(InvalidConfig(
+                    "translucent paramterer should be boolean".to_string(),
+                ))?,
                 None => !visible,
             };
 
@@ -106,30 +113,40 @@ impl AssetLoader for RenderBlockTypeStorageLoader {
 
             let render_block_type: RenderBlockType = match material_name.as_str() {
                 "default" => {
-                    let mut builder = TexturedBlockTypeBuilder::new(&block_type)
-                        .render_data(render_data);
+                    let mut builder =
+                        TexturedBlockTypeBuilder::new(&block_type).render_data(render_data);
 
                     if visible {
-                        let textures = block.get("textures").ok_or(InvalidConfig("default block_type should have textures".to_string()))?;
+                        let textures = block.get("textures").ok_or(InvalidConfig(
+                            "default block_type should have textures".to_string(),
+                        ))?;
                         builder = add_textures(builder, textures);
                     }
 
                     Ok(builder.build())
-                },
+                }
                 "colored" => {
-                    let palette_index = block.get("palette_index").ok_or(InvalidConfig("colored block_type should have palette_index".to_string()))?;
-                    let palette_index: u64 = palette_index.as_u64()
-                            .ok_or(InvalidConfig("palette_index parameter should be unsigned 32bit number".to_string()))?;
+                    let palette_index = block.get("palette_index").ok_or(InvalidConfig(
+                        "colored block_type should have palette_index".to_string(),
+                    ))?;
+                    let palette_index: u64 = palette_index.as_u64().ok_or(InvalidConfig(
+                        "palette_index parameter should be unsigned 32bit number".to_string(),
+                    ))?;
 
                     Ok(RenderBlockType {
                         block_type,
-                        render_desc: RenderDesc::ColoredCube { render_data, palette_index: palette_index as u32 }
+                        render_desc: RenderDesc::ColoredCube {
+                            render_data,
+                            palette_index: palette_index as u32,
+                        },
                     })
                 }
 
-                _ => Err(InvalidConfig(format!("unsupported material {material_name}"))),
+                _ => Err(InvalidConfig(format!(
+                    "unsupported material {material_name}"
+                ))),
             }?;
-            
+
             block_type_storage.block_types.push(render_block_type);
         }
 
@@ -137,7 +154,10 @@ impl AssetLoader for RenderBlockTypeStorageLoader {
     }
 }
 
-fn add_textures(builder: TexturedBlockTypeBuilder, textures: &serde_json::Value) -> TexturedBlockTypeBuilder {
+fn add_textures(
+    builder: TexturedBlockTypeBuilder,
+    textures: &serde_json::Value,
+) -> TexturedBlockTypeBuilder {
     let mut builder = builder;
 
     if let Some(side_texture) = textures.get("side").and_then(|e| e.as_str()) {

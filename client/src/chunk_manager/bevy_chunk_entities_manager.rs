@@ -67,8 +67,7 @@ impl ChunkEntitiesManager {
             pos.z as f32,
         ));
 
-        let chunk_entity =
-            BevyChunkEntity::new(mesh, commands, meshes, material_storage);
+        let chunk_entity = BevyChunkEntity::new(mesh, commands, meshes, material_storage);
 
         self.chunk_entities.insert(pos, chunk_entity);
     }

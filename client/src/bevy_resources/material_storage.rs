@@ -1,7 +1,10 @@
 use bevy::prelude::*;
 use std::collections::HashMap;
 
-use crate::{bevy_render::{ColoredCubeMaterial, TexturedCubeMaterial}, chunk_mesh_builder::MaterialId};
+use crate::{
+    bevy_render::{ColoredCubeMaterial, TexturedCubeMaterial},
+    chunk_mesh_builder::MaterialId,
+};
 
 #[derive(Debug)]
 pub enum MaterialHandle {
@@ -33,7 +36,7 @@ pub struct MaterialStorage {
 }
 
 impl MaterialStorage {
-    pub fn get(&self, id: MaterialId) -> Option<&MaterialHandle> { 
+    pub fn get(&self, id: MaterialId) -> Option<&MaterialHandle> {
         self.materials.get(&id)
     }
 

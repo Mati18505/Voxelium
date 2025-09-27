@@ -1,14 +1,20 @@
 use std::sync::Arc;
 
 use bevy::{
-    asset::{Assets, Handle}, color, ecs::{
+    asset::{Assets, Handle},
+    color,
+    ecs::{
         entity::Entity,
         system::{Commands, ResMut},
-    }, image::Image, log, pbr::MeshMaterial3d, render::mesh::{Mesh, Mesh3d}
+    },
+    image::Image,
+    log,
+    pbr::MeshMaterial3d,
+    render::mesh::{Mesh, Mesh3d},
 };
 
-use crate::bevy_resources::{MaterialHandle, MaterialStorage};
 use super::BevyChunkMesh;
+use crate::bevy_resources::{MaterialHandle, MaterialStorage};
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct BevyChunkEntity {
