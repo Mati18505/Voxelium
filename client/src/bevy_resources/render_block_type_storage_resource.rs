@@ -107,9 +107,7 @@ impl AssetLoader for RenderBlockTypeStorageLoader {
             let render_block_type: RenderBlockType = match material_name.as_str() {
                 "default" => {
                     let mut builder = TexturedBlockTypeBuilder::new(&block_type)
-                        .visible(visible)
-                        .material(material_name)
-                        .translucent(translucent);
+                        .render_data(render_data);
 
                     if let Some(textures) = block.get("textures") {
                         builder = add_textures(builder, textures);

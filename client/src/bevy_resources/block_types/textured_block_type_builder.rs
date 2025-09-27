@@ -27,21 +27,9 @@ impl TexturedBlockTypeBuilder {
         }
     }
 
-    pub fn visible(mut self, visible: bool) -> Self {
+    pub fn render_data(mut self, render_data: RenderData) -> Self {
         let (rd, desc) = Self::expect_textured_cube_desc(&mut self.block_type.render_desc);
-        rd.visible = visible;
-        self
-    }
-
-    pub fn translucent(mut self, translucent: bool) -> Self {
-        let (rd, desc) = Self::expect_textured_cube_desc(&mut self.block_type.render_desc);
-        rd.translucent = translucent;
-        self
-    }
-
-    pub fn material(mut self, material_name: MaterialName) -> Self {
-        let (rd, desc) = Self::expect_textured_cube_desc(&mut self.block_type.render_desc);
-        rd.material = material_name;
+        *rd = render_data;
         self
     }
 
