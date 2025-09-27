@@ -16,7 +16,7 @@ impl VoxelRenderData {
     pub const fn const_default() -> Self {
         Self {
             visible: false,
-            translucent: false,
+            translucent: true,
             material: 0,
         }
     }
