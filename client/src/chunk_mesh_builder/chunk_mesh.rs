@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 pub type TextureIndex = u32;
-pub type PaletteIndex = u32;
+pub type ColorIndex = u32;
 pub type StorageIndex = u32;
 pub type MaterialId = u8;
 

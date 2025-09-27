@@ -126,18 +126,18 @@ impl AssetLoader for RenderBlockTypeStorageLoader {
                     Ok(builder.build())
                 }
                 "colored" => {
-                    let palette_index = block.get("palette_index").ok_or(InvalidConfig(
-                        "colored block_type should have palette_index".to_string(),
+                    let color_index = block.get("color_index").ok_or(InvalidConfig(
+                        "colored block_type should have color_index".to_string(),
                     ))?;
-                    let palette_index: u64 = palette_index.as_u64().ok_or(InvalidConfig(
-                        "palette_index parameter should be unsigned 32bit number".to_string(),
+                    let color_index: u64 = color_index.as_u64().ok_or(InvalidConfig(
+                        "color_index should be unsigned 32bit number".to_string(),
                     ))?;
 
                     Ok(RenderBlockType {
                         block_type,
                         render_desc: RenderDesc::ColoredCube {
                             render_data,
-                            palette_index: palette_index as u32,
+                            color_index: color_index as u32,
                         },
                     })
                 }

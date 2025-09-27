@@ -5,7 +5,7 @@ use shared::entities::{BlockSide, VoxelColor};
 
 use crate::{
     bevy_resources::{texture_dictionary, MaterialName, TextureDictionary, TextureName},
-    chunk_mesh_builder::{PaletteIndex, RenderShape, TextureIndex, VoxelRenderData},
+    chunk_mesh_builder::{ColorIndex, RenderShape, TextureIndex, VoxelRenderData},
 };
 
 #[derive(Debug, Clone)]
@@ -33,7 +33,7 @@ pub enum RenderDesc {
     },
     ColoredCube {
         render_data: RenderData,
-        palette_index: PaletteIndex,
+        color_index: ColorIndex,
     },
     Invisible,
 }
@@ -47,8 +47,8 @@ impl RenderDesc {
             } => Self::compile_textured_cube(render_data, textured_cube_desc, texture_dictionary),
             RenderDesc::ColoredCube {
                 render_data,
-                palette_index,
-            } => Self::compile_colored_cube(render_data, *palette_index),
+                color_index,
+            } => Self::compile_colored_cube(render_data, *color_index),
             RenderDesc::Invisible => RenderShape::Invisible,
         }
     }
@@ -95,7 +95,7 @@ impl RenderDesc {
         }
     }
 
-    fn compile_colored_cube(rd: &RenderData, palette_index: PaletteIndex) -> RenderShape {
+    fn compile_colored_cube(rd: &RenderData, color_index: ColorIndex) -> RenderShape {
         let render_data = VoxelRenderData {
             visible: rd.visible,
             translucent: rd.translucent,
@@ -104,7 +104,7 @@ impl RenderDesc {
 
         RenderShape::ColoredCube {
             render_data,
-            palette_index,
+            color_index,
         }
     }
 }
