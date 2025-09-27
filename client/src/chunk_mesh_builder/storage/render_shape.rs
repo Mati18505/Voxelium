@@ -1,4 +1,4 @@
-use shared::entities::{BlockSide, VoxelColor};
+use shared::entities::BlockSide;
 use std::collections::HashMap;
 
 use crate::chunk_mesh_builder::{ColorIndex, MaterialId, StorageIndex, TextureIndex};

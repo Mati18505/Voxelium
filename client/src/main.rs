@@ -1,13 +1,9 @@
 use std::sync::Arc;
 
 use bevy::{
-    color::palettes::css::WHITE,
-    pbr::wireframe::{WireframeConfig, WireframePlugin},
-    prelude::*,
-    render::{
-        settings::{RenderCreation, WgpuFeatures, WgpuSettings},
-        *,
-    },
+    asset::RenderAssetUsages, color::palettes::css::WHITE, pbr::wireframe::{WireframeConfig, WireframePlugin}, prelude::*, reflect::TypeData, render::{
+        render_resource::{Extent3d, TextureDimension, TextureFormat}, settings::{RenderCreation, WgpuFeatures, WgpuSettings}, *
+    }
 };
 use bevy_asset_loader::prelude::*;
 use bevy_common_assets::json::JsonAssetPlugin;
@@ -16,6 +12,7 @@ use bevy_common_assets::yaml::YamlAssetPlugin;
 use bevy_render::VoxelRenderPlugin;
 use bevy_resources::{RenderBlockTypeStorageLoader, RenderBlockTypeStorageResource, TextureConfig};
 use bevy_types::{AppStates, GameResources};
+use cgmath::dot;
 use chunk_mesh_builder::*;
 use controller::ControllerPlugin;
 use shared::{
@@ -103,12 +100,15 @@ struct VoxelAssets {
     texture_config: Handle<TextureConfig>,
     #[asset(path = "global.server_blocks.json")]
     server_blocks: Handle<BevyBlockTypeStorageResource>,
+    #[asset(path = "textures/palette.png")]
+    color_palette: Handle<Image>,
 }
 
 fn create_resources(
     mut commands: Commands,
     mut textured_materials: ResMut<Assets<TexturedCubeMaterial>>,
     mut colored_materials: ResMut<Assets<ColoredCubeMaterial>>,
+    mut textures: ResMut<Assets<Image>>,
     block_type_assets: Res<Assets<RenderBlockTypeStorageResource>>,
     server_block_type_assets: Res<Assets<BevyBlockTypeStorageResource>>,
     textures_assets: Res<Assets<TextureConfig>>,
@@ -133,10 +133,16 @@ fn create_resources(
     let server_block_type_storage: Arc<BlockTypeStorage> =
         Arc::new(server_block_type_storage_asset.clone().into());
 
+
+    let color_palette = textures.get(&voxel_assets.color_palette).expect("Failed to load color palette.").to_owned();
+    let color_palette = create_1d_color_palette(color_palette);
+    let color_palette_handle = textures.add(color_palette);
+
     let material_storage = create_material_storage(
         &mut textured_materials,
         &mut colored_materials,
         voxel_assets.opaque_texture.clone(),
+        color_palette_handle.clone(),
     );
 
     commands.insert_resource(GameResources {
@@ -149,10 +155,27 @@ fn create_resources(
     init_block_names(server_block_type_storage_asset.into());
 }
 
+fn create_1d_color_palette(color_palette_2d: Image) -> Image {
+    assert_eq!(color_palette_2d.width(), 256);
+    assert_eq!(color_palette_2d.height(), 1);
+
+    let extend = Extent3d {
+        width: 256,
+        height: 1,
+        ..default()
+    };
+
+    let data = color_palette_2d.data.unwrap();
+    let format = color_palette_2d.texture_descriptor.format;
+
+    Image::new(extend, TextureDimension::D1, data, format, RenderAssetUsages::default())
+}
+
 fn create_material_storage(
     textured_materials: &mut ResMut<Assets<TexturedCubeMaterial>>,
     colored_materials: &mut ResMut<Assets<ColoredCubeMaterial>>,
     opaque_texture: Handle<Image>,
+    color_palette: Handle<Image>,
 ) -> Arc<MaterialStorage> {
     let mut material_storage = MaterialStorage::default();
 
@@ -161,13 +184,13 @@ fn create_material_storage(
     };
     let textured_mat_handle = textured_materials.add(textured_mat);
 
-    // let colored_mat = ColoredCubeMaterial {
-    //     array_texture: opaque_texture,
-    // };
-    // let colored_mat_handle = colored_materials.add(colored_mat);
+    let colored_mat = ColoredCubeMaterial {
+        color_palette,
+    };
+    let colored_mat_handle = colored_materials.add(colored_mat);
 
     material_storage.add(0, MaterialHandle::TexturedCube(textured_mat_handle));
-    // material_storage.add(1, MaterialHandle::ColoredCube(colored_mat_handle));
+    material_storage.add(1, MaterialHandle::ColoredCube(colored_mat_handle));
 
     Arc::new(material_storage)
 }
