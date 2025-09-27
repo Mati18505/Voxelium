@@ -48,7 +48,7 @@ fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>
 
     let inner_builder = Box::new(AsyncChunkBuilder::new(Arc::new(voxel_mesher)));
     let chunk_builder = Box::new(VersionedChunkBuilder::<()>::new(inner_builder));
-    let mut config = Config::new(50, 49);
+    let mut config = Config::new(20, 19);
     config.dynamic_vertical_loading = false;
 
     let (chunk_object_tx, chunk_object_rx) = crossbeam_channel::unbounded::<ChunkObjectEvent>();
@@ -79,7 +79,6 @@ fn update(
 ) {
     for e in controller_events.read() {
         let new_pos = e.new_pos;
-        dbg!(&new_pos);
         let new_block_pos =
             BlockPos::new(new_pos.x as isize, new_pos.y as isize, new_pos.z as isize);
         let new_chunk_pos = ChunkPos::from(new_block_pos);

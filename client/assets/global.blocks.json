@@ -44,6 +44,11 @@
 			"block_type": "red",
 			"material": "colored",
 			"color_index": 0
+		},
+		{
+			"block_type": "green",
+			"material": "colored",
+			"color_index": 1
 		}
 	]
 }

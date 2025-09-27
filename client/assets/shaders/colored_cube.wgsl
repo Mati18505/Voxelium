@@ -17,14 +17,13 @@ fn fragment(
     @builtin(front_facing) is_front: bool,
     mesh: VertexOutput,
 ) -> @location(0) vec4<f32> {
-    let color_index = i32(round(mesh.uv_b.r));
+    let color_index = f32(round(mesh.uv_b.r));
 
     // Prepare a 'processed' StandardMaterial by sampling all textures to resolve
     // the material members
     var pbr_input: PbrInput = pbr_input_new();
 
-    // pbr_input.material.base_color = textureSample(color_palette, color_palette_sampler, mesh.uv, color_index);
-    pbr_input.material.base_color = Vec4(0.0, 255.0, 0.0, 255.0);
+    pbr_input.material.base_color = textureSample(color_palette, color_palette_sampler, color_index / 256);
 #ifdef VERTEX_COLORS
     pbr_input.material.base_color = pbr_input.material.base_color * mesh.color;
 #endif
