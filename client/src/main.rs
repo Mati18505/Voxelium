@@ -10,7 +10,7 @@ use bevy_common_assets::json::JsonAssetPlugin;
 use bevy_common_assets::yaml::YamlAssetPlugin;
 
 use bevy_render::VoxelRenderPlugin;
-use bevy_resources::{RenderBlockTypeStorageLoader, RenderBlockTypeStorageResource, TextureConfig};
+use bevy_resources::{RenderBlockTypeStorageLoader, RenderDescStorageResource, TextureConfig};
 use bevy_types::{AppStates, GameResources};
 use cgmath::dot;
 use chunk_mesh_builder::*;
@@ -25,7 +25,7 @@ use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
 use crate::{
     bevy_render::{ColoredCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
-        BevyBlockTypeStorageResource, MaterialHandle, MaterialStorage, RenderBlockTypeStorage, TextureIndexDictionary,
+        BevyBlockTypeStorageResource, MaterialHandle, MaterialStorage, RenderDescDictionary, TextureIndexDictionary
     },
     controller::ActionType,
     gui::GUIPlugin,
@@ -72,7 +72,7 @@ fn main() {
             default_color: WHITE.into(),
         })
         .init_asset_loader::<RenderBlockTypeStorageLoader>()
-        .init_asset::<RenderBlockTypeStorageResource>()
+        .init_asset::<RenderDescStorageResource>()
         .init_asset::<BevyBlockTypeStorageResource>()
         .init_state::<AppStates>()
         .add_loading_state(
@@ -92,7 +92,7 @@ fn main() {
 #[derive(AssetCollection, Resource)]
 struct VoxelAssets {
     #[asset(path = "global.render_desc.json")]
-    block_type_storage: Handle<RenderBlockTypeStorageResource>,
+    render_desc_storage_res: Handle<RenderDescStorageResource>,
     #[asset(key = "opaque")]
     opaque_texture: Handle<Image>,
     #[asset(path = "textures.config.yaml")]
@@ -108,16 +108,16 @@ fn create_resources(
     mut textured_materials: ResMut<Assets<TexturedCubeMaterial>>,
     mut colored_materials: ResMut<Assets<ColoredCubeMaterial>>,
     mut textures: ResMut<Assets<Image>>,
-    block_type_assets: Res<Assets<RenderBlockTypeStorageResource>>,
+    render_desc_storage_res_assets: Res<Assets<RenderDescStorageResource>>,
     server_block_type_assets: Res<Assets<BevyBlockTypeStorageResource>>,
     textures_assets: Res<Assets<TextureConfig>>,
     voxel_assets: Res<VoxelAssets>,
 ) {
-    let block_type_storage = block_type_assets
-        .get(&voxel_assets.block_type_storage)
+    let block_type_storage = render_desc_storage_res_assets
+        .get(&voxel_assets.render_desc_storage_res)
         .unwrap()
         .to_owned();
-    let block_type_storage: Arc<RenderBlockTypeStorage> = Arc::new(block_type_storage.into());
+    let render_desc_dict: Arc<RenderDescDictionary> = Arc::new(block_type_storage.into());
 
     let texture_dictionary: TextureConfig = textures_assets
         .get(&voxel_assets.texture_config)
@@ -145,7 +145,7 @@ fn create_resources(
     );
 
     commands.insert_resource(GameResources {
-        block_type_storage,
+        render_desc_dict,
         server_block_type_storage,
         texture_dictionary,
         material_storage,

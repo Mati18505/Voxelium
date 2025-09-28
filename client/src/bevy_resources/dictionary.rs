@@ -19,4 +19,8 @@ impl<K: Hash + Eq, V> Dictionary<K, V> {
     pub fn get(&self, k: &K) -> Option<&V> {
         self.dictionary.get(k)
     }
+
+    pub fn iter(&self) -> std::collections::hash_map::Iter<'_, K, V> {
+        self.dictionary.iter()
+    }
 }

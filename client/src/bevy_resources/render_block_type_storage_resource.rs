@@ -9,17 +9,17 @@ use bevy::{
 };
 
 use crate::bevy_resources::{
-    RenderBlockType, RenderBlockTypeStorage, RenderData, RenderDesc, TexturedBlockTypeBuilder,
+    BlockTypeName, RenderData, RenderDesc, RenderDescDictionary, TexturedBlockTypeBuilder
 };
 
 #[derive(bevy::asset::Asset, bevy::reflect::TypePath, Debug, Clone)]
-pub struct RenderBlockTypeStorageResource {
-    block_types: Vec<RenderBlockType>,
+pub struct RenderDescStorageResource {
+    block_types: Vec<(BlockTypeName, RenderDesc)>,
 }
 
-impl From<RenderBlockTypeStorageResource> for RenderBlockTypeStorage {
-    fn from(resource: RenderBlockTypeStorageResource) -> Self {
-        RenderBlockTypeStorage::new(resource.block_types)
+impl From<RenderDescStorageResource> for RenderDescDictionary {
+    fn from(resource: RenderDescStorageResource) -> Self {
+        RenderDescDictionary::new(resource.block_types.into_iter().collect())
     }
 }
 
@@ -49,7 +49,7 @@ impl AssetLoader for RenderBlockTypeStorageLoader {
         &["render_desc.json"]
     }
 
-    type Asset = RenderBlockTypeStorageResource;
+    type Asset = RenderDescStorageResource;
     type Settings = ();
     type Error = BlockStorageLoaderError;
 
@@ -71,7 +71,7 @@ impl AssetLoader for RenderBlockTypeStorageLoader {
             .as_array()
             .ok_or(InvalidConfig("blocks should be array".to_string()))?;
 
-        let mut block_type_storage = RenderBlockTypeStorageResource {
+        let mut block_type_storage = RenderDescStorageResource {
             block_types: Vec::new(),
         };
 
@@ -113,26 +113,29 @@ impl AssetLoader for RenderBlockTypeStorageLoader {
 
             if !visible {
                 let render_desc = RenderDesc::Invisible;
-                let render_block_type = RenderBlockType {
+                let render_block_type: (BlockTypeName, RenderDesc) = (
                     block_type,
                     render_desc,
-                };
+                );
 
                 block_type_storage.block_types.push(render_block_type);
                 continue;
             }
 
-            let render_block_type: RenderBlockType = match material_name.as_str() {
+            let render_block_type: (BlockTypeName, RenderDesc) = match material_name.as_str() {
                 "default" => {
                     let mut builder =
-                        TexturedBlockTypeBuilder::new(&block_type).render_data(render_data);
+                        TexturedBlockTypeBuilder::new().render_data(render_data);
 
                     let textures = block.get("textures").ok_or(InvalidConfig(
                         "default block_type should have textures".to_string(),
                     ))?;
                     builder = add_textures(builder, textures);
 
-                    Ok(builder.build())
+                    Ok((
+                        block_type, 
+                        builder.build()
+                    ))
                 }
                 "colored" => {
                     let color_index = block.get("color_index").ok_or(InvalidConfig(
@@ -142,13 +145,15 @@ impl AssetLoader for RenderBlockTypeStorageLoader {
                         "color_index should be unsigned 32bit number".to_string(),
                     ))?;
 
-                    Ok(RenderBlockType {
+                    let render_desc = RenderDesc::ColoredCube {
+                        render_data,
+                        color_index: color_index as u32,
+                    };
+
+                    Ok((
                         block_type,
-                        render_desc: RenderDesc::ColoredCube {
-                            render_data,
-                            color_index: color_index as u32,
-                        },
-                    })
+                        render_desc
+                    ))
                 }
 
                 _ => Err(InvalidConfig(format!(
