@@ -108,21 +108,20 @@ fn create_resources(
     mut textured_materials: ResMut<Assets<TexturedCubeMaterial>>,
     mut colored_materials: ResMut<Assets<ColoredCubeMaterial>>,
     mut textures: ResMut<Assets<Image>>,
-    mut textures_assets: ResMut<Assets<TextureIndexDictionaryAsset>>,
-    render_desc_storage_res_assets: Res<Assets<RenderDescDictAsset>>,
+    mut texture_index_dict_asset: ResMut<Assets<TextureIndexDictionaryAsset>>,
+    mut render_desc_dict_asset: ResMut<Assets<RenderDescDictAsset>>,
     server_block_type_assets: Res<Assets<BevyBlockTypeStorageResource>>,
     voxel_assets: Res<VoxelAssets>,
 ) {
-    let block_type_storage = render_desc_storage_res_assets
-        .get(&voxel_assets.render_desc_storage_res)
-        .unwrap()
-        .to_owned();
-    let render_desc_dict: Arc<RenderDescDictionary> = Arc::new(block_type_storage.into());
+    let render_desc_dict_asset: RenderDescDictAsset = render_desc_dict_asset
+        .remove(&voxel_assets.render_desc_storage_res)
+        .unwrap();
+    let render_desc_dict: Arc<RenderDescDictionary> = Arc::new(render_desc_dict_asset.0);
 
-    let texture_dictionary: TextureIndexDictionaryAsset = textures_assets
+    let texture_dictionary_asset: TextureIndexDictionaryAsset = texture_index_dict_asset
         .remove(&voxel_assets.texture_config)
         .unwrap();
-    let texture_dictionary: Arc<TextureIndexDictionary> = Arc::new(texture_dictionary.into());
+    let texture_dictionary: Arc<TextureIndexDictionary> = Arc::new(texture_dictionary_asset.into());
 
     let server_block_type_storage_asset = server_block_type_assets
         .get(&voxel_assets.server_blocks)
