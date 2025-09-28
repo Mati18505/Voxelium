@@ -1,13 +1,14 @@
 use shared::entities::name_to_block_id;
 
-use crate::{bevy_resources::{Dictionary, MaterialHandle, RenderDesc, Storage}, chunk_mesh_builder::{RenderShape, TextureIndex}};
+use crate::{bevy_resources::{Dictionary, MaterialAsset, MaterialHandle, RenderDesc, Storage}, chunk_mesh_builder::{RenderShape, TextureIndex}};
 
 pub type MaterialName = String;
 pub type TextureName = String;
 pub type BlockTypeName = String;
 
-pub type TextureIndexDictionary = Dictionary<TextureName, TextureIndex>;
+pub type MaterialsDictionary = Dictionary<MaterialName, MaterialAsset>;
 pub type RenderDescDictionary = Dictionary<BlockTypeName, RenderDesc>;
+pub type TextureIndexDictionary = Dictionary<TextureName, TextureIndex>;
 
 pub type MaterialStorage = Storage<MaterialHandle>;
 pub type RenderShapeStorage = Storage<RenderShape>;

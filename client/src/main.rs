@@ -10,7 +10,7 @@ use bevy_common_assets::json::JsonAssetPlugin;
 use bevy_common_assets::yaml::YamlAssetPlugin;
 
 use bevy_render::VoxelRenderPlugin;
-use bevy_resources::{RenderBlockTypeStorageLoader, RenderDescDictAsset};
+use bevy_resources::{MaterialsDictAssetLoader, MaterialsDictAsset};
 use bevy_types::{AppStates, GameResources};
 use cgmath::dot;
 use chunk_mesh_builder::*;
@@ -25,7 +25,7 @@ use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
 use crate::{
     bevy_render::{ColoredCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
-        BevyBlockTypeStorageResource, MaterialHandle, MaterialStorage, RenderDescDictionary, TextureIndexDictionary, TextureIndexDictionaryAsset
+        BevyBlockTypeStorageResource, MaterialHandle, MaterialStorage, MaterialsDictionary, RenderBlockTypeStorageLoader, RenderDescDictAsset, RenderDescDictionary, TextureIndexDictionary, TextureIndexDictionaryAsset
     },
     controller::ActionType,
     gui::GUIPlugin,
@@ -73,6 +73,8 @@ fn main() {
         })
         .init_asset_loader::<RenderBlockTypeStorageLoader>()
         .init_asset::<RenderDescDictAsset>()
+        .init_asset_loader::<MaterialsDictAssetLoader>()
+        .init_asset::<MaterialsDictAsset>()
         .init_asset::<BevyBlockTypeStorageResource>()
         .init_state::<AppStates>()
         .add_loading_state(
@@ -101,6 +103,8 @@ struct VoxelAssets {
     server_blocks: Handle<BevyBlockTypeStorageResource>,
     #[asset(path = "textures/palette.png")]
     color_palette: Handle<Image>,
+    #[asset(path = "global.materials.json")]
+    materials_dict_asset: Handle<MaterialsDictAsset>,
 }
 
 fn create_resources(
@@ -110,6 +114,7 @@ fn create_resources(
     mut textures: ResMut<Assets<Image>>,
     mut texture_index_dict_asset: ResMut<Assets<TextureIndexDictionaryAsset>>,
     mut render_desc_dict_asset: ResMut<Assets<RenderDescDictAsset>>,
+    mut materials_dict_asset: ResMut<Assets<MaterialsDictAsset>>,
     server_block_type_assets: Res<Assets<BevyBlockTypeStorageResource>>,
     voxel_assets: Res<VoxelAssets>,
 ) {
@@ -129,6 +134,13 @@ fn create_resources(
         .to_owned();
     let server_block_type_storage: Arc<BlockTypeStorage> =
         Arc::new(server_block_type_storage_asset.clone().into());
+
+    let materials_dict_asset: MaterialsDictAsset = materials_dict_asset
+        .remove(&voxel_assets.materials_dict_asset)
+        .unwrap();
+    let materials_dict: Arc<MaterialsDictionary> = Arc::new(materials_dict_asset.0);
+
+    dbg!(&materials_dict);
 
 
     let color_palette = textures.get(&voxel_assets.color_palette).expect("Failed to load color palette.").to_owned();
