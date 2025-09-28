@@ -42,11 +42,13 @@
 		},
 		{
 			"block_type": "red",
+			"type": "colored",
 			"material": "colored",
 			"color_index": 0
 		},
 		{
 			"block_type": "green",
+			"type": "colored",
 			"material": "colored",
 			"color_index": 1
 		}

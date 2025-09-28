@@ -75,6 +75,13 @@ impl AssetLoader for RenderBlockTypeStorageLoader {
                 }
             }
             .to_owned();
+            let type_name: String = match block.get("type") {
+                Some(v) => v.as_str().ok_or(InvalidConfig(
+                    "type parameter should be string".to_string(),
+                ))?,
+                None => "textured",
+            }
+            .to_owned();
             let material_name: String = match block.get("material") {
                 Some(v) => v.as_str().ok_or(InvalidConfig(
                     "material parameter should be string".to_string(),
@@ -98,7 +105,7 @@ impl AssetLoader for RenderBlockTypeStorageLoader {
             let render_data = RenderData {
                 visible,
                 translucent,
-                material: material_name.clone(),
+                material: material_name,
             };
 
             if !visible {
@@ -108,8 +115,8 @@ impl AssetLoader for RenderBlockTypeStorageLoader {
                 continue;
             }
 
-            let render_desc: RenderDesc = match material_name.as_str() {
-                "default" => {
+            let render_desc: RenderDesc = match type_name.as_str() {
+                "textured" => {
                     let mut builder =
                         TexturedBlockTypeBuilder::new().render_data(render_data);
 
@@ -137,7 +144,7 @@ impl AssetLoader for RenderBlockTypeStorageLoader {
                 }
 
                 _ => Err(InvalidConfig(format!(
-                    "unsupported material {material_name}"
+                    "unsupported type {type_name}"
                 ))),
             }?;
 
