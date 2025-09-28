@@ -1,6 +1,8 @@
 use std::{collections::HashMap, hash::Hash};
 
-#[derive(Debug, Default, Clone)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Dictionary<K: Hash + Eq, V> {
     dictionary: HashMap<K, V>,
 }

@@ -4,7 +4,7 @@ pub mod dictionary;
 pub mod material_asset;
 pub mod material_handle;
 pub mod render_block_type_storage_resource;
-pub mod textures_config;
+pub mod texture_index_dict_asset;
 pub mod types;
 pub mod storage;
 
@@ -14,6 +14,6 @@ pub use dictionary::*;
 pub use material_asset::*;
 pub use material_handle::*;
 pub use render_block_type_storage_resource::*;
-pub use textures_config::*;
+pub use texture_index_dict_asset::*;
 pub use types::*;
 pub use storage::*;
