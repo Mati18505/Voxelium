@@ -15,20 +15,22 @@ pub type RenderShapeStorage = Storage<RenderShape>;
 
 /// Creates [`RenderShapeStorage`] from [`RenderDescDictionary`], by compiling each [`RenderShape`] from [`RenderDesc`].
 /// Items in `RenderShapeStorage` are in order defined by `block_registry`.
-pub fn compile_render_desc_dict(render_desc_dict: &RenderDescDictionary, texture_dictionary: &TextureIndexDictionary) -> RenderShapeStorage {
-    let mut compiled: Vec<(u8, RenderShape)> = render_desc_dict
-        .iter()
-        .map(|(block_type_name, render_desc)| {
-            let block_id = name_to_block_id(&block_type_name);
-            let compiled = render_desc.compile(texture_dictionary);
+impl RenderDescDictionary {
+    pub fn compile_render_desc_dict(&self, texture_dictionary: &TextureIndexDictionary) -> RenderShapeStorage {
+        let mut compiled: Vec<(u8, RenderShape)> = self
+            .iter()
+            .map(|(block_type_name, render_desc)| {
+                let block_id = name_to_block_id(&block_type_name);
+                let compiled = render_desc.compile(texture_dictionary);
 
-            (block_id, compiled)
-        })
-        .collect();
+                (block_id, compiled)
+            })
+            .collect();
 
-    compiled.sort_by_key(|(id, _)| *id);
+        compiled.sort_by_key(|(id, _)| *id);
 
-    let render_shapes = compiled.into_iter().map(|(_, shape)| shape).collect();
+        let render_shapes = compiled.into_iter().map(|(_, shape)| shape).collect();
 
-    RenderShapeStorage::new(render_shapes)
+        RenderShapeStorage::new(render_shapes)
+    }
 }

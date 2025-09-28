@@ -7,7 +7,7 @@ use shared::{
 };
 
 use crate::{
-    bevy_resources::compile_render_desc_dict, bevy_types::{AppStates, GameResources}, chunk_manager::{ChunkObjectEvent, WorldChunkUpdate}, chunk_mesh_builder::{
+    bevy_types::{AppStates, GameResources}, chunk_manager::{ChunkObjectEvent, WorldChunkUpdate}, chunk_mesh_builder::{
         builders::{
             async_chunk_builder::AsyncChunkBuilder, versioned_chunk_builder::VersionedChunkBuilder,
         },
@@ -37,7 +37,7 @@ pub struct ChunkManagerResources {
 }
 
 fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>) {
-    let render_shapes = compile_render_desc_dict(&game_resources.render_desc_dict, &game_resources.texture_dictionary);
+    let render_shapes = game_resources.render_desc_dict.compile_render_desc_dict(&game_resources.texture_dictionary);
     let voxel_mesher = NaiveMesher::new(render_shapes);
 
     let inner_builder = Box::new(AsyncChunkBuilder::new(Arc::new(voxel_mesher)));
