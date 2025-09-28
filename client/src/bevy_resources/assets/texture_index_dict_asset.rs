@@ -6,6 +6,7 @@ use crate::{bevy_resources::{TextureIndexDictionary, TextureName}, chunk_mesh_bu
 
 #[derive(Debug, serde::Deserialize, Asset, TypePath)]
 pub struct TextureIndexDictionaryAsset {
+    pub name: String,
     pub textures: HashMap<TextureName, TextureIndex>,
 }
 

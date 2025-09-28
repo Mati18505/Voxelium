@@ -59,7 +59,7 @@ fn main() {
                     ..default()
                 }),
             WireframePlugin::default(),
-            YamlAssetPlugin::<TextureIndexDictionaryAsset>::new(&["config.yaml"]),
+            YamlAssetPlugin::<TextureIndexDictionaryAsset>::new(&["texture_array.yaml"]),
             JsonAssetPlugin::<BevyBlockTypeStorageResource>::new(&["blocks.json"]),
             ControllerPlugin,
             VoxelRenderPlugin,
@@ -95,7 +95,7 @@ struct VoxelAssets {
     render_desc_storage_res: Handle<RenderDescDictAsset>,
     #[asset(key = "opaque")]
     opaque_texture: Handle<Image>,
-    #[asset(path = "textures.config.yaml")]
+    #[asset(path = "opaque.texture_array.yaml")]
     texture_config: Handle<TextureIndexDictionaryAsset>,
     #[asset(path = "global.blocks.json")]
     server_blocks: Handle<BevyBlockTypeStorageResource>,
