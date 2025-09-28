@@ -10,7 +10,7 @@ use bevy_common_assets::json::JsonAssetPlugin;
 use bevy_common_assets::yaml::YamlAssetPlugin;
 
 use bevy_render::VoxelRenderPlugin;
-use bevy_resources::{RenderBlockTypeStorageLoader, RenderDescStorageResource};
+use bevy_resources::{RenderBlockTypeStorageLoader, RenderDescDictAsset};
 use bevy_types::{AppStates, GameResources};
 use cgmath::dot;
 use chunk_mesh_builder::*;
@@ -72,7 +72,7 @@ fn main() {
             default_color: WHITE.into(),
         })
         .init_asset_loader::<RenderBlockTypeStorageLoader>()
-        .init_asset::<RenderDescStorageResource>()
+        .init_asset::<RenderDescDictAsset>()
         .init_asset::<BevyBlockTypeStorageResource>()
         .init_state::<AppStates>()
         .add_loading_state(
@@ -92,7 +92,7 @@ fn main() {
 #[derive(AssetCollection, Resource)]
 struct VoxelAssets {
     #[asset(path = "global.render_desc.json")]
-    render_desc_storage_res: Handle<RenderDescStorageResource>,
+    render_desc_storage_res: Handle<RenderDescDictAsset>,
     #[asset(key = "opaque")]
     opaque_texture: Handle<Image>,
     #[asset(path = "textures.config.yaml")]
@@ -109,7 +109,7 @@ fn create_resources(
     mut colored_materials: ResMut<Assets<ColoredCubeMaterial>>,
     mut textures: ResMut<Assets<Image>>,
     mut textures_assets: ResMut<Assets<TextureIndexDictionaryAsset>>,
-    render_desc_storage_res_assets: Res<Assets<RenderDescStorageResource>>,
+    render_desc_storage_res_assets: Res<Assets<RenderDescDictAsset>>,
     server_block_type_assets: Res<Assets<BevyBlockTypeStorageResource>>,
     voxel_assets: Res<VoxelAssets>,
 ) {

@@ -13,12 +13,12 @@ use crate::bevy_resources::{
 };
 
 #[derive(bevy::asset::Asset, bevy::reflect::TypePath, Debug, Clone)]
-pub struct RenderDescStorageResource {
+pub struct RenderDescDictAsset {
     block_types: Vec<(BlockTypeName, RenderDesc)>,
 }
 
-impl From<RenderDescStorageResource> for RenderDescDictionary {
-    fn from(resource: RenderDescStorageResource) -> Self {
+impl From<RenderDescDictAsset> for RenderDescDictionary {
+    fn from(resource: RenderDescDictAsset) -> Self {
         RenderDescDictionary::new(resource.block_types.into_iter().collect())
     }
 }
@@ -49,7 +49,7 @@ impl AssetLoader for RenderBlockTypeStorageLoader {
         &["render_desc.json"]
     }
 
-    type Asset = RenderDescStorageResource;
+    type Asset = RenderDescDictAsset;
     type Settings = ();
     type Error = BlockStorageLoaderError;
 
@@ -71,7 +71,7 @@ impl AssetLoader for RenderBlockTypeStorageLoader {
             .as_array()
             .ok_or(InvalidConfig("blocks should be array".to_string()))?;
 
-        let mut block_type_storage = RenderDescStorageResource {
+        let mut block_type_storage = RenderDescDictAsset {
             block_types: Vec::new(),
         };
 
