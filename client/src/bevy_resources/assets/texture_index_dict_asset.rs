@@ -2,9 +2,7 @@ use std::collections::HashMap;
 
 use bevy::{asset::Asset, reflect::TypePath};
 
-use crate::{bevy_resources::TextureName, chunk_mesh_builder::TextureIndex};
-
-use super::TextureIndexDictionary;
+use crate::{bevy_resources::{TextureIndexDictionary, TextureName}, chunk_mesh_builder::TextureIndex};
 
 #[derive(Debug, serde::Deserialize, Asset, TypePath)]
 pub struct TextureIndexDictionaryAsset {

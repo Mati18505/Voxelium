@@ -1,19 +1,15 @@
-pub mod block_type_storage_asset;
+pub mod assets;
 pub mod block_types;
 pub mod dictionary;
 pub mod material_asset;
 pub mod material_handle;
-pub mod render_desc_storage_asset;
-pub mod texture_index_dict_asset;
 pub mod types;
 pub mod storage;
 
-pub use block_type_storage_asset::*;
+pub use assets::*;
 pub use block_types::*;
 pub use dictionary::*;
 pub use material_asset::*;
 pub use material_handle::*;
-pub use render_desc_storage_asset::*;
-pub use texture_index_dict_asset::*;
 pub use types::*;
 pub use storage::*;
