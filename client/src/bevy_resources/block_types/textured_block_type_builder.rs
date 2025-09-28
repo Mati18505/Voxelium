@@ -43,7 +43,7 @@ impl TexturedBlockTypeBuilder {
         self
     }
 
-    /// Returns [`RenderBlockType`] with `TexturedCube` [`RenderDesc`].
+    /// Returns `TexturedCube` [`RenderDesc`].
     pub fn build(self) -> RenderDesc {
         self.render_desc
     }

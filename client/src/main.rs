@@ -25,7 +25,7 @@ use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
 use crate::{
     bevy_render::{ColoredCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
-        BevyBlockTypeStorageResource, MaterialHandle, MaterialStorage, MaterialsDictionary, RenderBlockTypeStorageLoader, RenderDescDictAsset, RenderDescDictionary, TextureIndexDictionary, TextureIndexDictionaryAsset
+        BevyBlockTypeStorageResource, MaterialHandle, MaterialStorage, MaterialsDictionary, RenderDescDictAssetLoader, RenderDescDictAsset, RenderDescDictionary, TextureIndexDictionary, TextureIndexDictionaryAsset
     },
     controller::ActionType,
     gui::GUIPlugin,
@@ -71,7 +71,7 @@ fn main() {
             global: false,
             default_color: WHITE.into(),
         })
-        .init_asset_loader::<RenderBlockTypeStorageLoader>()
+        .init_asset_loader::<RenderDescDictAssetLoader>()
         .init_asset::<RenderDescDictAsset>()
         .init_asset_loader::<MaterialsDictAssetLoader>()
         .init_asset::<MaterialsDictAsset>()

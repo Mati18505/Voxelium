@@ -16,7 +16,7 @@ use crate::bevy_resources::{
 pub struct RenderDescDictAsset(pub RenderDescDictionary);
 
 #[derive(Default)]
-pub struct RenderBlockTypeStorageLoader;
+pub struct RenderDescDictAssetLoader;
 
 #[derive(Debug, Clone, Error)]
 pub enum BlockStorageParseError {
@@ -36,7 +36,7 @@ pub enum BlockStorageLoaderError {
     Parse(#[from] BlockStorageParseError),
 }
 
-impl AssetLoader for RenderBlockTypeStorageLoader {
+impl AssetLoader for RenderDescDictAssetLoader {
     fn extensions(&self) -> &[&str] {
         &["render_desc.json"]
     }
