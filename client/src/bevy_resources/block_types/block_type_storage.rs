@@ -1,10 +1,11 @@
 use std::{collections::HashMap, fmt::Debug};
 
+use bevy::render::render_resource::Texture;
 use shared::entities::BlockID;
 
 use crate::{
-    bevy_resources::{texture_dictionary, RenderBlockType, TextureDictionary},
-    chunk_mesh_builder::{RenderShape, RenderShapeStorage},
+    bevy_resources::{RenderBlockType, RenderShapeStorage, TextureIndexDictionary, TextureName},
+    chunk_mesh_builder::RenderShape,
 };
 
 #[derive(Debug, Default)]
@@ -21,7 +22,7 @@ impl RenderBlockTypeStorage {
         self.block_types.get(id as usize)
     }
 
-    pub fn compile(&self, texture_dictionary: &TextureDictionary) -> RenderShapeStorage {
+    pub fn compile(&self, texture_dictionary: &TextureIndexDictionary) -> RenderShapeStorage {
         let compiled: Vec<RenderShape> = self
             .block_types
             .iter()

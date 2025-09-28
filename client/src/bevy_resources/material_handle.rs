@@ -29,19 +29,3 @@ impl MaterialHandle {
         }
     }
 }
-
-#[derive(Debug, Default)]
-pub struct MaterialStorage {
-    materials: HashMap<MaterialId, MaterialHandle>,
-}
-
-impl MaterialStorage {
-    pub fn get(&self, id: MaterialId) -> Option<&MaterialHandle> {
-        self.materials.get(&id)
-    }
-
-    pub fn add(&mut self, id: MaterialId, handle: MaterialHandle) -> &MaterialHandle {
-        self.materials.insert(id, handle);
-        self.get(id).unwrap()
-    }
-}

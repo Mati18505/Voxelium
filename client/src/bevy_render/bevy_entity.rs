@@ -33,7 +33,7 @@ impl BevyChunkEntity {
         for (material_id, mesh) in chunk_mesh.layers {
             let mesh_handle = meshes.add(mesh);
 
-            if let Some(material) = material_storage.get(material_id) {
+            if let Some(material) = material_storage.get_by_id(material_id as usize) {
                 let entity = material.spawn_entity(commands, mesh_handle, chunk_mesh.transform);
                 render_resource.entities.push(entity);
             } else {

@@ -7,7 +7,6 @@ use shared::{
 };
 
 use crate::{
-    bevy_resources::texture_dictionary,
     bevy_types::{AppStates, GameResources},
     chunk_manager::{ChunkObjectEvent, WorldChunkUpdate},
     chunk_mesh_builder::{

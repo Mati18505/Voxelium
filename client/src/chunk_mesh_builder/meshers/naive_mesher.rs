@@ -3,7 +3,7 @@ use cgmath::Vector3;
 use std::sync::Arc;
 
 use super::{ChunkMesher, MesherOutput, MesherWarning};
-use crate::chunk_mesh_builder::{ChunkMesh, LayerMesh, RenderShape, RenderShapeStorage};
+use crate::{bevy_resources::RenderShapeStorage, chunk_mesh_builder::{ChunkMesh, LayerMesh, RenderShape}};
 use shared::entities::*;
 
 #[derive(Debug)]
@@ -27,7 +27,7 @@ impl ChunkMesher for NaiveMesher {
             let pos = BlockInChunkPos::from_index(index);
             let result = self
                 .render_shape_storage
-                .get_render_shape_from_id(*block_id);
+                .get_by_id(*block_id as usize);
 
             match result {
                 Some(render_shape) => {
@@ -105,7 +105,7 @@ impl NaiveMesher {
             let neighbor_id: BlockID = block_storage.get_block(neighbor_pos);
             let neighbor_render_shape: &RenderShape = self
                 .render_shape_storage
-                .get_render_shape_from_id(neighbor_id)
+                .get_by_id(neighbor_id as usize)
                 .ok_or(MesherWarning::UnknownRenderShape(neighbor_id, pos))?;
 
             return Ok(neighbor_render_shape.render_data().translucent);

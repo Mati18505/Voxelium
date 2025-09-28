@@ -4,7 +4,7 @@ use std::{collections::HashMap, default};
 use shared::entities::{BlockSide, VoxelColor};
 
 use crate::{
-    bevy_resources::{texture_dictionary, MaterialName, TextureDictionary, TextureName},
+    bevy_resources::{MaterialName, TextureIndexDictionary, TextureName},
     chunk_mesh_builder::{ColorIndex, RenderShape, TextureIndex, VoxelRenderData},
 };
 
@@ -39,7 +39,7 @@ pub enum RenderDesc {
 }
 
 impl RenderDesc {
-    pub fn compile(&self, texture_dictionary: &TextureDictionary) -> RenderShape {
+    pub fn compile(&self, texture_dictionary: &TextureIndexDictionary) -> RenderShape {
         match self {
             RenderDesc::TexturedCube {
                 render_data,
@@ -56,7 +56,7 @@ impl RenderDesc {
     fn compile_textured_cube(
         rd: &RenderData,
         desc: &TexturedCubeDesc,
-        texture_dictionary: &TextureDictionary,
+        texture_dictionary: &TextureIndexDictionary,
     ) -> RenderShape {
         // TODO: get material from material dictionary
         let render_data = VoxelRenderData {
@@ -84,10 +84,10 @@ impl RenderDesc {
 
     fn get_texture_index_from_name(
         name: &str,
-        texture_dictionary: &TextureDictionary,
+        texture_dictionary: &TextureIndexDictionary,
     ) -> TextureIndex {
-        match texture_dictionary.get_texture_index_from_name(&name) {
-            Some(t_id) => t_id,
+        match texture_dictionary.get(&name.to_string()) {
+            Some(t_id) => *t_id,
             None => {
                 warn!("While compiling textured cube: texture \"{name}\" wasn't in texture_index.");
                 0

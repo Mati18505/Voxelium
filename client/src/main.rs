@@ -25,12 +25,11 @@ use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
 use crate::{
     bevy_render::{ColoredCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
-        BevyBlockTypeStorageResource, MaterialHandle, MaterialStorage, RenderBlockTypeStorage,
-        TextureDictionary,
+        BevyBlockTypeStorageResource, MaterialHandle, MaterialStorage, RenderBlockTypeStorage, TextureIndexDictionary,
     },
     controller::ActionType,
     gui::GUIPlugin,
-    orchestrator::{utils::raycast_from_controller, OrchestratorPlugin},
+    orchestrator::{OrchestratorPlugin, utils::raycast_from_controller},
 };
 
 mod bevy_render;
@@ -124,7 +123,7 @@ fn create_resources(
         .get(&voxel_assets.texture_config)
         .unwrap()
         .to_owned();
-    let texture_dictionary: Arc<TextureDictionary> = Arc::new(texture_dictionary.into());
+    let texture_dictionary: Arc<TextureIndexDictionary> = Arc::new(texture_dictionary.into());
 
     let server_block_type_storage_asset = server_block_type_assets
         .get(&voxel_assets.server_blocks)
@@ -177,7 +176,7 @@ fn create_material_storage(
     opaque_texture: Handle<Image>,
     color_palette: Handle<Image>,
 ) -> Arc<MaterialStorage> {
-    let mut material_storage = MaterialStorage::default();
+    let mut material_storage = MaterialStorage::new(Vec::default());
 
     let textured_mat = TexturedCubeMaterial {
         array_texture: opaque_texture,
@@ -189,8 +188,8 @@ fn create_material_storage(
     };
     let colored_mat_handle = colored_materials.add(colored_mat);
 
-    material_storage.add(0, MaterialHandle::TexturedCube(textured_mat_handle));
-    material_storage.add(1, MaterialHandle::ColoredCube(colored_mat_handle));
+    material_storage.add(MaterialHandle::TexturedCube(textured_mat_handle));
+    material_storage.add(MaterialHandle::ColoredCube(colored_mat_handle));
 
     Arc::new(material_storage)
 }
