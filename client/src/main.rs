@@ -1,17 +1,11 @@
 use std::sync::Arc;
 
 use bevy::{
-    asset::RenderAssetUsages, color::palettes::css::WHITE, pbr::wireframe::{WireframeConfig, WireframePlugin}, prelude::*, reflect::TypeData, render::{
+    asset::RenderAssetUsages, color::palettes::css::WHITE, prelude::*, reflect::TypeData, render::{
         render_resource::{Extent3d, TextureDimension, TextureFormat}, settings::{RenderCreation, WgpuFeatures, WgpuSettings}, *
     },
-    color::palettes::css::WHITE,
     log,
     pbr::wireframe::{WireframeConfig, WireframePlugin},
-    prelude::*,
-    render::{
-        settings::{RenderCreation, WgpuFeatures, WgpuSettings},
-        *,
-    },
 };
 use bevy_asset_loader::prelude::*;
 use bevy_common_assets::json::JsonAssetPlugin;
