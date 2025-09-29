@@ -16,6 +16,6 @@ pub enum AppStates {
 pub struct GameResources {
     pub render_desc_dict: Arc<RenderDescDictionary>,
     pub server_block_type_storage: Arc<BlockTypeStorage>,
-    pub texture_dictionary: Arc<TextureIndexDictionary>,
+    pub texture_index_dictionary: Arc<TextureIndexDictionary>,
     pub material_storage: Arc<MaterialStorage>,
 }

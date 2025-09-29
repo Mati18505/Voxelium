@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use bevy::{
-    asset::RenderAssetUsages, color::palettes::css::WHITE, pbr::wireframe::{WireframeConfig, WireframePlugin}, prelude::*, reflect::TypeData, render::{
+    asset::RenderAssetUsages, color::palettes::css::WHITE, ecs::system::command::unregister_system, pbr::wireframe::{WireframeConfig, WireframePlugin}, prelude::*, reflect::TypeData, render::{
         render_resource::{Extent3d, TextureDimension, TextureFormat}, settings::{RenderCreation, WgpuFeatures, WgpuSettings}, *
     }
 };
@@ -25,7 +25,7 @@ use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
 use crate::{
     bevy_render::{ColoredCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
-        BevyBlockTypeStorageResource, MaterialHandle, MaterialStorage, MaterialsDictionary, RenderDescDictAssetLoader, RenderDescDictAsset, RenderDescDictionary, TextureIndexDictionary, TextureIndexDictionaryAsset
+        BevyBlockTypeStorageResource, MaterialHandle, MaterialStorage, MaterialsDictionary, RenderDescDictAsset, RenderDescDictAssetLoader, RenderDescDictionary, TextureAsset, TextureDictAsset, TextureDictAssetLoader, TextureDictionary, TextureIndexDictionary
     },
     controller::ActionType,
     gui::GUIPlugin,
@@ -59,7 +59,6 @@ fn main() {
                     ..default()
                 }),
             WireframePlugin::default(),
-            YamlAssetPlugin::<TextureIndexDictionaryAsset>::new(&["texture_array.yaml"]),
             JsonAssetPlugin::<BevyBlockTypeStorageResource>::new(&["blocks.json"]),
             ControllerPlugin,
             VoxelRenderPlugin,
@@ -75,6 +74,8 @@ fn main() {
         .init_asset::<RenderDescDictAsset>()
         .init_asset_loader::<MaterialsDictAssetLoader>()
         .init_asset::<MaterialsDictAsset>()
+        .init_asset_loader::<TextureDictAssetLoader>()
+        .init_asset::<TextureDictAsset>()
         .init_asset::<BevyBlockTypeStorageResource>()
         .init_state::<AppStates>()
         .add_loading_state(
@@ -97,8 +98,8 @@ struct VoxelAssets {
     render_desc_storage_res: Handle<RenderDescDictAsset>,
     #[asset(key = "opaque")]
     opaque_texture: Handle<Image>,
-    #[asset(path = "opaque.texture_array.yaml")]
-    texture_config: Handle<TextureIndexDictionaryAsset>,
+    #[asset(path = "global.textures.yaml")]
+    texture_dict_asset: Handle<TextureDictAsset>,
     #[asset(path = "global.blocks.json")]
     server_blocks: Handle<BevyBlockTypeStorageResource>,
     #[asset(path = "textures/palette.png")]
@@ -112,7 +113,7 @@ fn create_resources(
     mut textured_materials: ResMut<Assets<TexturedCubeMaterial>>,
     mut colored_materials: ResMut<Assets<ColoredCubeMaterial>>,
     mut textures: ResMut<Assets<Image>>,
-    mut texture_index_dict_asset: ResMut<Assets<TextureIndexDictionaryAsset>>,
+    mut texture_dict_asset: ResMut<Assets<TextureDictAsset>>,
     mut render_desc_dict_asset: ResMut<Assets<RenderDescDictAsset>>,
     mut materials_dict_asset: ResMut<Assets<MaterialsDictAsset>>,
     server_block_type_assets: Res<Assets<BevyBlockTypeStorageResource>>,
@@ -123,10 +124,12 @@ fn create_resources(
         .unwrap();
     let render_desc_dict: Arc<RenderDescDictionary> = Arc::new(render_desc_dict_asset.0);
 
-    let texture_dictionary_asset: TextureIndexDictionaryAsset = texture_index_dict_asset
-        .remove(&voxel_assets.texture_config)
+    let texture_dictionary_asset: TextureDictAsset = texture_dict_asset
+        .remove(&voxel_assets.texture_dict_asset)
         .unwrap();
-    let texture_dictionary: Arc<TextureIndexDictionary> = Arc::new(texture_dictionary_asset.into());
+    let texture_dictionary: Arc<TextureDictionary> = Arc::new(texture_dictionary_asset.into());
+
+    dbg!(&texture_dictionary);
 
     let server_block_type_storage_asset = server_block_type_assets
         .get(&voxel_assets.server_blocks)
@@ -142,7 +145,6 @@ fn create_resources(
 
     dbg!(&materials_dict);
 
-
     let color_palette = textures.get(&voxel_assets.color_palette).expect("Failed to load color palette.").to_owned();
     let color_palette = create_1d_color_palette(color_palette);
     let color_palette_handle = textures.add(color_palette);
@@ -150,14 +152,22 @@ fn create_resources(
     let material_storage = create_material_storage(
         &mut textured_materials,
         &mut colored_materials,
+        &materials_dict,
         voxel_assets.opaque_texture.clone(),
         color_palette_handle.clone(),
     );
 
+    // TODO: make this flexible.
+    let texture_index_dictionary: &TextureIndexDictionary = match texture_dictionary.get(&"opaque".to_string()).unwrap() {
+        TextureAsset::TextureArray { data } => &data.textures,
+        TextureAsset::Palette { data } => unimplemented!(),
+    };
+    let texture_index_dictionary = Arc::new(texture_index_dictionary.clone());
+
     commands.insert_resource(GameResources {
         render_desc_dict,
         server_block_type_storage,
-        texture_dictionary,
+        texture_index_dictionary,
         material_storage,
     });
 
@@ -183,6 +193,7 @@ fn create_1d_color_palette(color_palette_2d: Image) -> Image {
 fn create_material_storage(
     textured_materials: &mut ResMut<Assets<TexturedCubeMaterial>>,
     colored_materials: &mut ResMut<Assets<ColoredCubeMaterial>>,
+    materials_dict: &Arc<MaterialsDictionary>,
     opaque_texture: Handle<Image>,
     color_palette: Handle<Image>,
 ) -> Arc<MaterialStorage> {
