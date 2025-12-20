@@ -163,16 +163,19 @@ fn create_resources(
     let color_palette = create_1d_color_palette(color_palette);
     let color_palette_handle = textures.add(color_palette);
 
+    let result = texture_dictionary.compile(asset_server);
+    dbg!(&result);
+
+    let maybe_opaque_id = result.name_to_id.get(&"opaque".to_string());
+    let maybe_opaque = result.id_to_handle.get_by_id(*maybe_opaque_id.unwrap() as usize);
+
     let material_storage = create_material_storage(
         &mut textured_materials,
         &mut colored_materials,
         &materials_dict,
-        voxel_assets.opaque_texture.clone(),
+        maybe_opaque.unwrap().clone(),
         color_palette_handle.clone(),
     );
-
-    let result = texture_dictionary.compile(asset_server);
-    dbg!(result);
 
     // TODO: make this flexible.
     let texture_index_dictionary: &TextureIndexDictionary =

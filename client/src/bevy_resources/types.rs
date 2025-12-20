@@ -50,8 +50,8 @@ impl RenderDescDictionary {
     
 #[derive(Debug, Default)]
 pub struct TextureDictionaryCompilationResult {
-    name_to_id: Dictionary<TextureName, TextureId>,
-    id_to_handle: TextureIdStorage,
+    pub name_to_id: Dictionary<TextureName, TextureId>,
+    pub id_to_handle: TextureIdStorage,
 }
 
 impl TextureDictionary {
