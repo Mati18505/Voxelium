@@ -9,7 +9,8 @@ use bevy::{
 };
 
 use crate::bevy_resources::{
-    BlockTypeName, RenderData, RenderDesc, RenderDescDictionary, TexturedBlockTypeBuilder, render_desc
+    render_desc, BlockTypeName, RenderData, RenderDesc, RenderDescDictionary,
+    TexturedBlockTypeBuilder,
 };
 
 #[derive(Debug, bevy::asset::Asset, bevy::reflect::TypePath, Clone)]
@@ -76,9 +77,9 @@ impl AssetLoader for RenderDescDictAssetLoader {
             }
             .to_owned();
             let type_name: String = match block.get("type") {
-                Some(v) => v.as_str().ok_or(InvalidConfig(
-                    "type parameter should be string".to_string(),
-                ))?,
+                Some(v) => v
+                    .as_str()
+                    .ok_or(InvalidConfig("type parameter should be string".to_string()))?,
                 None => "textured",
             }
             .to_owned();
@@ -117,8 +118,7 @@ impl AssetLoader for RenderDescDictAssetLoader {
 
             let render_desc: RenderDesc = match type_name.as_str() {
                 "textured" => {
-                    let mut builder =
-                        TexturedBlockTypeBuilder::new().render_data(render_data);
+                    let mut builder = TexturedBlockTypeBuilder::new().render_data(render_data);
 
                     let textures = block.get("textures").ok_or(InvalidConfig(
                         "default block_type should have textures".to_string(),
@@ -143,14 +143,12 @@ impl AssetLoader for RenderDescDictAssetLoader {
                     Ok(render_desc)
                 }
 
-                _ => Err(InvalidConfig(format!(
-                    "unsupported type {type_name}"
-                ))),
+                _ => Err(InvalidConfig(format!("unsupported type {type_name}"))),
             }?;
 
             render_descriptions.insert(block_type_name, render_desc);
         }
-        
+
         let render_desc_dict = RenderDescDictionary::new(render_descriptions);
 
         Ok(RenderDescDictAsset(render_desc_dict))

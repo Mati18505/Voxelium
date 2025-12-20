@@ -5,9 +5,7 @@ pub struct Storage<V> {
 
 impl<V> Storage<V> {
     pub fn new(values: Vec<V>) -> Storage<V> {
-        Storage {
-            storage: values,
-        }
+        Storage { storage: values }
     }
 
     pub fn add(&mut self, v: V) {

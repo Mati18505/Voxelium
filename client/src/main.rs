@@ -1,16 +1,24 @@
 use std::sync::Arc;
 
 use bevy::{
-    asset::RenderAssetUsages, color::palettes::css::WHITE, ecs::system::command::unregister_system, pbr::wireframe::{WireframeConfig, WireframePlugin}, prelude::*, reflect::TypeData, render::{
-        render_resource::{Extent3d, TextureDimension, TextureFormat}, settings::{RenderCreation, WgpuFeatures, WgpuSettings}, *
-    }
+    asset::RenderAssetUsages,
+    color::palettes::css::WHITE,
+    ecs::system::command::unregister_system,
+    pbr::wireframe::{WireframeConfig, WireframePlugin},
+    prelude::*,
+    reflect::TypeData,
+    render::{
+        render_resource::{Extent3d, TextureDimension, TextureFormat},
+        settings::{RenderCreation, WgpuFeatures, WgpuSettings},
+        *,
+    },
 };
 use bevy_asset_loader::prelude::*;
 use bevy_common_assets::json::JsonAssetPlugin;
 use bevy_common_assets::yaml::YamlAssetPlugin;
 
 use bevy_render::VoxelRenderPlugin;
-use bevy_resources::{MaterialsDictAssetLoader, MaterialsDictAsset};
+use bevy_resources::{MaterialsDictAsset, MaterialsDictAssetLoader};
 use bevy_types::{AppStates, GameResources};
 use cgmath::dot;
 use chunk_mesh_builder::*;
@@ -25,11 +33,13 @@ use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
 use crate::{
     bevy_render::{ColoredCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
-        BevyBlockTypeStorageResource, MaterialHandle, MaterialStorage, MaterialsDictionary, RenderDescDictAsset, RenderDescDictAssetLoader, RenderDescDictionary, TextureAsset, TextureDictAsset, TextureDictAssetLoader, TextureDictionary, TextureIndexDictionary
+        BevyBlockTypeStorageResource, MaterialHandle, MaterialStorage, MaterialsDictionary,
+        RenderDescDictAsset, RenderDescDictAssetLoader, RenderDescDictionary, TextureAsset,
+        TextureDictAsset, TextureDictAssetLoader, TextureDictionary, TextureIndexDictionary,
     },
     controller::ActionType,
     gui::GUIPlugin,
-    orchestrator::{OrchestratorPlugin, utils::raycast_from_controller},
+    orchestrator::{utils::raycast_from_controller, OrchestratorPlugin},
 };
 
 mod bevy_render;
@@ -145,7 +155,10 @@ fn create_resources(
 
     dbg!(&materials_dict);
 
-    let color_palette = textures.get(&voxel_assets.color_palette).expect("Failed to load color palette.").to_owned();
+    let color_palette = textures
+        .get(&voxel_assets.color_palette)
+        .expect("Failed to load color palette.")
+        .to_owned();
     let color_palette = create_1d_color_palette(color_palette);
     let color_palette_handle = textures.add(color_palette);
 
@@ -158,10 +171,11 @@ fn create_resources(
     );
 
     // TODO: make this flexible.
-    let texture_index_dictionary: &TextureIndexDictionary = match texture_dictionary.get(&"opaque".to_string()).unwrap() {
-        TextureAsset::TextureArray { data } => &data.textures,
-        TextureAsset::Palette { data } => unimplemented!(),
-    };
+    let texture_index_dictionary: &TextureIndexDictionary =
+        match texture_dictionary.get(&"opaque".to_string()).unwrap() {
+            TextureAsset::TextureArray { data } => &data.textures,
+            TextureAsset::Palette { data } => unimplemented!(),
+        };
     let texture_index_dictionary = Arc::new(texture_index_dictionary.clone());
 
     commands.insert_resource(GameResources {
@@ -187,7 +201,13 @@ fn create_1d_color_palette(color_palette_2d: Image) -> Image {
     let data = color_palette_2d.data.unwrap();
     let format = color_palette_2d.texture_descriptor.format;
 
-    Image::new(extend, TextureDimension::D1, data, format, RenderAssetUsages::default())
+    Image::new(
+        extend,
+        TextureDimension::D1,
+        data,
+        format,
+        RenderAssetUsages::default(),
+    )
 }
 
 fn create_material_storage(
@@ -204,9 +224,7 @@ fn create_material_storage(
     };
     let textured_mat_handle = textured_materials.add(textured_mat);
 
-    let colored_mat = ColoredCubeMaterial {
-        color_palette,
-    };
+    let colored_mat = ColoredCubeMaterial { color_palette };
     let colored_mat_handle = colored_materials.add(colored_mat);
 
     material_storage.add(MaterialHandle::TexturedCube(textured_mat_handle));

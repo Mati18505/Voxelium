@@ -3,7 +3,10 @@ use cgmath::Vector3;
 use std::sync::Arc;
 
 use super::{ChunkMesher, MesherOutput, MesherWarning};
-use crate::{bevy_resources::RenderShapeStorage, chunk_mesh_builder::{ChunkMesh, LayerMesh, RenderShape}};
+use crate::{
+    bevy_resources::RenderShapeStorage,
+    chunk_mesh_builder::{ChunkMesh, LayerMesh, RenderShape},
+};
 use shared::entities::*;
 
 #[derive(Debug)]
@@ -25,9 +28,7 @@ impl ChunkMesher for NaiveMesher {
 
         for (index, block_id) in block_storage.iter().enumerate() {
             let pos = BlockInChunkPos::from_index(index);
-            let result = self
-                .render_shape_storage
-                .get_by_id(*block_id as usize);
+            let result = self.render_shape_storage.get_by_id(*block_id as usize);
 
             match result {
                 Some(render_shape) => {

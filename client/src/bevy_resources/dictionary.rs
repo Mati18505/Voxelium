@@ -9,9 +9,7 @@ pub struct Dictionary<K: Hash + Eq, V> {
 
 impl<K: Hash + Eq, V> Dictionary<K, V> {
     pub fn new(values: HashMap<K, V>) -> Dictionary<K, V> {
-        Dictionary {
-            dictionary: values,
-        }
+        Dictionary { dictionary: values }
     }
 
     pub fn set(&mut self, k: K, v: V) {

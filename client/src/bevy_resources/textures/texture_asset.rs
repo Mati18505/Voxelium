@@ -2,12 +2,8 @@ use crate::bevy_resources::TextureIndexDictionary;
 
 #[derive(Debug)]
 pub enum TextureAsset {
-    TextureArray {
-        data: TextureArrayData,
-    },
-    Palette {
-        data: PaletteData,
-    },
+    TextureArray { data: TextureArrayData },
+    Palette { data: PaletteData },
 }
 
 #[derive(Debug, Default)]
