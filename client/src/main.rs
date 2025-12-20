@@ -128,6 +128,7 @@ fn create_resources(
     mut materials_dict_asset: ResMut<Assets<MaterialsDictAsset>>,
     server_block_type_assets: Res<Assets<BevyBlockTypeStorageResource>>,
     voxel_assets: Res<VoxelAssets>,
+    asset_server: Res<AssetServer>,
 ) {
     let render_desc_dict_asset: RenderDescDictAsset = render_desc_dict_asset
         .remove(&voxel_assets.render_desc_storage_res)
@@ -169,6 +170,9 @@ fn create_resources(
         voxel_assets.opaque_texture.clone(),
         color_palette_handle.clone(),
     );
+
+    let result = texture_dictionary.compile(asset_server);
+    dbg!(result);
 
     // TODO: make this flexible.
     let texture_index_dictionary: &TextureIndexDictionary =

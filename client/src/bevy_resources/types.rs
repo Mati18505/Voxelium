@@ -1,4 +1,4 @@
-use bevy::{asset::Handle, image::Image};
+use bevy::{asset::{AssetServer, Handle}, ecs::system::Res, image::Image};
 use shared::entities::name_to_block_id;
 
 use crate::{
@@ -47,27 +47,38 @@ impl RenderDescDictionary {
         RenderShapeStorage::new(render_shapes)
     }
 }
+    
+#[derive(Debug, Default)]
+pub struct TextureDictionaryCompilationResult {
+    name_to_id: Dictionary<TextureName, TextureId>,
+    id_to_handle: TextureIdStorage,
+}
 
-// impl TextureDictionary {
-//     pub fn compile(&self) -> TextureIdStorage {
-//         let mut compiled: Vec<(u8, RenderShape)> = self
-//             .iter()
-//             .map(|(block_type_name, render_desc)| {
-//                 let block_id = name_to_block_id(&block_type_name);
-//                 let compiled = render_desc.compile(texture_dictionary);
-//
-//                 (block_id, compiled)
-//             })
-//             .collect();
-//
-//         compiled.sort_by_key(|(id, _)| *id);
-//
-//         let render_shapes = compiled.into_iter().map(|(_, shape)| shape).collect();
-//
-//         RenderShapeStorage::new(render_shapes)
-//     }
-// }
-//
+impl TextureDictionary {
+    pub fn compile(
+        &self,
+        asset_server: Res<AssetServer>
+    ) -> TextureDictionaryCompilationResult {
+        let mut result = TextureDictionaryCompilationResult::default();
+
+        self
+            .iter()
+            .enumerate()
+            .for_each(|(id, (texture_name, texture_asset))| {
+                let path: &str = match texture_asset {
+                    TextureAsset::TextureArray { data } => &data.path,
+                    TextureAsset::Palette { data } => &data.path,
+                };
+                let loading = asset_server.load(path);
+
+                result.name_to_id.set(texture_name.to_string(), id as TextureId);
+                result.id_to_handle.add(loading);
+            });
+
+        result
+    }
+}
+
 // impl From<TextureDictionary> for Vec<(String, TextureId)> {
 //     fn from(resource: BevyBlockTypeStorageResource) -> Self {
 //         resource
