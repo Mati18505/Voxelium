@@ -31,7 +31,7 @@ impl Material for TexturedCubeMaterial {
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct ColoredCubeMaterial {
-    #[texture(0, dimension = "1d")]
+    #[texture(0, dimension = "2d")]
     #[sampler(1)]
     pub color_palette: Handle<Image>,
 }

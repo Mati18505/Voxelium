@@ -9,6 +9,7 @@ use crate::bevy_resources::{MaterialStorage, RenderDescDictionary, TextureIndexD
 pub enum AppStates {
     #[default]
     Loading,
+    Compile,
     InGame,
 }
 

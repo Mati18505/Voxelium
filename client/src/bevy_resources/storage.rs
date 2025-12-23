@@ -1,3 +1,5 @@
+use std::slice::Iter;
+
 #[derive(Debug, Clone, Default)]
 pub struct Storage<V> {
     storage: Vec<V>,
@@ -16,5 +18,9 @@ impl<V> Storage<V> {
 
     pub fn get_by_id(&self, id: usize) -> Option<&V> {
         self.storage.get(id)
+    }
+
+    pub fn iter(&self) -> Iter<'_, V> {
+        self.storage.iter()
     }
 }
