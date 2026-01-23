@@ -60,7 +60,7 @@ impl RenderDesc {
         texture_dictionary: &TextureIndexDictionary,
         material_name_to_id: &Dictionary<MaterialName, MaterialId>,
     ) -> RenderShape {
-        let material = *material_name_to_id.get(&render_data.material).unwrap();
+        let material = *material_name_to_id.get(&rd.material).unwrap();
 
         let render_data = VoxelRenderData {
             visible: rd.visible,
@@ -99,7 +99,7 @@ impl RenderDesc {
     }
 
     fn compile_colored_cube(rd: &RenderData, color_index: ColorIndex, material_name_to_id: &Dictionary<MaterialName, MaterialId>) -> RenderShape {
-        let material = *material_name_to_id.get(&render_data.material).unwrap();
+        let material = *material_name_to_id.get(&rd.material).unwrap();
 
         let render_data = VoxelRenderData {
             visible: rd.visible,
