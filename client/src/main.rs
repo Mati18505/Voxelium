@@ -33,7 +33,7 @@ use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
 use crate::{
     bevy_render::{ColoredCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
-        BevyBlockTypeStorageResource, MaterialHandle, MaterialStorage, MaterialsDictionary, RenderDescDictAsset, RenderDescDictAssetLoader, RenderDescDictionary, ResourcesPlugin, TextureAsset, TextureDictAsset, TextureDictAssetLoader, TextureDictionary, TextureIndexDictionary
+        BevyBlockTypeStorageAsset, MaterialHandle, MaterialStorage, MaterialsDictionary, RenderDescDictAsset, RenderDescDictAssetLoader, RenderDescDictionary, ResourcesPlugin, TextureAsset, TextureDictAsset, TextureDictAssetLoader, TextureDictionary, TextureIndexDictionary
     },
     controller::ActionType,
     gui::GUIPlugin,
@@ -67,7 +67,7 @@ fn main() {
                     ..default()
                 }),
             WireframePlugin::default(),
-            JsonAssetPlugin::<BevyBlockTypeStorageResource>::new(&["blocks.json"]),
+            JsonAssetPlugin::<BevyBlockTypeStorageAsset>::new(&["blocks.json"]),
             ControllerPlugin,
             VoxelRenderPlugin,
             ChunkManagerPlugin,
@@ -85,7 +85,7 @@ fn main() {
         .init_asset::<MaterialsDictAsset>()
         .init_asset_loader::<TextureDictAssetLoader>()
         .init_asset::<TextureDictAsset>()
-        .init_asset::<BevyBlockTypeStorageResource>()
+        .init_asset::<BevyBlockTypeStorageAsset>()
         .init_state::<AppStates>()
         .add_loading_state(
             LoadingState::new(AppStates::Loading)
@@ -107,7 +107,7 @@ struct VoxelAssets {
     #[asset(path = "global.textures.yaml")]
     texture_dict_asset: Handle<TextureDictAsset>,
     #[asset(path = "global.blocks.json")]
-    server_blocks: Handle<BevyBlockTypeStorageResource>,
+    server_blocks: Handle<BevyBlockTypeStorageAsset>,
     #[asset(path = "global.materials.json")]
     materials_dict_asset: Handle<MaterialsDictAsset>,
 }

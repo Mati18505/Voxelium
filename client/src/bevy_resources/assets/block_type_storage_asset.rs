@@ -8,12 +8,12 @@ struct BevyBlockTypeResource {
 }
 
 #[derive(serde::Deserialize, Asset, TypePath, Debug, Clone, PartialEq)]
-pub struct BevyBlockTypeStorageResource {
+pub struct BevyBlockTypeStorageAsset {
     blocks: Vec<BevyBlockTypeResource>,
 }
 
-impl From<BevyBlockTypeStorageResource> for BlockTypeStorage {
-    fn from(resource: BevyBlockTypeStorageResource) -> BlockTypeStorage {
+impl From<BevyBlockTypeStorageAsset> for BlockTypeStorage {
+    fn from(resource: BevyBlockTypeStorageAsset) -> BlockTypeStorage {
         let block_types = resource
             .blocks
             .into_iter()
@@ -24,8 +24,8 @@ impl From<BevyBlockTypeStorageResource> for BlockTypeStorage {
     }
 }
 
-impl From<BevyBlockTypeStorageResource> for Vec<(String, BlockID)> {
-    fn from(resource: BevyBlockTypeStorageResource) -> Self {
+impl From<BevyBlockTypeStorageAsset> for Vec<(String, BlockID)> {
+    fn from(resource: BevyBlockTypeStorageAsset) -> Self {
         resource
             .blocks
             .into_iter()

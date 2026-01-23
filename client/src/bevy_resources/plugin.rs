@@ -3,7 +3,7 @@ use std::sync::Arc;
 use bevy::prelude::*;
 use shared::entities::*;
 
-use crate::{VoxelAssets, bevy_render::{ColoredCubeMaterial, TexturedCubeMaterial}, bevy_resources::{BevyBlockTypeStorageResource, MaterialHandle, MaterialStorage, MaterialsDictAsset, MaterialsDictionary, RenderDescDictAsset, RenderDescDictionary, TextureAsset, TextureDictAsset, TextureDictionary, TextureDictionaryCompilationResult, TextureIdStorage, TextureIndexDictionary}, bevy_types::{AppStates, GameResources}, orchestrator};
+use crate::{VoxelAssets, bevy_render::{ColoredCubeMaterial, TexturedCubeMaterial}, bevy_resources::{BevyBlockTypeStorageAsset, MaterialHandle, MaterialStorage, MaterialsDictAsset, MaterialsDictionary, RenderDescDictAsset, RenderDescDictionary, TextureAsset, TextureDictAsset, TextureDictionary, TextureDictionaryCompilationResult, TextureIdStorage, TextureIndexDictionary}, bevy_types::{AppStates, GameResources}, orchestrator};
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
 enum ResourcesCompilingState {
@@ -63,7 +63,7 @@ fn compile_rest(
     mut texture_dict_asset: ResMut<Assets<TextureDictAsset>>,
     mut render_desc_dict_asset: ResMut<Assets<RenderDescDictAsset>>,
     mut materials_dict_asset: ResMut<Assets<MaterialsDictAsset>>,
-    server_block_type_assets: Res<Assets<BevyBlockTypeStorageResource>>,
+    server_block_type_assets: Res<Assets<BevyBlockTypeStorageAsset>>,
     voxel_assets: Res<VoxelAssets>,
     asset_server: Res<AssetServer>,
     mut next_state: ResMut<NextState<AppStates>>,
