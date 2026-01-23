@@ -23,7 +23,7 @@ impl VoxelRenderData {
 }
 
 /// Stores rendering data of particular BlockType.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum RenderShape {
     TexturedCube {
         render_data: VoxelRenderData,

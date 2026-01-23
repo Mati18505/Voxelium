@@ -1,11 +1,10 @@
-use bevy::{asset::{AssetServer, Handle}, ecs::system::Res, image::Image};
+use bevy::{asset::{AssetServer, Assets, Handle}, ecs::system::{Res, ResMut}, image::Image};
 use shared::entities::name_to_block_id;
 
 use crate::{
-    bevy_resources::{
-        Dictionary, MaterialAsset, MaterialHandle, RenderDesc, Storage, TextureAsset,
-    },
-    chunk_mesh_builder::{RenderShape, TextureIndex},
+    bevy_render::{ColoredCubeMaterial, TexturedCubeMaterial}, bevy_resources::{
+        ColoredCubeMaterialData, Dictionary, MaterialAsset, MaterialHandle, RenderDesc, Storage, TextureAsset, TexturedCubeMaterialData
+    }, chunk_mesh_builder::{MaterialId, RenderShape, TextureIndex}
 };
 
 pub type MaterialName = String;
@@ -29,12 +28,12 @@ pub type TextureIdStorage = Storage<Handle<Image>>;
 impl RenderDescDictionary {
     /// Creates [`RenderShapeStorage`] from [`RenderDescDictionary`], by compiling each [`RenderShape`] from [`RenderDesc`].
     /// Items in `RenderShapeStorage` are in order defined by `block_registry`.
-    pub fn compile(&self, texture_dictionary: &TextureIndexDictionary) -> RenderShapeStorage {
+    pub fn compile(&self, texture_dictionary: &TextureIndexDictionary, material_name_to_id: &Dictionary<MaterialName, MaterialId>) -> RenderShapeStorage {
         let mut compiled: Vec<(u8, RenderShape)> = self
             .iter()
             .map(|(block_type_name, render_desc)| {
                 let block_id = name_to_block_id(&block_type_name);
-                let compiled = render_desc.compile(texture_dictionary);
+                let compiled = render_desc.compile(texture_dictionary, material_name_to_id);
 
                 (block_id, compiled)
             })
@@ -77,6 +76,89 @@ impl TextureDictionary {
 
         result
     }
+}
+
+#[derive(Debug)]
+pub struct MaterialsDictionaryCompilationResult {
+    pub name_to_id: Dictionary<MaterialName, MaterialId>,
+    pub id_to_handle: MaterialStorage,
+}
+
+impl Default for MaterialsDictionaryCompilationResult {
+    fn default() -> Self {
+        Self { name_to_id: Default::default(), id_to_handle: MaterialStorage::new(Vec::new()) }
+    }
+}
+
+impl MaterialsDictionary {
+    pub fn compile(
+        &self,
+        mut textures: &mut ResMut<Assets<Image>>,
+        texture_assets: &TextureDictionary,
+        compiled_textures: &TextureDictionaryCompilationResult,
+        textured_materials: &mut ResMut<Assets<TexturedCubeMaterial>>,
+        colored_materials: &mut ResMut<Assets<ColoredCubeMaterial>>,
+        asset_server: Res<AssetServer>,
+    ) -> MaterialsDictionaryCompilationResult {
+        let mut result = MaterialsDictionaryCompilationResult::default();
+        self
+            .iter()
+            .enumerate()
+            .for_each(|(id, (material_name, material_asset))| {
+                let texture_name: &String = match material_asset {
+                    MaterialAsset::TexturedCube { data } => &data.texture_array_name,
+                    MaterialAsset::ColoredCube { data } => &data.palette_name
+                };
+                let texture_id = compiled_textures.name_to_id.get(texture_name).unwrap();
+                let texture_handle = compiled_textures.id_to_handle.get_by_id(*texture_id as usize).unwrap().clone();
+
+                let material_handle = match material_asset {
+                    MaterialAsset::TexturedCube { data } => {
+                        let textured_mat = TexturedCubeMaterial {
+                            array_texture: texture_handle.clone(),
+                        };
+
+                        let texture_index_dictionary: &TextureIndexDictionary =
+                            match texture_assets.get(texture_name).unwrap() {
+                                TextureAsset::TextureArray { data } => &data.textures,
+                                TextureAsset::Palette { data } => unimplemented!(),
+                            };
+
+                        let layers = texture_index_dictionary.iter().len();
+
+                        let texture = textures.get(&texture_handle).unwrap();
+
+                        let array_texture = create_array_texture(layers as u32, texture_handle, &mut textures);
+
+                        MaterialHandle::TexturedCube(textured_materials.add(textured_mat))
+                    } 
+                    MaterialAsset::ColoredCube { data } => {
+                        let colored_mat = ColoredCubeMaterial {
+                            color_palette: texture_handle,
+                        };
+                        MaterialHandle::ColoredCube(colored_materials.add(colored_mat))
+                    } 
+                };
+
+                result.name_to_id.set(material_name.to_string(), id as MaterialId);
+                result.id_to_handle.add(material_handle);
+            });
+
+        result
+    }
+}
+
+fn create_array_texture(
+    layers: u32,
+    texture_handle: Handle<Image>,
+    mut images: &mut ResMut<Assets<Image>>,
+) -> Handle<Image> {
+    dbg!(layers);
+
+    let image = images.get_mut(&texture_handle).unwrap();
+    image.reinterpret_stacked_2d_as_array(layers);
+
+    texture_handle
 }
 
 // impl From<TextureDictionary> for Vec<(String, TextureId)> {

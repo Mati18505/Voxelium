@@ -102,54 +102,35 @@ fn compile_rest(
             TextureAsset::TextureArray { data } => &data.textures,
             TextureAsset::Palette { data } => unimplemented!(),
         };
-    let texture_index_dictionary = Arc::new(texture_index_dictionary.clone());
 
-    let opaque_array = create_array_texture(texture_index_dictionary.iter().len() as u32, maybe_opaque.unwrap().clone(), textures);
-
-    let maybe_palette_id = loaded_textures.textures.name_to_id.get(&"default".to_string());
-    let maybe_palette = loaded_textures.textures.id_to_handle.get_by_id(*maybe_palette_id.unwrap() as usize);
-
-    let material_storage = create_material_storage(
+    let material_compilation_result = materials_dict.compile(
+        &mut textures,
+        &texture_dictionary,
+        &loaded_textures.textures,
         &mut textured_materials,
         &mut colored_materials,
-        &materials_dict,
-        opaque_array,
-        maybe_palette.unwrap().clone()
+        asset_server
     );
+
+    let texture_index_dictionary = Arc::new(texture_index_dictionary.clone());
+    dbg!(&material_compilation_result);
+    let material_storage = Arc::new(material_compilation_result.id_to_handle);
+
+    init_block_names(server_block_type_storage_asset.into());
+
+    let render_shape_storage = Arc::new(render_desc_dict.compile(&texture_index_dictionary, &material_compilation_result.name_to_id));
 
     commands.insert_resource(GameResources {
         render_desc_dict,
         server_block_type_storage,
         texture_index_dictionary,
         material_storage,
+        render_shape_storage,
     });
 
-    init_block_names(server_block_type_storage_asset.into());
     next_state.set(AppStates::InGame);
 }
 
-fn create_material_storage(
-    textured_materials: &mut ResMut<Assets<TexturedCubeMaterial>>,
-    colored_materials: &mut ResMut<Assets<ColoredCubeMaterial>>,
-    materials_dict: &Arc<MaterialsDictionary>,
-    opaque_texture: Handle<Image>,
-    color_palette: Handle<Image>,
-) -> Arc<MaterialStorage> {
-    let mut material_storage = MaterialStorage::new(Vec::default());
-
-    let textured_mat = TexturedCubeMaterial {
-        array_texture: opaque_texture,
-    };
-    let textured_mat_handle = textured_materials.add(textured_mat);
-
-    let colored_mat = ColoredCubeMaterial { color_palette };
-    let colored_mat_handle = colored_materials.add(colored_mat);
-
-    material_storage.add(MaterialHandle::TexturedCube(textured_mat_handle));
-    material_storage.add(MaterialHandle::ColoredCube(colored_mat_handle));
-
-    Arc::new(material_storage)
-}
 
 #[derive(Resource, Default)]
 struct SourceTextures {
@@ -172,15 +153,4 @@ fn check_all_textures_loaded(
     }
 
     next_state.set(ResourcesCompilingState::CompilingRest);
-}
-
-fn create_array_texture(
-    layers: u32,
-    texture_handle: Handle<Image>,
-    mut images: ResMut<Assets<Image>>,
-) -> Handle<Image> {
-    let image = images.get_mut(&texture_handle).unwrap();
-    image.reinterpret_stacked_2d_as_array(layers);
-
-    texture_handle
 }

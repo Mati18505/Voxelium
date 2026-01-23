@@ -4,8 +4,8 @@ use std::{collections::HashMap, default};
 use shared::entities::{BlockSide, VoxelColor};
 
 use crate::{
-    bevy_resources::{MaterialName, TextureIndexDictionary, TextureName},
-    chunk_mesh_builder::{ColorIndex, RenderShape, TextureIndex, VoxelRenderData},
+    bevy_resources::{Dictionary, MaterialName, TextureIndexDictionary, TextureName},
+    chunk_mesh_builder::{ColorIndex, MaterialId, RenderShape, TextureIndex, VoxelRenderData},
 };
 
 #[derive(Debug, Clone)]
@@ -39,16 +39,17 @@ pub enum RenderDesc {
 }
 
 impl RenderDesc {
-    pub fn compile(&self, texture_dictionary: &TextureIndexDictionary) -> RenderShape {
+    pub fn compile(&self, texture_dictionary: &TextureIndexDictionary, material_name_to_id: &Dictionary<MaterialName, MaterialId>) -> RenderShape {
+        // TODO: Better error (no such material) handling.
         match self {
             RenderDesc::TexturedCube {
                 render_data,
                 textured_cube_desc,
-            } => Self::compile_textured_cube(render_data, textured_cube_desc, texture_dictionary),
+            } => Self::compile_textured_cube(render_data, textured_cube_desc, texture_dictionary, material_name_to_id),
             RenderDesc::ColoredCube {
                 render_data,
                 color_index,
-            } => Self::compile_colored_cube(render_data, *color_index),
+            } => Self::compile_colored_cube(render_data, *color_index, material_name_to_id),
             RenderDesc::Invisible => RenderShape::Invisible,
         }
     }
@@ -57,12 +58,14 @@ impl RenderDesc {
         rd: &RenderData,
         desc: &TexturedCubeDesc,
         texture_dictionary: &TextureIndexDictionary,
+        material_name_to_id: &Dictionary<MaterialName, MaterialId>,
     ) -> RenderShape {
-        // TODO: get material from material dictionary
+        let material = *material_name_to_id.get(&render_data.material).unwrap();
+
         let render_data = VoxelRenderData {
             visible: rd.visible,
             translucent: rd.translucent,
-            material: 0,
+            material,
         };
 
         let mut textures = HashMap::<BlockSide, TextureIndex>::default();
@@ -95,11 +98,13 @@ impl RenderDesc {
         }
     }
 
-    fn compile_colored_cube(rd: &RenderData, color_index: ColorIndex) -> RenderShape {
+    fn compile_colored_cube(rd: &RenderData, color_index: ColorIndex, material_name_to_id: &Dictionary<MaterialName, MaterialId>) -> RenderShape {
+        let material = *material_name_to_id.get(&render_data.material).unwrap();
+
         let render_data = VoxelRenderData {
             visible: rd.visible,
             translucent: rd.translucent,
-            material: 1,
+            material,
         };
 
         RenderShape::ColoredCube {

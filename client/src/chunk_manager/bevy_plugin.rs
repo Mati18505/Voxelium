@@ -40,10 +40,7 @@ pub struct ChunkManagerResources {
 }
 
 fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>) {
-    let render_shapes = game_resources
-        .render_desc_dict
-        .compile(&game_resources.texture_index_dictionary);
-    let voxel_mesher = NaiveMesher::new(render_shapes);
+    let voxel_mesher = NaiveMesher::new((*game_resources.render_shape_storage).clone());
 
     let inner_builder = Box::new(AsyncChunkBuilder::new(Arc::new(voxel_mesher)));
     let chunk_builder = Box::new(VersionedChunkBuilder::<()>::new(inner_builder));
