@@ -51,6 +51,16 @@
 			"type": "colored",
 			"material": "colored",
 			"color_index": 1
+		},
+		{
+			"block_type": "leaves",
+			"material": "translucent",
+			"textures": {
+				"side": "sandstone",
+				"top": "sandstone_top",
+				"bottom": "sandstone_bottom"
+			},
+			"translucent": true
 		}
 	]
 }

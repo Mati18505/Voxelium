@@ -1,4 +1,5 @@
 use bevy::log::warn;
+use thiserror::Error;
 use std::{collections::HashMap, default};
 
 use shared::entities::{BlockSide, VoxelColor};
@@ -38,9 +39,14 @@ pub enum RenderDesc {
     Invisible,
 }
 
+#[derive(Debug, Clone, Error)]
+pub enum RenderDescCompilationError {
+    #[error("No such material: {0}")]
+    NoSuchMaterial(String),
+}
+
 impl RenderDesc {
-    pub fn compile(&self, texture_dictionary: &TextureIndexDictionary, material_name_to_id: &Dictionary<MaterialName, MaterialId>) -> RenderShape {
-        // TODO: Better error (no such material) handling.
+    pub fn compile(&self, texture_dictionary: &TextureIndexDictionary, material_name_to_id: &Dictionary<MaterialName, MaterialId>) -> Result<RenderShape, RenderDescCompilationError> {
         match self {
             RenderDesc::TexturedCube {
                 render_data,
@@ -50,7 +56,7 @@ impl RenderDesc {
                 render_data,
                 color_index,
             } => Self::compile_colored_cube(render_data, *color_index, material_name_to_id),
-            RenderDesc::Invisible => RenderShape::Invisible,
+            RenderDesc::Invisible => Ok(RenderShape::Invisible),
         }
     }
 
@@ -59,8 +65,10 @@ impl RenderDesc {
         desc: &TexturedCubeDesc,
         texture_dictionary: &TextureIndexDictionary,
         material_name_to_id: &Dictionary<MaterialName, MaterialId>,
-    ) -> RenderShape {
-        let material = *material_name_to_id.get(&rd.material).unwrap();
+    ) -> Result<RenderShape, RenderDescCompilationError> {
+        use RenderDescCompilationError::*;
+
+        let material = *material_name_to_id.get(&rd.material).ok_or(NoSuchMaterial(rd.material.to_string()))?;
 
         let render_data = VoxelRenderData {
             visible: rd.visible,
@@ -82,7 +90,7 @@ impl RenderDesc {
         let side_texture_index =
             Self::get_texture_index_from_name(&desc.side_texture, texture_dictionary);
 
-        RenderShape::create_textured_cube(render_data, side_texture_index, textures)
+        Ok(RenderShape::create_textured_cube(render_data, side_texture_index, textures))
     }
 
     fn get_texture_index_from_name(
@@ -98,8 +106,10 @@ impl RenderDesc {
         }
     }
 
-    fn compile_colored_cube(rd: &RenderData, color_index: ColorIndex, material_name_to_id: &Dictionary<MaterialName, MaterialId>) -> RenderShape {
-        let material = *material_name_to_id.get(&rd.material).unwrap();
+    fn compile_colored_cube(rd: &RenderData, color_index: ColorIndex, material_name_to_id: &Dictionary<MaterialName, MaterialId>) -> Result<RenderShape, RenderDescCompilationError> {
+        use RenderDescCompilationError::*;
+
+        let material = *material_name_to_id.get(&rd.material).ok_or(NoSuchMaterial(rd.material.to_string()))?;
 
         let render_data = VoxelRenderData {
             visible: rd.visible,
@@ -107,10 +117,10 @@ impl RenderDesc {
             material,
         };
 
-        RenderShape::ColoredCube {
+        Ok(RenderShape::ColoredCube {
             render_data,
             color_index,
-        }
+        })
     }
 }
 

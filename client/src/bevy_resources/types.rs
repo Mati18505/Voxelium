@@ -1,9 +1,10 @@
 use bevy::{asset::{AssetServer, Assets, Handle}, ecs::system::{Res, ResMut}, image::Image};
 use shared::entities::name_to_block_id;
+use thiserror::Error;
 
 use crate::{
     bevy_render::{ColoredCubeMaterial, TexturedCubeMaterial}, bevy_resources::{
-        ColoredCubeMaterialData, Dictionary, MaterialAsset, MaterialHandle, RenderDesc, Storage, TextureAsset, TexturedCubeMaterialData
+        ColoredCubeMaterialData, Dictionary, MaterialAsset, MaterialHandle, RenderDesc, RenderDescCompilationError, Storage, TextureAsset, TexturedCubeMaterialData
     }, chunk_mesh_builder::{MaterialId, RenderShape, TextureIndex}
 };
 
@@ -25,25 +26,45 @@ pub type MaterialStorage = Storage<MaterialHandle>;
 pub type RenderShapeStorage = Storage<RenderShape>;
 pub type TextureIdStorage = Storage<Handle<Image>>;
 
+#[derive(Debug, Error, Clone)]
+pub enum RenderDescDictionaryCompilationWarning {
+    #[error("Cannot compile block type: {0}, {1}")]
+    CannotCompile(BlockTypeName, RenderDescCompilationError),
+}
+
+#[derive(Debug, Clone)]
+pub struct RenderDescDictionaryCompilationOutput {
+    /// Generated output.
+    pub storage: RenderShapeStorage,
+    /// Non-fatal issues encountered during compilation.
+    pub warnings: Vec<RenderDescDictionaryCompilationWarning>,
+}
+
 impl RenderDescDictionary {
     /// Creates [`RenderShapeStorage`] from [`RenderDescDictionary`], by compiling each [`RenderShape`] from [`RenderDesc`].
     /// Items in `RenderShapeStorage` are in order defined by `block_registry`.
-    pub fn compile(&self, texture_dictionary: &TextureIndexDictionary, material_name_to_id: &Dictionary<MaterialName, MaterialId>) -> RenderShapeStorage {
-        let mut compiled: Vec<(u8, RenderShape)> = self
-            .iter()
-            .map(|(block_type_name, render_desc)| {
-                let block_id = name_to_block_id(&block_type_name);
-                let compiled = render_desc.compile(texture_dictionary, material_name_to_id);
+    pub fn compile(&self, texture_dictionary: &TextureIndexDictionary, material_name_to_id: &Dictionary<MaterialName, MaterialId>) -> RenderDescDictionaryCompilationOutput {
+        use RenderDescDictionaryCompilationWarning::*;
+        let mut warnings: Vec<RenderDescDictionaryCompilationWarning> = vec![];
 
-                (block_id, compiled)
-            })
-            .collect();
+        let mut compiled = Vec::new();
+
+        for (block_type_name, render_desc) in self.iter() {
+            let block_id = name_to_block_id(block_type_name);
+
+            match render_desc.compile(texture_dictionary, material_name_to_id) {
+                Ok(c) => compiled.push((block_id, c)),
+                Err(e) => warnings.push(CannotCompile(block_type_name.to_string(), e)),
+            }
+        }
 
         compiled.sort_by_key(|(id, _)| *id);
+        let storage = RenderShapeStorage::new(compiled.into_iter().map(|(_, shape)| shape).collect());
 
-        let render_shapes = compiled.into_iter().map(|(_, shape)| shape).collect();
-
-        RenderShapeStorage::new(render_shapes)
+        RenderDescDictionaryCompilationOutput {
+            storage,
+            warnings,
+        }
     }
 }
     

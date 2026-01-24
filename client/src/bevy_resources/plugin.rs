@@ -118,7 +118,12 @@ fn compile_rest(
 
     init_block_names(server_block_type_storage_asset.into());
 
-    let render_shape_storage = Arc::new(render_desc_dict.compile(&texture_index_dictionary, &material_compilation_result.name_to_id));
+    let compilation_out = render_desc_dict.compile(&texture_index_dictionary, &material_compilation_result.name_to_id);
+    let render_shape_storage = Arc::new(compilation_out.storage);
+    
+    for warning in compilation_out.warnings {
+        warn!("{warning}");
+    }
 
     commands.insert_resource(GameResources {
         render_desc_dict,

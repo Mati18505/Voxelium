@@ -70,7 +70,7 @@ impl TerrainGenerator {
             name_to_block_id("red")
         } else if world_y.abs() < generated_height {
             //self.noise.gen_range(4..5) as BlockID
-            name_to_block_id("green")
+            name_to_block_id("leaves")
         } else {
             name_to_block_id("air")
         }
