@@ -27,3 +27,5 @@ graph2.png
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/settings.json
+/client/assets/vox
+/.idea
