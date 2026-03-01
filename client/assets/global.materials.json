@@ -1,0 +1,14 @@
+{
+	"materials": [
+		{
+			"name": "default",
+			"type": "textured_cube",
+			"texture_array": "opaque"
+		},
+		{
+			"name": "colored",
+			"type": "colored_cube",
+			"palette": "default"
+		}
+    ]
+}

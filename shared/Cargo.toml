@@ -3,5 +3,9 @@ name = "shared"
 edition = "2021"
 
 [dependencies]
+bevy = { version = "0.16.0", features = ["dynamic_linking", "trace"] }
 cgmath = "0.18.0"
+once_cell = "1.21.3"
 rand = "0.9.1"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"

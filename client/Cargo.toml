@@ -4,11 +4,14 @@ edition = "2021"
 
 [dependencies]
 cgmath = "0.18.0"
-bevy = { version = "0.16.0", features = ["dynamic_linking"] }
+bevy = { version = "0.16.0", features = ["dynamic_linking", "trace"]}
 bevy_flycam = { git = 'https://github.com/kristoff3r/bevy_flycam/' }
+bevy_asset_loader = { git = 'https://github.com/NiklasEi/bevy_asset_loader/', branch = 'bevy_main', features=["standard_dynamic_assets", "2d"] }
 shared = { path = "../shared" }
-
-[profile.dev]
-opt-level = 0
-incremental = true
-debug = true
+thiserror = "2.0.12"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+bevy_common_assets = { version = "0.13.0", features = ["yaml", "json"] }
+crossbeam-channel = "0.5.15"
+rand = "0.9.1"
+yaml-rust2 = "0.10.4"

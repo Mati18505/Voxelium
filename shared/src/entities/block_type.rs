@@ -1,7 +1,7 @@
 #[derive(Debug, Clone, PartialEq)]
 pub struct BlockType {
-    name: String,
-    affect_raycast: bool,
+    pub name: String,
+    pub affect_raycast: bool,
 }
 
 impl BlockType {

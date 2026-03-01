@@ -20,6 +20,10 @@ impl BlockStorage {
         self.block_types[pos.index()]
     }
 
+    pub fn set_block(&mut self, pos: BlockInChunkPos, new_block: BlockID) {
+        self.block_types[pos.index()] = new_block;
+    }
+
     pub fn get_blocks(&self) -> &[BlockID] {
         &self.block_types
     }

@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy::reflect::TypePath;
 use bevy_common_assets::yaml::YamlAssetPlugin;
 
-#[derive(serde::Deserialize, bevy::asset::Asset, bevy::reflect::TypePath)]
+#[derive(serde::Deserialize, bevy::asset::Asset, bevy::reflect::TypePath, Debug)]
 pub struct Config {
     column_height: u32,
     render_distance: u32,
@@ -11,7 +11,6 @@ pub struct Config {
     block_ray_cast_increment: f32,
 
     world_scale: u32,
-    chunk_size: u32,
 } 
 
 impl Default for Config {
@@ -24,7 +23,6 @@ impl Default for Config {
             block_ray_cast_increment: 0.5,
             
             world_scale: 1,
-            chunk_size: 16,
         }
     }
 }

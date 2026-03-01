@@ -1,26 +1,54 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
-use bevy::prelude::*;
-use bevy::render::{
-    settings::{RenderCreation, WgpuSettings},
-    RenderPlugin,
-};
 use bevy::{
-    color::palettes::css::*,
+    asset::RenderAssetUsages,
+    color::palettes::css::WHITE,
+    ecs::system::command::unregister_system,
     pbr::wireframe::{WireframeConfig, WireframePlugin},
-    render::settings::WgpuFeatures,
+    prelude::*,
+    reflect::TypeData,
+    render::{
+        render_resource::{Extent3d, TextureDimension, TextureFormat},
+        settings::{RenderCreation, WgpuFeatures, WgpuSettings},
+        *,
+    },
 };
-use bevy_render::{BevyChunkEntity, BevyChunkMesh};
-use chunk_builder::*;
+use bevy_asset_loader::prelude::*;
+use bevy_common_assets::json::JsonAssetPlugin;
+use bevy_common_assets::yaml::YamlAssetPlugin;
+
+use bevy_render::VoxelRenderPlugin;
+use bevy_resources::{MaterialsDictAsset, MaterialsDictAssetLoader};
+use bevy_types::{AppStates, GameResources};
+use cgmath::dot;
+use chunk_mesh_builder::*;
 use controller::ControllerPlugin;
 use shared::{
-    chunk_loader::*,
-    entities::{world, BlockSide, BlockType, Chunk, ChunkPos},
+    entities::{init_block_names, name_to_block_id, BlockID, BlockPos, BlockTypeStorage},
+    physics::RaycastResult,
+};
+
+use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
+
+use crate::{
+    bevy_render::{ColoredCubeMaterial, TexturedCubeMaterial},
+    bevy_resources::{
+        BevyBlockTypeStorageAsset, MaterialHandle, MaterialStorage, MaterialsDictionary, RenderDescDictAsset, RenderDescDictAssetLoader, RenderDescDictionary, ResourcesPlugin, TextureAsset, TextureDictAsset, TextureDictAssetLoader, TextureDictionary, TextureIndexDictionary
+    },
+    controller::ActionType,
+    gui::GUIPlugin,
+    orchestrator::{OrchestratorPlugin, utils::raycast_from_controller},
 };
 
 mod bevy_render;
-mod chunk_builder;
+mod bevy_resources;
+mod bevy_types;
+mod chunk_manager;
+mod chunk_mesh_builder;
 mod controller;
+mod gui;
+mod orchestrator;
+mod voxel_edits;
 
 fn main() {
     App::new()
@@ -33,22 +61,62 @@ fn main() {
                         ..default()
                     }),
                     ..default()
+                })
+                .set(bevy::log::LogPlugin {
+                    // level: bevy::log::Level::TRACE,
+                    ..default()
                 }),
             WireframePlugin::default(),
+            JsonAssetPlugin::<BevyBlockTypeStorageAsset>::new(&["blocks.json"]),
             ControllerPlugin,
+            VoxelRenderPlugin,
+            ChunkManagerPlugin,
+            OrchestratorPlugin,
+            GUIPlugin,
+            ResourcesPlugin,
         ))
         .insert_resource(WireframeConfig {
-            global: true,
+            global: false,
             default_color: WHITE.into(),
         })
-        .add_systems(Startup, init_level)
+        .init_asset_loader::<RenderDescDictAssetLoader>()
+        .init_asset::<RenderDescDictAsset>()
+        .init_asset_loader::<MaterialsDictAssetLoader>()
+        .init_asset::<MaterialsDictAsset>()
+        .init_asset_loader::<TextureDictAssetLoader>()
+        .init_asset::<TextureDictAsset>()
+        .init_asset::<BevyBlockTypeStorageAsset>()
+        .init_state::<AppStates>()
+        .add_loading_state(
+            LoadingState::new(AppStates::Loading)
+                .continue_to_state(AppStates::Compile)
+                .with_dynamic_assets_file::<StandardDynamicAssetCollection>(
+                    "texture_array.assets.ron",
+                )
+                .load_collection::<VoxelAssets>(),
+        )
+        .add_systems(OnExit(AppStates::Compile), init_level)
+        .add_systems(Update, update.run_if(in_state(AppStates::InGame)))
         .run();
+}
+
+#[derive(AssetCollection, Resource)]
+struct VoxelAssets {
+    #[asset(path = "global.render_desc.json")]
+    render_desc_storage_res: Handle<RenderDescDictAsset>,
+    #[asset(path = "global.textures.yaml")]
+    texture_dict_asset: Handle<TextureDictAsset>,
+    #[asset(path = "global.blocks.json")]
+    server_blocks: Handle<BevyBlockTypeStorageAsset>,
+    #[asset(path = "global.materials.json")]
+    materials_dict_asset: Handle<MaterialsDictAsset>,
 }
 
 fn init_level(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut ambient_light: ResMut<AmbientLight>,
 ) {
     commands.spawn((
         Mesh3d(meshes.add(Plane3d::new(Vec3::Y, Vec2::splat(5.0)))),
@@ -57,44 +125,69 @@ fn init_level(
         GlobalTransform::default(),
     ));
 
+    ambient_light.color = Color::WHITE;
+    ambient_light.brightness = 100.0;
+
     commands.spawn((
         DirectionalLight { ..default() },
         Transform::from_xyz(11.0, 20.0, 4.0).looking_at(Vec3::ZERO, Vec3::Y),
         GlobalTransform::default(),
     ));
+}
 
-    let mut chunk_loader = ChunkLoader::default();
-    let mut world = world::World::new();
-    let pos = ChunkPos::new(0, 0, 0);
+fn update(
+    mut chunk_manager_resources: ResMut<ChunkManagerResources>,
+    game_resources: ResMut<GameResources>,
+    mut controller_ev: EventReader<controller::ActionEvent>,
+) {
+    for ev in controller_ev.read() {
+        let world = &chunk_manager_resources.chunk_manager.get_world().world;
+        let raycast_result = raycast_from_controller(
+            ev.controller_pos,
+            ev.controller_forward,
+            world,
+            &game_resources.server_block_type_storage,
+        );
 
-    world.add_chunk(pos, chunk_loader.load_chunk(pos));
+        if raycast_result.collide {
+            let block_action: BlockAction = match ev.action_type {
+                ActionType::LeftClick => destroy_block_action(raycast_result),
+                ActionType::RightClick => place_block_action(raycast_result),
+            };
 
-    if let Some(chunk) = world.get_chunk(pos) {
-        let mesh: BevyChunkMesh = build_chunk(chunk);
-        let chunk_entity = BevyChunkEntity::new(mesh, commands, meshes, materials);
+            if block_action.feasible {
+                voxel_edits::set_block_and_update_chunk(
+                    &mut chunk_manager_resources.chunk_manager,
+                    block_action.pos,
+                    block_action.new_block,
+                );
+            }
+        } else {
+            println!("Raycast don't collide.");
+        }
     }
 }
 
-fn build_chunk(chunk: &Chunk) -> BevyChunkMesh {
-    let air = BlockType::new("air", false);
-    let air = MeshBlockTypeBuilder::new(air).translucent(true).build();
-    let dirt = BlockType::new("dirt", true);
-    let dirt = MeshBlockTypeBuilder::new(dirt)
-        .visible(true)
-        .texture(BlockSide::Front, "dirt")
-        .build();
+struct BlockAction {
+    feasible: bool,
+    pos: BlockPos,
+    new_block: BlockID,
+}
 
-    let mut block_type_storage = BlockTypeStorage::new();
-    block_type_storage.set_block_type(0, air);
-    block_type_storage.set_block_type(1, dirt);
+fn destroy_block_action(raycast_result: RaycastResult) -> BlockAction {
+    BlockAction {
+        feasible: true,
+        pos: raycast_result.hitpoint.pos,
+        new_block: name_to_block_id("air"),
+    }
+}
 
-    let texture_dictionary = Rc::new(TextureDictionary::new());
-    let mut voxel_mesher = VoxelMesher::new(
-        chunk.get_block_storage().clone(),
-        Rc::new(block_type_storage),
-        texture_dictionary,
-    );
-    let chunk_mesh = voxel_mesher.create_mesh();
+fn place_block_action(raycast_result: RaycastResult) -> BlockAction {
+    let previous_block_id = raycast_result.step_before_hitpoint.block_id;
 
-    BevyChunkMesh::from(chunk_mesh.clone())
+    BlockAction {
+        feasible: previous_block_id == name_to_block_id("air"),
+        pos: raycast_result.step_before_hitpoint.pos,
+        new_block: name_to_block_id("wood"),
+    }
 }

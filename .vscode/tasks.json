@@ -1,0 +1,34 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run all checks",
+      "type": "shell",
+      "dependsOn": [
+        "Run tests",
+        "Run clippy",
+        "Check format"
+      ],
+      "dependsOrder": "parallel",
+      "command": "echo All checks complete",
+      "problemMatcher": [
+        "$rustc"
+      ]
+    },
+    {
+      "label": "Run tests",
+      "type": "shell",
+      "command": "cargo test --workspace --lib --bins --tests --benches"
+    },
+    {
+      "label": "Run clippy",
+      "type": "shell",
+      "command": "cargo clippy --workspace --all-targets --all-features -- -D warnings"
+    },
+    {
+      "label": "Check format",
+      "type": "shell",
+      "command": "cargo fmt --all -- --check"
+    }
+  ]
+}

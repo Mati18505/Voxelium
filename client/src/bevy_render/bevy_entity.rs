@@ -1,20 +1,22 @@
+use std::sync::Arc;
+
 use bevy::{
     asset::{Assets, Handle},
-    color::Color,
+    color,
     ecs::{
         entity::Entity,
         system::{Commands, ResMut},
     },
-    math::{Quat, Vec3},
-    pbr::{MeshMaterial3d, StandardMaterial},
+    image::Image,
+    log,
+    pbr::MeshMaterial3d,
     render::mesh::{Mesh, Mesh3d},
-    transform::components::Transform,
-    utils::default,
 };
 
 use super::BevyChunkMesh;
+use crate::bevy_resources::{MaterialHandle, MaterialStorage};
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct BevyChunkEntity {
     entities: Vec<Entity>,
 }
@@ -22,29 +24,29 @@ pub struct BevyChunkEntity {
 impl BevyChunkEntity {
     pub fn new(
         chunk_mesh: BevyChunkMesh,
-        mut commands: Commands,
-        mut meshes: ResMut<Assets<Mesh>>,
-        mut materials: ResMut<Assets<StandardMaterial>>,
+        commands: &mut Commands,
+        meshes: &mut ResMut<Assets<Mesh>>,
+        material_storage: Arc<MaterialStorage>,
     ) -> Self {
         let mut render_resource = BevyChunkEntity::default();
 
-        for (material_name, mesh) in chunk_mesh.layers {
+        for (material_id, mesh) in chunk_mesh.layers {
             let mesh_handle = meshes.add(mesh);
-            let material_handle = materials.add(StandardMaterial {
-                base_color: Color::srgb(0.396, 0.263, 0.129),
-                ..default()
-            });
-            let entity = commands
-                .spawn((
-                    Mesh3d(mesh_handle),
-                    MeshMaterial3d(material_handle),
-                    chunk_mesh.transform,
-                ))
-                .id();
 
-            render_resource.entities.push(entity);
+            if let Some(material) = material_storage.get_by_id(material_id as usize) {
+                let entity = material.spawn_entity(commands, mesh_handle, chunk_mesh.transform);
+                render_resource.entities.push(entity);
+            } else {
+                log::error!("Material {} not found!", material_id);
+            }
         }
 
         render_resource
+    }
+
+    pub fn cleanup(&self, commands: &mut Commands) {
+        for entity in self.entities.iter() {
+            commands.entity(*entity).despawn();
+        }
     }
 }
