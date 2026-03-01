@@ -15,3 +15,17 @@ Cargo.lock
 
 # texture packs
 *.tps
+
+.old
+generate-graphs.sh
+graph1.png
+graph2.png
+
+/.cargo/config.toml
+
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/settings.json
+/client/assets/vox
+/.idea
