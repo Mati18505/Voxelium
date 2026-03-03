@@ -1,6 +1,6 @@
 use bevy::log::warn;
-use thiserror::Error;
 use std::{collections::HashMap, default};
+use thiserror::Error;
 
 use shared::entities::{BlockSide, VoxelColor};
 
@@ -46,12 +46,21 @@ pub enum RenderDescCompilationError {
 }
 
 impl RenderDesc {
-    pub fn compile(&self, texture_dictionary: &TextureIndexDictionary, material_name_to_id: &Dictionary<MaterialName, MaterialId>) -> Result<RenderShape, RenderDescCompilationError> {
+    pub fn compile(
+        &self,
+        texture_dictionary: &TextureIndexDictionary,
+        material_name_to_id: &Dictionary<MaterialName, MaterialId>,
+    ) -> Result<RenderShape, RenderDescCompilationError> {
         match self {
             RenderDesc::TexturedCube {
                 render_data,
                 textured_cube_desc,
-            } => Self::compile_textured_cube(render_data, textured_cube_desc, texture_dictionary, material_name_to_id),
+            } => Self::compile_textured_cube(
+                render_data,
+                textured_cube_desc,
+                texture_dictionary,
+                material_name_to_id,
+            ),
             RenderDesc::ColoredCube {
                 render_data,
                 color_index,
@@ -68,7 +77,9 @@ impl RenderDesc {
     ) -> Result<RenderShape, RenderDescCompilationError> {
         use RenderDescCompilationError::*;
 
-        let material = *material_name_to_id.get(&rd.material).ok_or(NoSuchMaterial(rd.material.to_string()))?;
+        let material = *material_name_to_id
+            .get(&rd.material)
+            .ok_or(NoSuchMaterial(rd.material.to_string()))?;
 
         let render_data = VoxelRenderData {
             visible: rd.visible,
@@ -90,7 +101,11 @@ impl RenderDesc {
         let side_texture_index =
             Self::get_texture_index_from_name(&desc.side_texture, texture_dictionary);
 
-        Ok(RenderShape::create_textured_cube(render_data, side_texture_index, textures))
+        Ok(RenderShape::create_textured_cube(
+            render_data,
+            side_texture_index,
+            textures,
+        ))
     }
 
     fn get_texture_index_from_name(
@@ -106,10 +121,16 @@ impl RenderDesc {
         }
     }
 
-    fn compile_colored_cube(rd: &RenderData, color_index: ColorIndex, material_name_to_id: &Dictionary<MaterialName, MaterialId>) -> Result<RenderShape, RenderDescCompilationError> {
+    fn compile_colored_cube(
+        rd: &RenderData,
+        color_index: ColorIndex,
+        material_name_to_id: &Dictionary<MaterialName, MaterialId>,
+    ) -> Result<RenderShape, RenderDescCompilationError> {
         use RenderDescCompilationError::*;
 
-        let material = *material_name_to_id.get(&rd.material).ok_or(NoSuchMaterial(rd.material.to_string()))?;
+        let material = *material_name_to_id
+            .get(&rd.material)
+            .ok_or(NoSuchMaterial(rd.material.to_string()))?;
 
         let render_data = VoxelRenderData {
             visible: rd.visible,

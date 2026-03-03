@@ -3,7 +3,17 @@ use std::sync::Arc;
 use bevy::prelude::*;
 use shared::entities::*;
 
-use crate::{VoxelAssets, bevy_render::{ColoredCubeMaterial, TexturedCubeMaterial}, bevy_resources::{BevyBlockTypeStorageAsset, MaterialHandle, MaterialStorage, MaterialsDictAsset, MaterialsDictionary, RenderDescDictAsset, RenderDescDictionary, TextureAsset, TextureDictAsset, TextureDictionary, TextureDictionaryCompilationResult, TextureIdStorage, TextureIndexDictionary}, bevy_types::{AppStates, GameResources}, orchestrator};
+use crate::{
+    bevy_render::{ColoredCubeMaterial, TexturedCubeMaterial},
+    bevy_resources::{
+        BevyBlockTypeStorageAsset, MaterialHandle, MaterialStorage, MaterialsDictAsset,
+        MaterialsDictionary, RenderDescDictAsset, RenderDescDictionary, TextureAsset,
+        TextureDictAsset, TextureDictionary, TextureDictionaryCompilationResult, TextureId,
+        TextureIdStorage, TextureIndexDictionary,
+    },
+    bevy_types::{AppStates, GameResources},
+    orchestrator, VoxelAssets,
+};
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
 enum ResourcesCompilingState {
@@ -16,12 +26,22 @@ enum ResourcesCompilingState {
 pub struct ResourcesPlugin;
 impl Plugin for ResourcesPlugin {
     fn build(&self, app: &mut App) {
-        app
-        .init_state::<ResourcesCompilingState>()
-        .init_resource::<SourceTextures>()
-        .add_systems(OnEnter(AppStates::Compile), compile_assets)
-        .add_systems(OnEnter(ResourcesCompilingState::CompilingRest), compile_rest)
-        .add_systems(Update, check_all_textures_loaded.run_if(in_state(ResourcesCompilingState::LoadingTextures)));
+        app.init_state::<ResourcesCompilingState>()
+            .init_resource::<SourceTextures>()
+            .add_systems(OnEnter(AppStates::Compile), compile_assets)
+            .add_systems(
+                OnEnter(ResourcesCompilingState::CompilingRest),
+                compile_rest,
+            )
+            .add_systems(
+                Update,
+                check_all_textures_loaded
+                    .run_if(in_state(ResourcesCompilingState::LoadingTextures)),
+            )
+            .add_systems(
+                Update,
+                create_texture_arrays.run_if(in_state(ResourcesCompilingState::LoadingTextures)),
+            );
     }
 }
 
@@ -33,7 +53,7 @@ fn compile_assets(
     mut next_state: ResMut<NextState<ResourcesCompilingState>>,
 ) {
     load_textures(texture_dict_asset, voxel_assets, asset_server, textures_out);
-    next_state.set(ResourcesCompilingState::LoadingTextures)
+    next_state.set(ResourcesCompilingState::LoadingTextures);
 }
 
 fn load_textures(
@@ -93,8 +113,14 @@ fn compile_rest(
 
     dbg!(&materials_dict);
 
-    let maybe_opaque_id = loaded_textures.textures.name_to_id.get(&"opaque".to_string());
-    let maybe_opaque = loaded_textures.textures.id_to_handle.get_by_id(*maybe_opaque_id.unwrap() as usize);
+    let maybe_opaque_id = loaded_textures
+        .textures
+        .name_to_id
+        .get(&"opaque".to_string());
+    let maybe_opaque = loaded_textures
+        .textures
+        .id_to_handle
+        .get_by_id(*maybe_opaque_id.unwrap() as usize);
 
     // TODO: make this flexible.
     let texture_index_dictionary: &TextureIndexDictionary =
@@ -109,7 +135,7 @@ fn compile_rest(
         &loaded_textures.textures,
         &mut textured_materials,
         &mut colored_materials,
-        asset_server
+        asset_server,
     );
 
     let texture_index_dictionary = Arc::new(texture_index_dictionary.clone());
@@ -118,9 +144,12 @@ fn compile_rest(
 
     init_block_names(server_block_type_storage_asset.into());
 
-    let compilation_out = render_desc_dict.compile(&texture_index_dictionary, &material_compilation_result.name_to_id);
+    let compilation_out = render_desc_dict.compile(
+        &texture_index_dictionary,
+        &material_compilation_result.name_to_id,
+    );
     let render_shape_storage = Arc::new(compilation_out.storage);
-    
+
     for warning in compilation_out.warnings {
         warn!("{warning}");
     }
@@ -135,7 +164,6 @@ fn compile_rest(
 
     next_state.set(AppStates::InGame);
 }
-
 
 #[derive(Resource, Default)]
 struct SourceTextures {
@@ -158,4 +186,44 @@ fn check_all_textures_loaded(
     }
 
     next_state.set(ResourcesCompilingState::CompilingRest);
+}
+
+fn create_texture_arrays(
+    so_textures: Res<SourceTextures>,
+    mut events: EventReader<AssetEvent<Image>>,
+    voxel_assets: Res<VoxelAssets>,
+    mut texture_dict_asset: ResMut<Assets<TextureDictAsset>>,
+    mut textures: ResMut<Assets<Image>>,
+) {
+    let texture_dictionary_asset: &TextureDictAsset = texture_dict_asset
+        .get(&voxel_assets.texture_dict_asset)
+        .unwrap();
+    let texture_dictionary: Arc<TextureDictionary> = Arc::new(texture_dictionary_asset.0.clone());
+
+    for event in events.read() {
+        match event {
+            AssetEvent::LoadedWithDependencies { id: asset_id } => {
+                let texture_id = so_textures.textures.asset_id_to_id.get(asset_id).unwrap();
+                let texture_name = so_textures.textures.id_to_name.get(texture_id).unwrap();
+
+                if let TextureAsset::TextureArray { data } =
+                    texture_dictionary.get(texture_name).unwrap()
+                {
+                    info!("Creating texture array {:?}", texture_name);
+
+                    let texture_index_dictionary = &data.textures;
+
+                    let layers = texture_index_dictionary.iter().len();
+                    create_texture_array(layers as u32, *asset_id, &mut textures);
+                }
+            }
+            _ => (),
+        }
+    }
+}
+
+fn create_texture_array(layers: u32, asset_id: AssetId<Image>, mut images: &mut Assets<Image>) {
+    if let Some(image) = images.get_mut(asset_id) {
+        image.reinterpret_stacked_2d_as_array(layers);
+    }
 }

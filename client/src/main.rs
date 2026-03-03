@@ -33,11 +33,14 @@ use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
 use crate::{
     bevy_render::{ColoredCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
-        BevyBlockTypeStorageAsset, MaterialHandle, MaterialStorage, MaterialsDictionary, RenderDescDictAsset, RenderDescDictAssetLoader, RenderDescDictionary, ResourcesPlugin, TextureAsset, TextureDictAsset, TextureDictAssetLoader, TextureDictionary, TextureIndexDictionary
+        BevyBlockTypeStorageAsset, MaterialHandle, MaterialStorage, MaterialsDictionary,
+        RenderDescDictAsset, RenderDescDictAssetLoader, RenderDescDictionary, ResourcesPlugin,
+        TextureAsset, TextureDictAsset, TextureDictAssetLoader, TextureDictionary,
+        TextureIndexDictionary,
     },
     controller::ActionType,
     gui::GUIPlugin,
-    orchestrator::{OrchestratorPlugin, utils::raycast_from_controller},
+    orchestrator::{utils::raycast_from_controller, OrchestratorPlugin},
 };
 
 mod bevy_render;
