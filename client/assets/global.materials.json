@@ -9,6 +9,11 @@
 			"name": "colored",
 			"type": "colored_cube",
 			"palette": "default"
+		},
+		{
+			"name": "translucent",
+			"type": "textured_cube",
+			"texture_array": "opaque"
 		}
-    ]
+  ]
 }
