@@ -1,6 +1,5 @@
-use bevy::{log::info_span, render::Render};
+use bevy::log::info_span;
 use cgmath::Vector3;
-use std::sync::Arc;
 
 use super::{ChunkMesher, MesherOutput, MesherWarning};
 use crate::{
@@ -73,8 +72,6 @@ impl NaiveMesher {
         block_storage: &BlockStorage,
         warnings: &mut Vec<MesherWarning>,
     ) {
-        use BlockSide::*;
-
         if !render_shape.render_data().visible {
             return;
         }

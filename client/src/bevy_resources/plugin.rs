@@ -6,13 +6,11 @@ use shared::entities::*;
 use crate::{
     bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
-        BevyBlockTypeStorageAsset, MaterialHandle, MaterialStorage, MaterialsDictAsset,
+        BevyBlockTypeStorageAsset, MaterialsDictAsset,
         MaterialsDictionary, RenderDescDictAsset, RenderDescDictionary, TextureAsset,
-        TextureDictAsset, TextureDictionary, TextureDictionaryCompilationResult, TextureId,
-        TextureIdStorage, TextureIndexDictionary,
+        TextureDictAsset, TextureDictionary, TextureDictionaryCompilationResult, TextureIndexDictionary,
     },
-    bevy_types::{AppStates, GameResources},
-    orchestrator, VoxelAssets,
+    bevy_types::{AppStates, GameResources}, VoxelAssets,
 };
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
@@ -46,10 +44,10 @@ impl Plugin for ResourcesPlugin {
 }
 
 fn compile_assets(
-    mut texture_dict_asset: ResMut<Assets<TextureDictAsset>>,
+    texture_dict_asset: ResMut<Assets<TextureDictAsset>>,
     voxel_assets: Res<VoxelAssets>,
     asset_server: Res<AssetServer>,
-    mut textures_out: ResMut<SourceTextures>,
+    textures_out: ResMut<SourceTextures>,
     mut next_state: ResMut<NextState<ResourcesCompilingState>>,
 ) {
     load_textures(texture_dict_asset, voxel_assets, asset_server, textures_out);
@@ -57,7 +55,7 @@ fn compile_assets(
 }
 
 fn load_textures(
-    mut texture_dict_asset: ResMut<Assets<TextureDictAsset>>,
+    texture_dict_asset: ResMut<Assets<TextureDictAsset>>,
     voxel_assets: Res<VoxelAssets>,
     asset_server: Res<AssetServer>,
     mut textures_out: ResMut<SourceTextures>,
@@ -81,7 +79,7 @@ fn compile_rest(
     mut colored_materials: ResMut<Assets<ColoredCubeMaterial>>,
     mut cutout_materials: ResMut<Assets<CutoutTexturedCubeMaterial>>,
     mut textures: ResMut<Assets<Image>>,
-    mut texture_dict_asset: ResMut<Assets<TextureDictAsset>>,
+    texture_dict_asset: ResMut<Assets<TextureDictAsset>>,
     mut render_desc_dict_asset: ResMut<Assets<RenderDescDictAsset>>,
     mut materials_dict_asset: ResMut<Assets<MaterialsDictAsset>>,
     server_block_type_assets: Res<Assets<BevyBlockTypeStorageAsset>>,
@@ -194,7 +192,7 @@ fn create_texture_arrays(
     so_textures: Res<SourceTextures>,
     mut events: EventReader<AssetEvent<Image>>,
     voxel_assets: Res<VoxelAssets>,
-    mut texture_dict_asset: ResMut<Assets<TextureDictAsset>>,
+    texture_dict_asset: ResMut<Assets<TextureDictAsset>>,
     mut textures: ResMut<Assets<Image>>,
 ) {
     let texture_dictionary_asset: &TextureDictAsset = texture_dict_asset
@@ -203,29 +201,26 @@ fn create_texture_arrays(
     let texture_dictionary: Arc<TextureDictionary> = Arc::new(texture_dictionary_asset.0.clone());
 
     for event in events.read() {
-        match event {
-            AssetEvent::LoadedWithDependencies { id: asset_id } => {
-                if let Some(texture_id) = so_textures.textures.asset_id_to_id.get(asset_id) {
-                    let texture_name = so_textures.textures.id_to_name.get(texture_id).unwrap();
+        if let AssetEvent::LoadedWithDependencies { id: asset_id } = event {
+            if let Some(texture_id) = so_textures.textures.asset_id_to_id.get(asset_id) {
+                let texture_name = so_textures.textures.id_to_name.get(texture_id).unwrap();
 
-                    if let TextureAsset::TextureArray { data } =
-                        texture_dictionary.get(texture_name).unwrap()
-                    {
-                        info!("Creating texture array {:?}", texture_name);
+                if let TextureAsset::TextureArray { data } =
+                    texture_dictionary.get(texture_name).unwrap()
+                {
+                    info!("Creating texture array {:?}", texture_name);
 
-                        let texture_index_dictionary = &data.textures;
+                    let texture_index_dictionary = &data.textures;
 
-                        let layers = texture_index_dictionary.iter().len();
-                        create_texture_array(layers as u32, *asset_id, &mut textures);
-                    }
+                    let layers = texture_index_dictionary.iter().len();
+                    create_texture_array(layers as u32, *asset_id, &mut textures);
                 }
             }
-            _ => (),
         }
     }
 }
 
-fn create_texture_array(layers: u32, asset_id: AssetId<Image>, mut images: &mut Assets<Image>) {
+fn create_texture_array(layers: u32, asset_id: AssetId<Image>, images: &mut Assets<Image>) {
     if let Some(image) = images.get_mut(asset_id) {
         image.reinterpret_stacked_2d_as_array(layers);
     }

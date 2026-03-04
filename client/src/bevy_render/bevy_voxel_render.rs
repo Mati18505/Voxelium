@@ -2,7 +2,6 @@ use bevy::{
     prelude::*,
     render::render_resource::{AsBindGroup, ShaderRef},
 };
-use shared::entities::VoxelColor;
 
 pub struct VoxelRenderPlugin;
 impl Plugin for VoxelRenderPlugin {

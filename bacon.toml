@@ -53,7 +53,7 @@ need_stdout = false
 # long running programs (uncomment it if you need it)
 [jobs.run-long]
 command = [
-    "cargo", "run", "--profile", "tracy"
+    "cargo", "run", "-p", "client", "--profile", "tracy"
     # put launch parameters for your program behind a `--` separator
 ]
 need_stdout = true

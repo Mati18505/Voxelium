@@ -1,42 +1,30 @@
-use std::sync::Arc;
-
 use bevy::{
-    asset::RenderAssetUsages,
     color::palettes::css::WHITE,
-    ecs::system::command::unregister_system,
     pbr::wireframe::{WireframeConfig, WireframePlugin},
     prelude::*,
-    reflect::TypeData,
     render::{
-        render_resource::{Extent3d, TextureDimension, TextureFormat},
         settings::{RenderCreation, WgpuFeatures, WgpuSettings},
         *,
     },
 };
 use bevy_asset_loader::prelude::*;
 use bevy_common_assets::json::JsonAssetPlugin;
-use bevy_common_assets::yaml::YamlAssetPlugin;
 
 use bevy_render::VoxelRenderPlugin;
 use bevy_resources::{MaterialsDictAsset, MaterialsDictAssetLoader};
 use bevy_types::{AppStates, GameResources};
-use cgmath::dot;
-use chunk_mesh_builder::*;
 use controller::ControllerPlugin;
 use shared::{
-    entities::{init_block_names, name_to_block_id, BlockID, BlockPos, BlockTypeStorage},
+    entities::{BlockID, BlockPos, name_to_block_id},
     physics::RaycastResult,
 };
 
 use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
 
 use crate::{
-    bevy_render::{ColoredCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
-        BevyBlockTypeStorageAsset, MaterialHandle, MaterialStorage, MaterialsDictionary,
-        RenderDescDictAsset, RenderDescDictAssetLoader, RenderDescDictionary, ResourcesPlugin,
-        TextureAsset, TextureDictAsset, TextureDictAssetLoader, TextureDictionary,
-        TextureIndexDictionary,
+        BevyBlockTypeStorageAsset, RenderDescDictAsset, RenderDescDictAssetLoader, ResourcesPlugin,
+        TextureDictAsset, TextureDictAssetLoader,
     },
     controller::ActionType,
     gui::GUIPlugin,

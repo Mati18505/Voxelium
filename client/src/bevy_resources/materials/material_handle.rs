@@ -1,10 +1,6 @@
 use bevy::prelude::*;
-use std::collections::HashMap;
 
-use crate::{
-    bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial},
-    chunk_mesh_builder::MaterialId,
-};
+use crate::bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial};
 
 #[derive(Debug)]
 pub enum MaterialHandle {

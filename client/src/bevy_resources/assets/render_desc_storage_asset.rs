@@ -1,15 +1,12 @@
 use std::collections::HashMap;
 
-use shared::entities::{BlockID, BlockSide};
+use shared::entities::BlockSide;
 use thiserror::Error;
 
-use bevy::{
-    asset::{io::Reader, AssetLoader, LoadContext},
-    render::Render,
-};
+use bevy::asset::{io::Reader, AssetLoader, LoadContext};
 
 use crate::bevy_resources::{
-    render_desc, BlockTypeName, RenderData, RenderDesc, RenderDescDictionary,
+    BlockTypeName, RenderData, RenderDesc, RenderDescDictionary,
     TexturedBlockTypeBuilder,
 };
 

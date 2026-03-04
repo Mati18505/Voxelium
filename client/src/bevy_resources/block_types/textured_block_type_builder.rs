@@ -1,9 +1,7 @@
 use shared::entities::BlockSide;
-use std::collections::HashMap;
 
-use crate::chunk_mesh_builder::{RenderShape, VoxelRenderData};
 
-use crate::bevy_resources::{MaterialName, RenderData, RenderDesc, TextureName, TexturedCubeDesc};
+use crate::bevy_resources::{RenderData, RenderDesc, TexturedCubeDesc};
 
 #[derive(Debug)]
 pub struct TexturedBlockTypeBuilder {

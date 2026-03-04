@@ -1,11 +1,11 @@
 use bevy::log::warn;
-use std::{collections::HashMap, default};
+use std::collections::HashMap;
 use thiserror::Error;
 
-use shared::entities::{BlockSide, VoxelColor};
+use shared::entities::BlockSide;
 
 use crate::{
-    bevy_resources::{Dictionary, MaterialName, TextureIndexDictionary, TextureName},
+    bevy_resources::{Dictionary, MaterialName, TextureIndexDictionary},
     chunk_mesh_builder::{ColorIndex, MaterialId, RenderShape, TextureIndex, VoxelRenderData},
 };
 

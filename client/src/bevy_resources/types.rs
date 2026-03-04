@@ -1,10 +1,7 @@
 use bevy::prelude::*;
 use bevy::{
-    asset::{AssetEvent, AssetServer, Assets, Handle},
-    ecs::{
-        event::EventReader,
-        system::{Res, ResMut},
-    },
+    asset::{AssetServer, Assets, Handle},
+    ecs::system::{Res, ResMut},
     image::Image,
 };
 use shared::entities::name_to_block_id;
@@ -13,8 +10,8 @@ use thiserror::Error;
 use crate::{
     bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
-        ColoredCubeMaterialData, Dictionary, MaterialAsset, MaterialHandle, RenderDesc,
-        RenderDescCompilationError, Storage, TextureAsset, TexturedCubeMaterialData,
+        Dictionary, MaterialAsset, MaterialHandle, RenderDesc,
+        RenderDescCompilationError, Storage, TextureAsset,
     },
     chunk_mesh_builder::{MaterialId, RenderShape, TextureIndex},
 };
@@ -136,7 +133,7 @@ impl Default for MaterialsDictionaryCompilationResult {
 impl MaterialsDictionary {
     pub fn compile(
         &self,
-        mut textures: &mut ResMut<Assets<Image>>,
+        textures: &mut ResMut<Assets<Image>>,
         texture_assets: &TextureDictionary,
         compiled_textures: &TextureDictionaryCompilationResult,
         textured_materials: &mut ResMut<Assets<TexturedCubeMaterial>>,

@@ -1,17 +1,14 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::collections::HashMap;
 
-use bevy::{
-    asset::{io::Reader, AssetLoader, LoadContext},
-    render::Render,
-};
+use bevy::asset::{io::Reader, AssetLoader, LoadContext};
 use thiserror::Error;
 
 use crate::bevy_resources::{
-    texture_asset, PaletteData, TextureArrayData, TextureAsset, TextureDictionary,
-    TextureIndexDictionary, TextureName,
+    PaletteData, TextureArrayData, TextureAsset, TextureDictionary,
+    TextureIndexDictionary,
 };
 
-use yaml_rust2::{yaml::Hash, Yaml, YamlEmitter, YamlLoader};
+use yaml_rust2::{yaml::Hash, Yaml, YamlLoader};
 
 #[derive(Debug, bevy::asset::Asset, bevy::reflect::TypePath)]
 pub struct TextureDictAsset(pub TextureDictionary);
@@ -88,10 +85,10 @@ impl AssetLoader for TextureDictAssetLoader {
 
                 let texture = match texture_type {
                     "array" => Ok(TextureAsset::TextureArray {
-                        data: parse_array_texture_params(&v)?,
+                        data: parse_array_texture_params(v)?,
                     }),
                     "palette" => Ok(TextureAsset::Palette {
-                        data: parse_palette_texture_params(&v)?,
+                        data: parse_palette_texture_params(v)?,
                     }),
                     _ => Err(InvalidConfig(format!(
                         "unimplemented texture type {texture_type}"

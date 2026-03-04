@@ -28,7 +28,7 @@ impl BlockStorage {
         &self.block_types
     }
 
-    pub fn iter(&self) -> std::slice::Iter<BlockID> {
+    pub fn iter(&self) -> std::slice::Iter<'_, BlockID> {
         self.block_types.iter()
     }
 }
