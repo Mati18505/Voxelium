@@ -164,6 +164,7 @@ impl MaterialsDictionary {
                     .set(material_name.to_string(), id as MaterialId);
                 match compile_material(
                     material_asset,
+                    textures,
                     compiled_textures,
                     textured_materials,
                     colored_materials,
@@ -195,6 +196,7 @@ pub enum MaterialCompilationError {
 
 fn compile_material(
     material_asset: &MaterialAsset,
+    textures: &mut ResMut<Assets<Image>>,
     compiled_textures: &TextureDictionaryCompilationResult,
     textured_materials: &mut ResMut<Assets<TexturedCubeMaterial>>,
     colored_materials: &mut ResMut<Assets<ColoredCubeMaterial>>,
@@ -217,6 +219,10 @@ fn compile_material(
             texture_name.to_string(),
         ))?
         .clone();
+
+    if textures.get(&texture_handle).is_none() {
+        return Err(MaterialCompilationError::NoSuchTexture(texture_name.to_string()));
+    }
 
     let material_handle = match material_asset {
         MaterialAsset::TexturedCube { .. } => {
