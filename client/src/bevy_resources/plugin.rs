@@ -112,25 +112,8 @@ fn compile_rest(
 
     dbg!(&materials_dict);
 
-    let maybe_opaque_id = loaded_textures
-        .textures
-        .name_to_id
-        .get(&"opaque".to_string());
-    let maybe_opaque = loaded_textures
-        .textures
-        .id_to_handle
-        .get_by_id(*maybe_opaque_id.unwrap() as usize);
-
-    // TODO: make this flexible.
-    let texture_index_dictionary: &TextureIndexDictionary =
-        match texture_dictionary.get(&"opaque".to_string()).unwrap() {
-            TextureAsset::TextureArray { data } => &data.textures,
-            TextureAsset::Palette { data } => unimplemented!(),
-        };
-
     let material_compilation_result = materials_dict.compile(
         &mut textures,
-        &texture_dictionary,
         &loaded_textures.textures,
         &mut placeholder_materials,
         &mut textured_materials,
@@ -145,10 +128,14 @@ fn compile_rest(
 
     dbg!(&material_compilation_result);
 
-    let texture_index_dictionary = Arc::new(texture_index_dictionary.clone());
-    let material_storage = Arc::new(material_compilation_result.id_to_handle);
-
     init_block_names(server_block_type_storage_asset.into());
+
+    // TODO: make this flexible.
+    let texture_index_dictionary: &TextureIndexDictionary =
+        match texture_dictionary.get(&"opaque".to_string()).unwrap() {
+            TextureAsset::TextureArray { data } => &data.textures,
+            TextureAsset::Palette { data } => unimplemented!(),
+        };
 
     let compilation_out = render_desc_dict.compile(
         &texture_index_dictionary,
@@ -162,10 +149,10 @@ fn compile_rest(
 
     dbg!(&render_shape_storage.iter().len());
 
+    let material_storage = Arc::new(material_compilation_result.id_to_handle);
+
     commands.insert_resource(GameResources {
-        render_desc_dict,
         server_block_type_storage,
-        texture_index_dictionary,
         material_storage,
         render_shape_storage,
     });

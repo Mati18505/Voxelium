@@ -145,7 +145,6 @@ impl MaterialsDictionary {
     pub fn compile(
         &self,
         textures: &mut ResMut<Assets<Image>>,
-        texture_assets: &TextureDictionary,
         compiled_textures: &TextureDictionaryCompilationResult,
         placeholder_materials: &mut ResMut<Assets<StandardMaterial>>,
         textured_materials: &mut ResMut<Assets<TexturedCubeMaterial>>,
