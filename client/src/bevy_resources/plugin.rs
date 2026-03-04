@@ -76,6 +76,7 @@ fn load_textures(
 
 fn compile_rest(
     mut commands: Commands,
+    mut placeholder_materials: ResMut<Assets<StandardMaterial>>,
     mut textured_materials: ResMut<Assets<TexturedCubeMaterial>>,
     mut colored_materials: ResMut<Assets<ColoredCubeMaterial>>,
     mut cutout_materials: ResMut<Assets<CutoutTexturedCubeMaterial>>,
@@ -133,6 +134,7 @@ fn compile_rest(
         &mut textures,
         &texture_dictionary,
         &loaded_textures.textures,
+        &mut placeholder_materials,
         &mut textured_materials,
         &mut colored_materials,
         &mut cutout_materials,

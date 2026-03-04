@@ -3,6 +3,7 @@ use bevy::{
     asset::{AssetServer, Assets, Handle},
     ecs::system::{Res, ResMut},
     image::Image,
+    color::palettes::css::GRAY,
 };
 use shared::entities::name_to_block_id;
 use thiserror::Error;
@@ -146,6 +147,7 @@ impl MaterialsDictionary {
         textures: &mut ResMut<Assets<Image>>,
         texture_assets: &TextureDictionary,
         compiled_textures: &TextureDictionaryCompilationResult,
+        placeholder_materials: &mut ResMut<Assets<StandardMaterial>>,
         textured_materials: &mut ResMut<Assets<TexturedCubeMaterial>>,
         colored_materials: &mut ResMut<Assets<ColoredCubeMaterial>>,
         cutout_materials: &mut ResMut<Assets<CutoutTexturedCubeMaterial>>,
@@ -157,6 +159,9 @@ impl MaterialsDictionary {
         self.iter()
             .enumerate()
             .for_each(|(id, (material_name, material_asset))| {
+                result
+                    .name_to_id
+                    .set(material_name.to_string(), id as MaterialId);
                 match compile_material(
                     material_asset,
                     compiled_textures,
@@ -165,14 +170,16 @@ impl MaterialsDictionary {
                     cutout_materials,
                 ) {
                     Ok(material_handle) => {
-                        result
-                            .name_to_id
-                            .set(material_name.to_string(), id as MaterialId);
                         result.id_to_handle.add(material_handle);
                     }
-                    Err(err) => result
-                        .warnings
-                        .push(CannotCompile(material_name.to_string(), err)),
+                    Err(err) => {
+                        let placeholder = placeholder_materials.add(StandardMaterial {
+                            base_color: GRAY.into(),
+                            ..Default::default()
+                        });
+                        result.id_to_handle.add(MaterialHandle::PlaceHolder(placeholder));
+                        result.warnings.push(CannotCompile(material_name.to_string(), err));
+                    }
                 }
             });
 
