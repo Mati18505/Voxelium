@@ -11,8 +11,8 @@
 			"palette": "default"
 		},
 		{
-			"name": "translucent",
-			"type": "textured_cube",
+      "name": "cutout",
+			"type": "cutout_textured_cube",
 			"texture_array": "opaque"
 		}
   ]

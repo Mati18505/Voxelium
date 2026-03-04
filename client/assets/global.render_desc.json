@@ -54,12 +54,14 @@
 		},
 		{
 			"block_type": "leaves",
-			"material": "translucent",
-			"textures": {
-				"side": "sandstone",
-				"top": "sandstone_top",
-				"bottom": "sandstone_bottom"
-			},
+			"material": "cutout",
+			"textures": { "side": "leaves" },
+			"translucent": true
+		},
+		{
+			"block_type": "glass",
+			"material": "cutout",
+			"textures": { "side": "glass" },
 			"translucent": true
 		}
 	]

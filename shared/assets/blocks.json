@@ -39,6 +39,10 @@
 		{
 			"name": "leaves",
 			"affect_raycast": true
+		},
+		{
+			"name": "glass",
+			"affect_raycast": true
 		}
 	]
 }

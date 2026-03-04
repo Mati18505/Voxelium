@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use shared::entities::*;
 
 use crate::{
-    bevy_render::{ColoredCubeMaterial, TexturedCubeMaterial},
+    bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
         BevyBlockTypeStorageAsset, MaterialHandle, MaterialStorage, MaterialsDictAsset,
         MaterialsDictionary, RenderDescDictAsset, RenderDescDictionary, TextureAsset,
@@ -79,6 +79,7 @@ fn compile_rest(
     mut commands: Commands,
     mut textured_materials: ResMut<Assets<TexturedCubeMaterial>>,
     mut colored_materials: ResMut<Assets<ColoredCubeMaterial>>,
+    mut cutout_materials: ResMut<Assets<CutoutTexturedCubeMaterial>>,
     mut textures: ResMut<Assets<Image>>,
     mut texture_dict_asset: ResMut<Assets<TextureDictAsset>>,
     mut render_desc_dict_asset: ResMut<Assets<RenderDescDictAsset>>,
@@ -135,6 +136,7 @@ fn compile_rest(
         &loaded_textures.textures,
         &mut textured_materials,
         &mut colored_materials,
+        &mut cutout_materials,
         asset_server,
     );
 

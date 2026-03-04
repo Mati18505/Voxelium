@@ -11,7 +11,7 @@ use shared::entities::name_to_block_id;
 use thiserror::Error;
 
 use crate::{
-    bevy_render::{ColoredCubeMaterial, TexturedCubeMaterial},
+    bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
         ColoredCubeMaterialData, Dictionary, MaterialAsset, MaterialHandle, RenderDesc,
         RenderDescCompilationError, Storage, TextureAsset, TexturedCubeMaterialData,
@@ -141,6 +141,7 @@ impl MaterialsDictionary {
         compiled_textures: &TextureDictionaryCompilationResult,
         textured_materials: &mut ResMut<Assets<TexturedCubeMaterial>>,
         colored_materials: &mut ResMut<Assets<ColoredCubeMaterial>>,
+        cutout_materials: &mut ResMut<Assets<CutoutTexturedCubeMaterial>>,
         asset_server: Res<AssetServer>,
     ) -> MaterialsDictionaryCompilationResult {
         let mut result = MaterialsDictionaryCompilationResult::default();
@@ -150,6 +151,7 @@ impl MaterialsDictionary {
                 let texture_name: &String = match material_asset {
                     MaterialAsset::TexturedCube { data } => &data.texture_array_name,
                     MaterialAsset::ColoredCube { data } => &data.palette_name,
+                    MaterialAsset::CutoutTexturedCube { data } => &data.texture_array_name,
                 };
                 let texture_id = compiled_textures.name_to_id.get(texture_name).unwrap();
                 let texture_handle = compiled_textures
@@ -171,6 +173,15 @@ impl MaterialsDictionary {
                             color_palette: texture_handle,
                         };
                         MaterialHandle::ColoredCube(colored_materials.add(colored_mat))
+                    }
+                    MaterialAsset::CutoutTexturedCube { data } => {
+                        let cutout_textured_mat = CutoutTexturedCubeMaterial {
+                            array_texture: texture_handle,
+                        };
+
+                        MaterialHandle::CutoutTexturedCube(
+                            cutout_materials.add(cutout_textured_mat),
+                        )
                     }
                 };
 

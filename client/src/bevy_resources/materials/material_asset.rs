@@ -2,6 +2,7 @@
 pub enum MaterialAsset {
     TexturedCube { data: TexturedCubeMaterialData },
     ColoredCube { data: ColoredCubeMaterialData },
+    CutoutTexturedCube { data: TexturedCubeMaterialData },
 }
 
 #[derive(Debug, Default)]

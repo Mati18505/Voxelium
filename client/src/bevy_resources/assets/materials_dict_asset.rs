@@ -89,9 +89,12 @@ impl AssetLoader for MaterialsDictAssetLoader {
                 "colored_cube" => Ok(MaterialAsset::ColoredCube {
                     data: ColoredCubeMaterialData::default(),
                 }),
-                _ => Err(InvalidConfig(
-                    "unsupported material type: {material_type}".to_string(),
-                )),
+                "cutout_textured_cube" => Ok(MaterialAsset::CutoutTexturedCube {
+                    data: TexturedCubeMaterialData::default(),
+                }),
+                _ => Err(InvalidConfig(format!(
+                    "unsupported material type: {material_type}"
+                ))),
             }?;
 
             match material_asset {
@@ -100,6 +103,9 @@ impl AssetLoader for MaterialsDictAssetLoader {
                 }
                 MaterialAsset::ColoredCube { ref mut data } => {
                     *data = load_colored_cube_data(material)?;
+                }
+                MaterialAsset::CutoutTexturedCube { ref mut data } => {
+                    *data = load_textured_cube_data(material)?;
                 }
             }
 
