@@ -6,9 +6,7 @@ use shared::entities::*;
 use crate::{
     bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
-        BevyBlockTypeStorageAsset, MaterialsDictAsset, MaterialsDictionary, RenderDescDictAsset,
-        RenderDescDictionary, TextureAsset, TextureDictAsset, TextureDictionary,
-        TextureDictionaryCompilationResult, TextureIndexDictionary,
+        BevyBlockTypeStorageAsset, MaterialsDictAsset, MaterialsDictionary, RenderDescDictAsset, RenderDescDictionary, TextureAsset, TextureDictAsset, TextureDictionary, TextureDictionaryCompilationResult, TextureId, TextureIndexDictionary
     },
     bevy_types::{AppStates, GameResources},
     VoxelAssets,
@@ -185,17 +183,28 @@ fn check_all_textures_loaded(
     asset_server: Res<AssetServer>,
     mut next_state: ResMut<NextState<ResourcesCompilingState>>,
 ) {
-    // TODO: handle loading fail
-    if textures
-        .textures
-        .id_to_handle
-        .iter()
-        .any(|h| !asset_server.get_load_state(h).unwrap().is_loaded())
-    {
-        return;
+    let mut has_pending = false;
+
+    for (texture_id, handle) in textures.textures.id_to_handle.iter().enumerate() {
+        match asset_server.get_load_state(handle) {
+            Some(load_state) if load_state.is_loaded() => {}
+            Some(load_state) if load_state.is_failed() => {
+                let texture_id = texture_id as TextureId;
+                let texture_name = textures
+                    .textures
+                    .id_to_name
+                    .get(&texture_id)
+                    .cloned()
+                    .unwrap();
+                warn!("Texture failed to load and may render incorrectly: {texture_name}");
+            }
+            _ => has_pending = true,
+        }
     }
 
-    next_state.set(ResourcesCompilingState::CompilingRest);
+    if !has_pending {
+        next_state.set(ResourcesCompilingState::CompilingRest);
+    }
 }
 
 fn create_texture_arrays(
