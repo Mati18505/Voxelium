@@ -15,7 +15,7 @@ use bevy_resources::{MaterialsDictAsset, MaterialsDictAssetLoader};
 use bevy_types::{AppStates, GameResources};
 use controller::ControllerPlugin;
 use shared::{
-    entities::{BlockID, BlockPos, name_to_block_id},
+    entities::{name_to_block_id, BlockID, BlockPos},
     physics::RaycastResult,
 };
 

@@ -6,11 +6,12 @@ use shared::entities::*;
 use crate::{
     bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
-        BevyBlockTypeStorageAsset, MaterialsDictAsset,
-        MaterialsDictionary, RenderDescDictAsset, RenderDescDictionary, TextureAsset,
-        TextureDictAsset, TextureDictionary, TextureDictionaryCompilationResult, TextureIndexDictionary,
+        BevyBlockTypeStorageAsset, MaterialsDictAsset, MaterialsDictionary, RenderDescDictAsset,
+        RenderDescDictionary, TextureAsset, TextureDictAsset, TextureDictionary,
+        TextureDictionaryCompilationResult, TextureIndexDictionary,
     },
-    bevy_types::{AppStates, GameResources}, VoxelAssets,
+    bevy_types::{AppStates, GameResources},
+    VoxelAssets,
 };
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
@@ -138,8 +139,13 @@ fn compile_rest(
         asset_server,
     );
 
-    let texture_index_dictionary = Arc::new(texture_index_dictionary.clone());
+    for warning in &material_compilation_result.warnings {
+        warn!("{warning}");
+    }
+
     dbg!(&material_compilation_result);
+
+    let texture_index_dictionary = Arc::new(texture_index_dictionary.clone());
     let material_storage = Arc::new(material_compilation_result.id_to_handle);
 
     init_block_names(server_block_type_storage_asset.into());
@@ -153,6 +159,8 @@ fn compile_rest(
     for warning in compilation_out.warnings {
         warn!("{warning}");
     }
+
+    dbg!(&render_shape_storage.iter().len());
 
     commands.insert_resource(GameResources {
         render_desc_dict,

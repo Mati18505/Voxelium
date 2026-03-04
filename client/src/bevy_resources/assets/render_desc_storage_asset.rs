@@ -6,8 +6,7 @@ use thiserror::Error;
 use bevy::asset::{io::Reader, AssetLoader, LoadContext};
 
 use crate::bevy_resources::{
-    BlockTypeName, RenderData, RenderDesc, RenderDescDictionary,
-    TexturedBlockTypeBuilder,
+    BlockTypeName, RenderData, RenderDesc, RenderDescDictionary, TexturedBlockTypeBuilder,
 };
 
 #[derive(Debug, bevy::asset::Asset, bevy::reflect::TypePath, Clone)]

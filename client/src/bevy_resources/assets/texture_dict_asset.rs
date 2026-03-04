@@ -4,8 +4,7 @@ use bevy::asset::{io::Reader, AssetLoader, LoadContext};
 use thiserror::Error;
 
 use crate::bevy_resources::{
-    PaletteData, TextureArrayData, TextureAsset, TextureDictionary,
-    TextureIndexDictionary,
+    PaletteData, TextureArrayData, TextureAsset, TextureDictionary, TextureIndexDictionary,
 };
 
 use yaml_rust2::{yaml::Hash, Yaml, YamlLoader};
