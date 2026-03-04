@@ -205,18 +205,19 @@ fn create_texture_arrays(
     for event in events.read() {
         match event {
             AssetEvent::LoadedWithDependencies { id: asset_id } => {
-                let texture_id = so_textures.textures.asset_id_to_id.get(asset_id).unwrap();
-                let texture_name = so_textures.textures.id_to_name.get(texture_id).unwrap();
+                if let Some(texture_id) = so_textures.textures.asset_id_to_id.get(asset_id) {
+                    let texture_name = so_textures.textures.id_to_name.get(texture_id).unwrap();
 
-                if let TextureAsset::TextureArray { data } =
-                    texture_dictionary.get(texture_name).unwrap()
-                {
-                    info!("Creating texture array {:?}", texture_name);
+                    if let TextureAsset::TextureArray { data } =
+                        texture_dictionary.get(texture_name).unwrap()
+                    {
+                        info!("Creating texture array {:?}", texture_name);
 
-                    let texture_index_dictionary = &data.textures;
+                        let texture_index_dictionary = &data.textures;
 
-                    let layers = texture_index_dictionary.iter().len();
-                    create_texture_array(layers as u32, *asset_id, &mut textures);
+                        let layers = texture_index_dictionary.iter().len();
+                        create_texture_array(layers as u32, *asset_id, &mut textures);
+                    }
                 }
             }
             _ => (),
