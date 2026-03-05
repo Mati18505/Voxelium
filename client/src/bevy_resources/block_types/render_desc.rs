@@ -49,8 +49,8 @@ pub enum RenderDescCompilationError {
     NoSuchMaterial(MaterialName),
     #[error("Texture asset was not found: {0}")]
     NoTextureAsset(TextureName),
-    #[error("Material {0} is invalid for use in: {1}")]
-    InvalidMaterial(MaterialName, String),
+    #[error("Material {0} is invalid for use in: {1}, because {2}")]
+    InvalidMaterial(MaterialName, String, String),
 }
 
 pub struct RenderDescCompileCtx<'a> {
@@ -95,6 +95,7 @@ impl RenderDesc {
                 .ok_or(InvalidMaterial(
                     rd.material.to_string(),
                     "textured_cube".to_string(),
+                    "has no connected texture_name".to_string(),
                 ))?;
         let texture_asset = ctx
             .texture_asset_dictionary
@@ -102,10 +103,14 @@ impl RenderDesc {
             .ok_or(NoTextureAsset(texture_name.to_string()))?;
 
         let texture_dictionary = match texture_asset {
-            TextureArray { data } => &data.textures,
+            TextureArray { data } => Ok(&data.textures),
             // invalid material 9
-            Palette { .. } => unreachable!(),
-        };
+            Palette { .. } => Err(InvalidMaterial(
+                rd.material.to_string(),
+                "textured_cube".to_string(),
+                "connected texture is of palette type, should be texture array".to_string(),
+            )),
+        }?;
 
         let render_data = VoxelRenderData {
             visible: rd.visible,
@@ -294,6 +299,34 @@ mod tests {
         let mut ctx = test_ctx();
         // Material didn't return `material_id_to_texture_name`.
         ctx.1 = Default::default();
+
+        let ctx = RenderDescCompileCtx {
+            material_name_to_id: &ctx.0,
+            material_id_to_texture_name: &ctx.1,
+            texture_asset_dictionary: &ctx.2,
+        };
+
+        let render_desc = textured_rd();
+
+        let result = render_desc.compile(ctx);
+
+        assert_matches!(result, Err(RenderDescCompilationError::InvalidMaterial(..)));
+    }
+
+    #[test]
+    fn test_compile_textured_cube_invalid_material_texture() {
+        let mut ctx = test_ctx();
+        // Material did return `material_id_to_texture_name` with bad TextureAsset.
+        ctx.2 = TextureDictionary::default();
+        ctx.2.set(
+            "block_textures".to_string(),
+            Palette {
+                data: PaletteData {
+                    path: "opaque.png".to_string(),
+                    len: 1,
+                },
+            },
+        );
 
         let ctx = RenderDescCompileCtx {
             material_name_to_id: &ctx.0,
