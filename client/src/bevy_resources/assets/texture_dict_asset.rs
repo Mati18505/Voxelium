@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use bevy::asset::{io::Reader, AssetLoader, LoadContext};
+use bevy::log::warn;
 use thiserror::Error;
 
 use crate::bevy_resources::{
@@ -93,6 +94,13 @@ impl AssetLoader for TextureDictAssetLoader {
                         "unimplemented texture type {texture_type}"
                     ))),
                 }?;
+
+                if collected_textures.contains_key(name) {
+                    warn!(
+                        "Duplicate texture entry \"{name}\" found in texture dict. Ignoring duplicate."
+                    );
+                    continue;
+                }
 
                 collected_textures.insert(name.to_string(), texture);
             }
