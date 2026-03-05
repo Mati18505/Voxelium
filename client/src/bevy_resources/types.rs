@@ -8,6 +8,7 @@ use bevy::{
 use shared::entities::{iterate_over_block_registry, name_to_block_id, BlockID};
 use thiserror::Error;
 
+use crate::bevy_resources::RenderDescCompileCtx;
 use crate::{
     bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
@@ -80,11 +81,12 @@ impl RenderDescDictionary {
 
         for (block_type_name, block_id) in block_registry {
             let render_shape = if let Some(render_desc) = self.get(block_type_name) {
-                match render_desc.compile(
+                let ctx = RenderDescCompileCtx {
                     material_name_to_id,
                     material_id_to_texture_name,
                     texture_asset_dictionary,
-                ) {
+                };
+                match render_desc.compile(ctx) {
                     Ok(compilation_result) => compilation_result,
                     Err(e) => {
                         out.warnings

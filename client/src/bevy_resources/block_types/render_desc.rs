@@ -53,28 +53,26 @@ pub enum RenderDescCompilationError {
     InvalidMaterial(MaterialName, String),
 }
 
+pub struct RenderDescCompileCtx<'a> {
+    pub material_name_to_id: &'a Dictionary<MaterialName, MaterialId>,
+    pub material_id_to_texture_name: &'a Dictionary<MaterialId, TextureName>,
+    pub texture_asset_dictionary: &'a TextureDictionary,
+}
+
 impl RenderDesc {
     pub fn compile(
         &self,
-        material_name_to_id: &Dictionary<MaterialName, MaterialId>,
-        material_id_to_texture_name: &Dictionary<MaterialId, TextureName>,
-        texture_asset_dictionary: &TextureDictionary,
+        ctx: RenderDescCompileCtx,
     ) -> Result<RenderShape, RenderDescCompilationError> {
         match self {
             RenderDesc::TexturedCube {
-                render_data,
-                textured_cube_desc,
-            } => Self::compile_textured_cube(
-                render_data,
-                textured_cube_desc,
-                material_name_to_id,
-                material_id_to_texture_name,
-                texture_asset_dictionary,
-            ),
+                render_data: rd,
+                textured_cube_desc: desc,
+            } => Self::compile_textured_cube(rd, desc, ctx),
             RenderDesc::ColoredCube {
-                render_data,
+                render_data: rd,
                 color_index,
-            } => Self::compile_colored_cube(render_data, *color_index, material_name_to_id),
+            } => Self::compile_colored_cube(rd, *color_index, ctx.material_name_to_id),
             RenderDesc::Invisible => Ok(RenderShape::Invisible),
         }
     }
@@ -82,28 +80,30 @@ impl RenderDesc {
     fn compile_textured_cube(
         rd: &RenderData,
         desc: &TexturedCubeDesc,
-        material_name_to_id: &Dictionary<MaterialName, MaterialId>,
-        material_id_to_texture_name: &Dictionary<MaterialId, TextureName>,
-        texture_asset_dictionary: &TextureDictionary,
+        ctx: RenderDescCompileCtx,
     ) -> Result<RenderShape, RenderDescCompilationError> {
         use RenderDescCompilationError::*;
 
-        let material = *material_name_to_id
+        let material = *ctx
+            .material_name_to_id
             .get(&rd.material)
             .ok_or(NoSuchMaterial(rd.material.to_string()))?;
 
-        let texture_name = material_id_to_texture_name
-            .get(&material)
-            .ok_or(InvalidMaterial(
-                rd.material.to_string(),
-                "textured_cube".to_string(),
-            ))?;
-        let texture_asset = texture_asset_dictionary
+        let texture_name =
+            ctx.material_id_to_texture_name
+                .get(&material)
+                .ok_or(InvalidMaterial(
+                    rd.material.to_string(),
+                    "textured_cube".to_string(),
+                ))?;
+        let texture_asset = ctx
+            .texture_asset_dictionary
             .get(&texture_name)
             .ok_or(NoTextureAsset(texture_name.to_string()))?;
 
         let texture_dictionary = match texture_asset {
             TextureArray { data } => &data.textures,
+            // invalid material 9
             Palette { .. } => unreachable!(),
         };
 
@@ -194,9 +194,8 @@ mod tests {
 
     use super::*;
 
-    #[test]
-    fn test_compile_textured_cube_compiles_successfully() {
-        let render_desc = RenderDesc::TexturedCube {
+    fn render_desc() -> RenderDesc {
+        RenderDesc::TexturedCube {
             render_data: RenderData {
                 material: "stone_material".to_string(),
                 ..Default::default()
@@ -206,8 +205,15 @@ mod tests {
                 top_texture: Some("stone_top".to_string()),
                 bottom_texture: Some("stone_bottom".to_string()),
             },
-        };
+        }
+    }
 
+    /// Returns [`RenderDescCompileCtx`] that passes tests.
+    fn test_ctx() -> (
+        Dictionary<MaterialName, MaterialId>,
+        Dictionary<MaterialId, TextureName>,
+        TextureDictionary,
+    ) {
         let mut material_name_to_id = Dictionary::<MaterialName, MaterialId>::default();
         material_name_to_id.set("stone_material".to_string(), 0);
 
@@ -230,55 +236,44 @@ mod tests {
             },
         );
 
-        let result = render_desc.compile(
-            &material_name_to_id,
-            &material_id_to_texture_name,
-            &texture_asset_dictionary,
-        );
+        (
+            material_name_to_id,
+            material_id_to_texture_name,
+            texture_asset_dictionary,
+        )
+    }
+
+    #[test]
+    fn test_compile_textured_cube_compiles_successfully() {
+        let ctx = test_ctx();
+        let ctx = RenderDescCompileCtx {
+            material_name_to_id: &ctx.0,
+            material_id_to_texture_name: &ctx.1,
+            texture_asset_dictionary: &ctx.2,
+        };
+
+        let render_desc = render_desc();
+
+        let result = render_desc.compile(ctx);
 
         assert!(matches!(result, Ok(RenderShape::TexturedCube { .. })));
     }
 
     #[test]
     fn test_compile_textured_cube_invalid_material() {
-        let render_desc = RenderDesc::TexturedCube {
-            render_data: RenderData {
-                material: "stone_material".to_string(),
-                ..Default::default()
-            },
-            textured_cube_desc: TexturedCubeDesc {
-                side_texture: "stone".to_string(),
-                top_texture: Some("stone_top".to_string()),
-                bottom_texture: Some("stone_bottom".to_string()),
-            },
+        let mut ctx = test_ctx();
+        // Material didn't return `material_id_to_texture_name`.
+        ctx.1 = Default::default();
+
+        let ctx = RenderDescCompileCtx {
+            material_name_to_id: &ctx.0,
+            material_id_to_texture_name: &ctx.1,
+            texture_asset_dictionary: &ctx.2,
         };
 
-        let mut material_name_to_id = Dictionary::<MaterialName, MaterialId>::default();
-        material_name_to_id.set("stone_material".to_string(), 0);
+        let render_desc = render_desc();
 
-        let mut material_id_to_texture_name = Dictionary::<MaterialId, TextureName>::default();
-
-        let mut texture_indices = TextureIndexDictionary::default();
-        texture_indices.set("stone".to_string(), 1);
-        texture_indices.set("stone_top".to_string(), 2);
-        texture_indices.set("stone_bottom".to_string(), 3);
-
-        let mut texture_asset_dictionary = TextureDictionary::default();
-        texture_asset_dictionary.set(
-            "block_textures".to_string(),
-            TextureArray {
-                data: TextureArrayData {
-                    path: "opaque.png".to_string(),
-                    textures: texture_indices,
-                },
-            },
-        );
-
-        let result = render_desc.compile(
-            &material_name_to_id,
-            &material_id_to_texture_name,
-            &texture_asset_dictionary,
-        );
+        let result = render_desc.compile(ctx);
 
         assert!(matches!(
             result,
