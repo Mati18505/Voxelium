@@ -1,6 +1,5 @@
 use shared::entities::BlockSide;
 
-
 use crate::bevy_resources::{RenderData, RenderDesc, TexturedCubeDesc};
 
 #[derive(Debug)]

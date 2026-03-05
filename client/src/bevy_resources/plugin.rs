@@ -6,7 +6,9 @@ use shared::entities::*;
 use crate::{
     bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
-        BevyBlockTypeStorageAsset, MaterialsDictAsset, MaterialsDictionary, RenderDescDictAsset, RenderDescDictionary, TextureAsset, TextureDictAsset, TextureDictionary, TextureDictionaryCompilationResult, TextureId, TextureIndexDictionary
+        BevyBlockTypeStorageAsset, MaterialsDictAsset, MaterialsDictionary, RenderDescDictAsset,
+        RenderDescDictionary, TextureAsset, TextureDictAsset, TextureDictionary,
+        TextureDictionaryCompilationResult, TextureId, TextureIndexDictionary,
     },
     bevy_types::{AppStates, GameResources},
     VoxelAssets,

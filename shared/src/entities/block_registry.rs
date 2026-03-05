@@ -25,3 +25,11 @@ pub fn name_to_block_id(name: &str) -> BlockID {
         BlockID::default()
     })
 }
+
+pub fn iterate_over_block_registry() -> std::collections::hash_map::Iter<'static, String, BlockID> {
+    let map = BLOCK_NAME_TO_ID
+        .get()
+        .expect("BLOCK_NAME_TO_ID not initialized");
+
+    map.iter()
+}

@@ -1,11 +1,11 @@
 use bevy::prelude::*;
 use bevy::{
     asset::{AssetServer, Assets, Handle},
+    color::palettes::css::GRAY,
     ecs::system::{Res, ResMut},
     image::Image,
-    color::palettes::css::GRAY,
 };
-use shared::entities::name_to_block_id;
+use shared::entities::{iterate_over_block_registry, name_to_block_id, BlockID};
 use thiserror::Error;
 
 use crate::{
@@ -39,9 +39,13 @@ pub type TextureIdStorage = Storage<Handle<Image>>;
 pub enum RenderDescDictionaryCompilationWarning {
     #[error("Cannot compile block type: {0}, {1}")]
     CannotCompile(BlockTypeName, RenderDescCompilationError),
+    #[error("Cannot find corresponding render desc for block: {0}")]
+    NoCorrespondingRenderDesc(BlockTypeName),
+    #[error("Cannot find corresponding block for render desc: {0}")]
+    NoCorrespondingBlockInRegistry(BlockTypeName),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct RenderDescDictionaryCompilationOutput {
     /// Generated output.
     pub storage: RenderShapeStorage,
@@ -50,32 +54,49 @@ pub struct RenderDescDictionaryCompilationOutput {
 }
 
 impl RenderDescDictionary {
-    /// Creates [`RenderShapeStorage`] from [`RenderDescDictionary`], by compiling each [`RenderShape`] from [`RenderDesc`].
-    /// Items in `RenderShapeStorage` are in order defined by `block_registry`.
+    /// Creates [`RenderShapeStorage`] from [`RenderDescDictionary`], by compiling each [`RenderShape`] from [`RenderDesc`] for every block in 'block_registry'.
+    /// Items in [`RenderShapeStorage`] are in order defined by `block_registry`.
+    /// Compiles only render descriptions that have corresponding entry in `block_registry'.
     pub fn compile(
         &self,
         texture_dictionary: &TextureIndexDictionary,
         material_name_to_id: &Dictionary<MaterialName, MaterialId>,
     ) -> RenderDescDictionaryCompilationOutput {
         use RenderDescDictionaryCompilationWarning::*;
-        let mut warnings: Vec<RenderDescDictionaryCompilationWarning> = vec![];
+        let mut out = RenderDescDictionaryCompilationOutput::default();
 
-        let mut compiled = Vec::new();
-
-        for (block_type_name, render_desc) in self.iter() {
-            let block_id = name_to_block_id(block_type_name);
-
-            match render_desc.compile(texture_dictionary, material_name_to_id) {
-                Ok(c) => compiled.push((block_id, c)),
-                Err(e) => warnings.push(CannotCompile(block_type_name.to_string(), e)),
+        for (render_desc_name, _render_desc) in self.iter() {
+            if render_desc_name != "air" {
+                if name_to_block_id(render_desc_name) == BlockID::default() {
+                    out.warnings
+                        .push(NoCorrespondingBlockInRegistry(render_desc_name.to_string()));
+                }
             }
         }
 
-        compiled.sort_by_key(|(id, _)| *id);
-        let storage =
-            RenderShapeStorage::new(compiled.into_iter().map(|(_, shape)| shape).collect());
+        let mut block_registry: Vec<_> = iterate_over_block_registry().collect();
+        block_registry.sort_by_key(|(_, block_id)| *block_id);
 
-        RenderDescDictionaryCompilationOutput { storage, warnings }
+        for (block_type_name, block_id) in block_registry {
+            let render_shape = if let Some(render_desc) = self.get(block_type_name) {
+                match render_desc.compile(texture_dictionary, material_name_to_id) {
+                    Ok(compilation_result) => compilation_result,
+                    Err(e) => {
+                        out.warnings
+                            .push(CannotCompile(block_type_name.to_string(), e));
+                        RenderShape::Invisible
+                    }
+                }
+            } else {
+                out.warnings
+                    .push(NoCorrespondingRenderDesc(block_type_name.to_string()));
+                RenderShape::Invisible
+            };
+
+            out.storage.add(render_shape);
+        }
+
+        out
     }
 }
 
@@ -122,23 +143,13 @@ pub enum MaterialsDictionaryCompilationWarning {
     CannotCompile(MaterialName, MaterialCompilationError),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct MaterialsDictionaryCompilationResult {
     pub name_to_id: Dictionary<MaterialName, MaterialId>,
     pub id_to_handle: MaterialStorage,
 
     /// Non-fatal issues encountered during compilation.
     pub warnings: Vec<MaterialsDictionaryCompilationWarning>,
-}
-
-impl Default for MaterialsDictionaryCompilationResult {
-    fn default() -> Self {
-        Self {
-            name_to_id: Default::default(),
-            id_to_handle: MaterialStorage::new(Vec::new()),
-            warnings: Vec::default(),
-        }
-    }
 }
 
 impl MaterialsDictionary {
@@ -177,8 +188,12 @@ impl MaterialsDictionary {
                             base_color: GRAY.into(),
                             ..Default::default()
                         });
-                        result.id_to_handle.add(MaterialHandle::PlaceHolder(placeholder));
-                        result.warnings.push(CannotCompile(material_name.to_string(), err));
+                        result
+                            .id_to_handle
+                            .add(MaterialHandle::PlaceHolder(placeholder));
+                        result
+                            .warnings
+                            .push(CannotCompile(material_name.to_string(), err));
                     }
                 }
             });
@@ -220,7 +235,9 @@ fn compile_material(
         .clone();
 
     if textures.get(&texture_handle).is_none() {
-        return Err(MaterialCompilationError::NoSuchTexture(texture_name.to_string()));
+        return Err(MaterialCompilationError::NoSuchTexture(
+            texture_name.to_string(),
+        ));
     }
 
     let material_handle = match material_asset {

@@ -1,6 +1,6 @@
 use std::slice::Iter;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Storage<V> {
     storage: Vec<V>,
 }
@@ -22,5 +22,13 @@ impl<V> Storage<V> {
 
     pub fn iter(&self) -> Iter<'_, V> {
         self.storage.iter()
+    }
+}
+
+impl<V> Default for Storage<V> {
+    fn default() -> Self {
+        Self {
+            storage: Vec::new(),
+        }
     }
 }
