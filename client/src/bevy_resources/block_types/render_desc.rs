@@ -190,11 +190,14 @@ impl Default for TexturedCubeDesc {
 
 #[cfg(test)]
 mod tests {
+    use assert_matches::assert_matches;
+
     use crate::bevy_resources::{PaletteData, TextureArrayData};
 
     use super::*;
 
-    fn render_desc() -> RenderDesc {
+    /// Returns [`RenderDesc::TexturedCube`] that passes tests.
+    fn textured_rd() -> RenderDesc {
         RenderDesc::TexturedCube {
             render_data: RenderData {
                 material: "stone_material".to_string(),
@@ -205,6 +208,17 @@ mod tests {
                 top_texture: Some("stone_top".to_string()),
                 bottom_texture: Some("stone_bottom".to_string()),
             },
+        }
+    }
+
+    /// Returns [`RenderDesc::ColoredCube`] that passes tests.
+    fn colored_rd() -> RenderDesc {
+        RenderDesc::ColoredCube {
+            render_data: RenderData {
+                material: "stone_material".to_string(),
+                ..Default::default()
+            },
+            color_index: 0,
         }
     }
 
@@ -244,7 +258,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_textured_cube_compiles_successfully() {
+    fn test_textured_cube_compiles_successfully() {
         let ctx = test_ctx();
         let ctx = RenderDescCompileCtx {
             material_name_to_id: &ctx.0,
@@ -252,11 +266,27 @@ mod tests {
             texture_asset_dictionary: &ctx.2,
         };
 
-        let render_desc = render_desc();
+        let render_desc = textured_rd();
 
         let result = render_desc.compile(ctx);
 
-        assert!(matches!(result, Ok(RenderShape::TexturedCube { .. })));
+        assert_matches!(result, Ok(RenderShape::TexturedCube { .. }));
+    }
+
+    #[test]
+    fn test_colored_cube_compiles_successfully() {
+        let ctx = test_ctx();
+        let ctx = RenderDescCompileCtx {
+            material_name_to_id: &ctx.0,
+            material_id_to_texture_name: &ctx.1,
+            texture_asset_dictionary: &ctx.2,
+        };
+
+        let render_desc = colored_rd();
+
+        let result = render_desc.compile(ctx);
+
+        assert_matches!(result, Ok(RenderShape::ColoredCube { .. }));
     }
 
     #[test]
@@ -271,13 +301,10 @@ mod tests {
             texture_asset_dictionary: &ctx.2,
         };
 
-        let render_desc = render_desc();
+        let render_desc = textured_rd();
 
         let result = render_desc.compile(ctx);
 
-        assert!(matches!(
-            result,
-            Err(RenderDescCompilationError::InvalidMaterial(..))
-        ));
+        assert_matches!(result, Err(RenderDescCompilationError::InvalidMaterial(..)));
     }
 }
