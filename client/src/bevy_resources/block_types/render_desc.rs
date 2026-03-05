@@ -6,7 +6,9 @@ use shared::entities::BlockSide;
 
 use crate::{
     bevy_resources::{
-        Dictionary, MaterialName, TextureAsset::{Palette, TextureArray}, TextureDictionary, TextureIndexDictionary, TextureName
+        Dictionary, MaterialName,
+        TextureAsset::{Palette, TextureArray},
+        TextureDictionary, TextureIndexDictionary, TextureName,
     },
     chunk_mesh_builder::{ColorIndex, MaterialId, RenderShape, TextureIndex, VoxelRenderData},
 };
@@ -90,8 +92,15 @@ impl RenderDesc {
             .get(&rd.material)
             .ok_or(NoSuchMaterial(rd.material.to_string()))?;
 
-        let texture_name = material_id_to_texture_name.get(&material).ok_or(InvalidMaterial(rd.material.to_string(), "textured_cube".to_string()))?;
-        let texture_asset = texture_asset_dictionary.get(&texture_name).ok_or(NoTextureAsset(texture_name.to_string()))?;
+        let texture_name = material_id_to_texture_name
+            .get(&material)
+            .ok_or(InvalidMaterial(
+                rd.material.to_string(),
+                "textured_cube".to_string(),
+            ))?;
+        let texture_asset = texture_asset_dictionary
+            .get(&texture_name)
+            .ok_or(NoTextureAsset(texture_name.to_string()))?;
 
         let texture_dictionary = match texture_asset {
             TextureArray { data } => &data.textures,
@@ -271,7 +280,9 @@ mod tests {
             &texture_asset_dictionary,
         );
 
-        assert!(matches!(result, Err(RenderDescCompilationError::InvalidMaterial(..))));
+        assert!(matches!(
+            result,
+            Err(RenderDescCompilationError::InvalidMaterial(..))
+        ));
     }
-
 }

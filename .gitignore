@@ -30,3 +30,6 @@ graph2.png
 /client/assets/vox
 /.idea
 tmp/
+*.xcf
+.session.vim
+log.txt

@@ -20,12 +20,12 @@ need_stdout = false
 
 # Run clippy on the default target
 [jobs.clippy]
-command = ["cargo", "clippy", "--profile", "tracy"]
+command = ["cargo", "clippy", "--profile", "tracy", "--", "-D", "warnings"]
 need_stdout = false
 
 # Run clippy on all targets
 [jobs.clippy-all]
-command = ["cargo", "clippy", "--all-targets", "--workspace", "--profile", "tracy"]
+command = ["cargo", "clippy", "--all-targets", "--workspace", "--profile", "tracy", "--", "-D", "warnings"]
 need_stdout = false
 
 # This job lets you run
