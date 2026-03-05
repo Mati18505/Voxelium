@@ -5,7 +5,9 @@ use thiserror::Error;
 use shared::entities::BlockSide;
 
 use crate::{
-    bevy_resources::{Dictionary, MaterialName, TextureIndexDictionary},
+    bevy_resources::{
+        Dictionary, MaterialName, TextureAsset::{Palette, TextureArray}, TextureDictionary, TextureIndexDictionary, TextureName
+    },
     chunk_mesh_builder::{ColorIndex, MaterialId, RenderShape, TextureIndex, VoxelRenderData},
 };
 
@@ -43,13 +45,16 @@ pub enum RenderDesc {
 pub enum RenderDescCompilationError {
     #[error("No such material: {0}")]
     NoSuchMaterial(String),
+    #[error("Texture asset was not found: {0}")]
+    NoTextureAsset(TextureName),
 }
 
 impl RenderDesc {
     pub fn compile(
         &self,
-        texture_dictionary: &TextureIndexDictionary,
         material_name_to_id: &Dictionary<MaterialName, MaterialId>,
+        material_id_to_texture_name: &Dictionary<MaterialId, TextureName>,
+        texture_asset_dictionary: &TextureDictionary,
     ) -> Result<RenderShape, RenderDescCompilationError> {
         match self {
             RenderDesc::TexturedCube {
@@ -58,8 +63,9 @@ impl RenderDesc {
             } => Self::compile_textured_cube(
                 render_data,
                 textured_cube_desc,
-                texture_dictionary,
                 material_name_to_id,
+                material_id_to_texture_name,
+                texture_asset_dictionary,
             ),
             RenderDesc::ColoredCube {
                 render_data,
@@ -72,14 +78,23 @@ impl RenderDesc {
     fn compile_textured_cube(
         rd: &RenderData,
         desc: &TexturedCubeDesc,
-        texture_dictionary: &TextureIndexDictionary,
         material_name_to_id: &Dictionary<MaterialName, MaterialId>,
+        material_id_to_texture_name: &Dictionary<MaterialId, TextureName>,
+        texture_asset_dictionary: &TextureDictionary,
     ) -> Result<RenderShape, RenderDescCompilationError> {
         use RenderDescCompilationError::*;
 
         let material = *material_name_to_id
             .get(&rd.material)
             .ok_or(NoSuchMaterial(rd.material.to_string()))?;
+
+        let texture_name = material_id_to_texture_name.get(&material).unwrap();
+        let texture_asset = texture_asset_dictionary.get(&texture_name).ok_or(NoTextureAsset(texture_name.to_string()))?;
+
+        let texture_dictionary = match texture_asset {
+            TextureArray { data } => &data.textures,
+            Palette { data } => unreachable!(),
+        };
 
         let render_data = VoxelRenderData {
             visible: rd.visible,

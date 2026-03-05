@@ -116,6 +116,7 @@ fn compile_rest(
 
     let material_compilation_result = materials_dict.compile(
         &mut textures,
+        &texture_dictionary,
         &loaded_textures.textures,
         &mut placeholder_materials,
         &mut textured_materials,
@@ -132,16 +133,10 @@ fn compile_rest(
 
     init_block_names(server_block_type_storage_asset.into());
 
-    // TODO: make this flexible.
-    let texture_index_dictionary: &TextureIndexDictionary =
-        match texture_dictionary.get(&"opaque".to_string()).unwrap() {
-            TextureAsset::TextureArray { data } => &data.textures,
-            TextureAsset::Palette { data } => unimplemented!(),
-        };
-
     let compilation_out = render_desc_dict.compile(
-        &texture_index_dictionary,
         &material_compilation_result.name_to_id,
+        &material_compilation_result.id_to_texture_name,
+        &texture_dictionary_asset.0,
     );
     let render_shape_storage = Arc::new(compilation_out.storage);
 

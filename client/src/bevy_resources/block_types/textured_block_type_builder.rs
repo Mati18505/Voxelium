@@ -20,7 +20,7 @@ impl TexturedBlockTypeBuilder {
     }
 
     pub fn render_data(mut self, render_data: RenderData) -> Self {
-        let (rd, desc) = Self::expect_textured_cube_desc(&mut self.render_desc);
+        let (rd, _desc) = Self::expect_textured_cube_desc(&mut self.render_desc);
         *rd = render_data;
         self
     }
@@ -28,7 +28,7 @@ impl TexturedBlockTypeBuilder {
     pub fn texture(mut self, block_side: BlockSide, texture_name: &str) -> Self {
         use BlockSide::*;
 
-        let (rd, desc) = Self::expect_textured_cube_desc(&mut self.render_desc);
+        let (_rd, desc) = Self::expect_textured_cube_desc(&mut self.render_desc);
 
         match block_side {
             Back | Front | Left | Right => desc.side_texture = texture_name.to_owned(),

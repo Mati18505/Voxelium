@@ -13,7 +13,7 @@
 		{
       "name": "cutout",
 			"type": "cutout_textured_cube",
-			"texture_array": "opaque"
+			"texture_array": "cutout"
 		}
   ]
 }

@@ -59,8 +59,9 @@ impl RenderDescDictionary {
     /// Compiles only render descriptions that have corresponding entry in `block_registry'.
     pub fn compile(
         &self,
-        texture_dictionary: &TextureIndexDictionary,
         material_name_to_id: &Dictionary<MaterialName, MaterialId>,
+        material_id_to_texture_name: &Dictionary<MaterialId, TextureName>,
+        texture_asset_dictionary: &TextureDictionary,
     ) -> RenderDescDictionaryCompilationOutput {
         use RenderDescDictionaryCompilationWarning::*;
         let mut out = RenderDescDictionaryCompilationOutput::default();
@@ -79,7 +80,11 @@ impl RenderDescDictionary {
 
         for (block_type_name, block_id) in block_registry {
             let render_shape = if let Some(render_desc) = self.get(block_type_name) {
-                match render_desc.compile(texture_dictionary, material_name_to_id) {
+                match render_desc.compile(
+                    material_name_to_id,
+                    material_id_to_texture_name,
+                    texture_asset_dictionary,
+                ) {
                     Ok(compilation_result) => compilation_result,
                     Err(e) => {
                         out.warnings
@@ -148,6 +153,11 @@ pub struct MaterialsDictionaryCompilationResult {
     pub name_to_id: Dictionary<MaterialName, MaterialId>,
     pub id_to_handle: MaterialStorage,
 
+    // For render desc compilation.
+    // Should be set for every material that uses texture.
+    // No value if material doesn't use texture.
+    pub id_to_texture_name: Dictionary<MaterialId, TextureName>,
+
     /// Non-fatal issues encountered during compilation.
     pub warnings: Vec<MaterialsDictionaryCompilationWarning>,
 }
@@ -156,6 +166,7 @@ impl MaterialsDictionary {
     pub fn compile(
         &self,
         textures: &mut ResMut<Assets<Image>>,
+        texture_assets: &TextureDictionary,
         compiled_textures: &TextureDictionaryCompilationResult,
         placeholder_materials: &mut ResMut<Assets<StandardMaterial>>,
         textured_materials: &mut ResMut<Assets<TexturedCubeMaterial>>,
@@ -172,6 +183,16 @@ impl MaterialsDictionary {
                 result
                     .name_to_id
                     .set(material_name.to_string(), id as MaterialId);
+
+                let texture_name: &String = match material_asset {
+                    MaterialAsset::TexturedCube { data } => &data.texture_array_name,
+                    MaterialAsset::ColoredCube { data } => &data.palette_name,
+                    MaterialAsset::CutoutTexturedCube { data } => &data.texture_array_name,
+                };
+                result
+                    .id_to_texture_name
+                    .set(id as MaterialId, texture_name.to_string());
+
                 match compile_material(
                     material_asset,
                     textures,
