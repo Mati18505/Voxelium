@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MaterialHandle {
     PlaceHolder(Handle<StandardMaterial>),
     TexturedCube(Handle<TexturedCubeMaterial>),
