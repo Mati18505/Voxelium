@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use bevy::log::info_span;
 use cgmath::Vector3;
 
@@ -22,7 +24,7 @@ impl ChunkMesher for NaiveMesher {
         .entered();
 
         let mut chunk_mesh = ChunkMesh::default();
-        let mut warnings: Vec<MesherWarning> = Vec::default();
+        let mut warnings: HashMap<MesherWarning, u32> = HashMap::default();
         let block_storage = chunk.get_block_storage();
 
         for (index, block_id) in block_storage.iter().enumerate() {
@@ -45,7 +47,10 @@ impl ChunkMesher for NaiveMesher {
                     );
                 }
                 None => {
-                    warnings.push(MesherWarning::UnknownRenderShape(*block_id, pos));
+                    warnings
+                        .entry(MesherWarning::UnknownRenderShape(*block_id))
+                        .and_modify(|e| *e += 1)
+                        .or_insert(1);
                 }
             }
         }
@@ -70,7 +75,7 @@ impl NaiveMesher {
         pos: BlockInChunkPos,
         mesh: &mut LayerMesh,
         block_storage: &BlockStorage,
-        warnings: &mut Vec<MesherWarning>,
+        warnings: &mut HashMap<MesherWarning, u32>,
     ) {
         if !render_shape.render_data().visible {
             return;
@@ -81,14 +86,14 @@ impl NaiveMesher {
 
             let has_transparent_neighbor = match result {
                 Err(err) => {
-                    warnings.push(err);
+                    warnings.entry(err).and_modify(|e| *e += 1).or_insert(1);
                     true
                 }
                 Ok(has_transparent_neighbor) => has_transparent_neighbor,
             };
 
             if has_transparent_neighbor {
-                self.create_block_side(side, pos, render_shape, mesh, warnings);
+                self.create_block_side(side, pos, render_shape, mesh);
             }
         }
     }
@@ -104,7 +109,7 @@ impl NaiveMesher {
             let neighbor_render_shape: &RenderShape = self
                 .render_shape_storage
                 .get_by_id(neighbor_id as usize)
-                .ok_or(MesherWarning::UnknownRenderShape(neighbor_id, pos))?;
+                .ok_or(MesherWarning::UnknownRenderShape(neighbor_id))?;
 
             return Ok(neighbor_render_shape.render_data().translucent);
         }
@@ -124,7 +129,6 @@ impl NaiveMesher {
         block_pos: BlockInChunkPos,
         render_shape: &RenderShape,
         mesh: &mut LayerMesh,
-        warnings: &mut Vec<MesherWarning>,
     ) {
         let pos_x = block_pos.x as f32;
         let pos_y = block_pos.y as f32;

@@ -1,21 +1,21 @@
-use std::fmt::Debug;
+use std::{collections::HashMap, fmt::Debug};
 use thiserror::Error;
 
 use crate::chunk_mesh_builder::ChunkMesh;
 use shared::entities::{BlockID, BlockInChunkPos, Chunk};
 
-#[derive(Debug, Error, Clone, PartialEq)]
+#[derive(Debug, Error, Clone, PartialEq, Eq, Hash)]
 pub enum MesherWarning {
-    #[error("Mesher encountered unknown render shape id: {0}, on position: {1:?}")]
-    UnknownRenderShape(BlockID, BlockInChunkPos),
+    #[error("Mesher encountered unknown render shape id: {0}")]
+    UnknownRenderShape(BlockID),
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone)]
 pub struct MesherOutput {
     /// Generated chunk mesh.
     pub mesh: ChunkMesh,
-    /// Non-fatal issues encountered during mesh creation (may contain duplicates).
-    pub warnings: Vec<MesherWarning>,
+    /// Non-fatal issues encountered during mesh creation and repetition count.
+    pub warnings: HashMap<MesherWarning, u32>,
 }
 
 pub trait ChunkMesher: Send + Sync + Debug {
