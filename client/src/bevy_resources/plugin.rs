@@ -14,32 +14,15 @@ use crate::{
     VoxelAssets,
 };
 
-#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
-enum ResourcesCompilingState {
-    #[default]
-    CompilingTextures,
-    LoadingTextures,
-    CompilingRest,
-}
-
 pub struct ResourcesPlugin;
 impl Plugin for ResourcesPlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<ResourcesCompilingState>()
-            .init_resource::<SourceTextures>()
+        app.init_resource::<SourceTextures>()
             .add_systems(OnEnter(AppStates::Compile), compile_assets)
             .add_systems(
-                OnEnter(ResourcesCompilingState::CompilingRest),
-                compile_rest,
-            )
-            .add_systems(
                 Update,
-                check_all_textures_loaded
-                    .run_if(in_state(ResourcesCompilingState::LoadingTextures)),
-            )
-            .add_systems(
-                Update,
-                create_texture_arrays.run_if(in_state(ResourcesCompilingState::LoadingTextures)),
+                (check_all_textures_loaded, create_texture_arrays)
+                    .run_if(in_state(AppStates::Compile)),
             );
     }
 }
@@ -47,19 +30,18 @@ impl Plugin for ResourcesPlugin {
 fn compile_assets(
     texture_dict_asset: ResMut<Assets<TextureDictAsset>>,
     voxel_assets: Res<VoxelAssets>,
-    asset_server: Res<AssetServer>,
-    textures_out: ResMut<SourceTextures>,
-    mut next_state: ResMut<NextState<ResourcesCompilingState>>,
-) {
-    load_textures(texture_dict_asset, voxel_assets, asset_server, textures_out);
-    next_state.set(ResourcesCompilingState::LoadingTextures);
-}
+    asset_server: ResMut<AssetServer>,
+    source_textures: ResMut<SourceTextures>,
 
-fn load_textures(
-    texture_dict_asset: ResMut<Assets<TextureDictAsset>>,
-    voxel_assets: Res<VoxelAssets>,
-    asset_server: Res<AssetServer>,
-    mut textures_out: ResMut<SourceTextures>,
+    mut commands: Commands,
+    mut placeholder_materials: ResMut<Assets<StandardMaterial>>,
+    mut textured_materials: ResMut<Assets<TexturedCubeMaterial>>,
+    mut colored_materials: ResMut<Assets<ColoredCubeMaterial>>,
+    mut cutout_materials: ResMut<Assets<CutoutTexturedCubeMaterial>>,
+    mut render_desc_dict_asset: ResMut<Assets<RenderDescDictAsset>>,
+    mut materials_dict_asset: ResMut<Assets<MaterialsDictAsset>>,
+    server_block_type_assets: Res<Assets<BevyBlockTypeStorageAsset>>,
+    mut next_state: ResMut<NextState<AppStates>>,
 ) {
     let texture_dictionary_asset: &TextureDictAsset = texture_dict_asset
         .get(&voxel_assets.texture_dict_asset)
@@ -68,28 +50,10 @@ fn load_textures(
 
     dbg!(&texture_dictionary);
 
-    let result = texture_dictionary.compile(asset_server);
-    dbg!(&result);
+    let texture_dictionary_compilation_result = texture_dictionary.compile(asset_server);
 
-    textures_out.textures = result;
-}
+    dbg!(&texture_dictionary_compilation_result);
 
-fn compile_rest(
-    mut commands: Commands,
-    mut placeholder_materials: ResMut<Assets<StandardMaterial>>,
-    mut textured_materials: ResMut<Assets<TexturedCubeMaterial>>,
-    mut colored_materials: ResMut<Assets<ColoredCubeMaterial>>,
-    mut cutout_materials: ResMut<Assets<CutoutTexturedCubeMaterial>>,
-    mut textures: ResMut<Assets<Image>>,
-    texture_dict_asset: ResMut<Assets<TextureDictAsset>>,
-    mut render_desc_dict_asset: ResMut<Assets<RenderDescDictAsset>>,
-    mut materials_dict_asset: ResMut<Assets<MaterialsDictAsset>>,
-    server_block_type_assets: Res<Assets<BevyBlockTypeStorageAsset>>,
-    voxel_assets: Res<VoxelAssets>,
-    asset_server: Res<AssetServer>,
-    mut next_state: ResMut<NextState<AppStates>>,
-    loaded_textures: Res<SourceTextures>,
-) {
     let texture_dictionary_asset: &TextureDictAsset = texture_dict_asset
         .get(&voxel_assets.texture_dict_asset)
         .unwrap();
@@ -115,14 +79,12 @@ fn compile_rest(
     dbg!(&materials_dict);
 
     let material_compilation_result = materials_dict.compile(
-        &mut textures,
         &texture_dictionary,
-        &loaded_textures.textures,
+        &texture_dictionary_compilation_result,
         &mut placeholder_materials,
         &mut textured_materials,
         &mut colored_materials,
         &mut cutout_materials,
-        asset_server,
     );
 
     for warning in &material_compilation_result.warnings {
@@ -162,11 +124,7 @@ struct SourceTextures {
     textures: TextureDictionaryCompilationResult,
 }
 
-fn check_all_textures_loaded(
-    textures: Res<SourceTextures>,
-    asset_server: Res<AssetServer>,
-    mut next_state: ResMut<NextState<ResourcesCompilingState>>,
-) {
+fn check_all_textures_loaded(textures: Res<SourceTextures>, asset_server: Res<AssetServer>) {
     let mut has_pending = false;
 
     for (texture_id, handle) in textures.textures.id_to_handle.iter().enumerate() {
@@ -184,10 +142,6 @@ fn check_all_textures_loaded(
             }
             _ => has_pending = true,
         }
-    }
-
-    if !has_pending {
-        next_state.set(ResourcesCompilingState::CompilingRest);
     }
 }
 

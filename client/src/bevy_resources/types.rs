@@ -111,6 +111,7 @@ impl RenderDescDictionary {
 pub struct TextureDictionaryCompilationResult {
     pub name_to_id: Dictionary<TextureName, TextureId>,
     pub id_to_handle: TextureIdStorage,
+    pub texture_assets_to_load: Vec<String>,
 
     // For texture array creation.
     pub asset_id_to_id: Dictionary<AssetId<Image>, TextureId>,
@@ -118,7 +119,7 @@ pub struct TextureDictionaryCompilationResult {
 }
 
 impl TextureDictionary {
-    pub fn compile(&self, asset_server: Res<AssetServer>) -> TextureDictionaryCompilationResult {
+    pub fn compile(&self, asset_server: ResMut<AssetServer>) -> TextureDictionaryCompilationResult {
         let mut result = TextureDictionaryCompilationResult::default();
 
         self.iter()
@@ -167,14 +168,12 @@ pub struct MaterialsDictionaryCompilationResult {
 impl MaterialsDictionary {
     pub fn compile(
         &self,
-        textures: &mut ResMut<Assets<Image>>,
         texture_assets: &TextureDictionary,
         compiled_textures: &TextureDictionaryCompilationResult,
         placeholder_materials: &mut ResMut<Assets<StandardMaterial>>,
         textured_materials: &mut ResMut<Assets<TexturedCubeMaterial>>,
         colored_materials: &mut ResMut<Assets<ColoredCubeMaterial>>,
         cutout_materials: &mut ResMut<Assets<CutoutTexturedCubeMaterial>>,
-        asset_server: Res<AssetServer>,
     ) -> MaterialsDictionaryCompilationResult {
         use MaterialsDictionaryCompilationWarning::*;
         let mut result = MaterialsDictionaryCompilationResult::default();
@@ -195,30 +194,14 @@ impl MaterialsDictionary {
                     .id_to_texture_name
                     .set(id as MaterialId, texture_name.to_string());
 
-                match compile_material(
-                    material_asset,
-                    textures,
-                    compiled_textures,
-                    textured_materials,
-                    colored_materials,
-                    cutout_materials,
-                ) {
-                    Ok(material_handle) => {
-                        result.id_to_handle.add(material_handle);
-                    }
-                    Err(err) => {
-                        let placeholder = placeholder_materials.add(StandardMaterial {
-                            base_color: GRAY.into(),
-                            ..Default::default()
-                        });
-                        result
-                            .id_to_handle
-                            .add(MaterialHandle::PlaceHolder(placeholder));
-                        result
-                            .warnings
-                            .push(CannotCompile(material_name.to_string(), err));
-                    }
-                }
+                let placeholder = placeholder_materials.add(StandardMaterial {
+                    base_color: GRAY.into(),
+                    ..Default::default()
+                });
+
+                result
+                    .id_to_handle
+                    .add(MaterialHandle::PlaceHolder(placeholder));
             });
 
         result
@@ -233,7 +216,6 @@ pub enum MaterialCompilationError {
 
 fn compile_material(
     material_asset: &MaterialAsset,
-    textures: &mut ResMut<Assets<Image>>,
     compiled_textures: &TextureDictionaryCompilationResult,
     textured_materials: &mut ResMut<Assets<TexturedCubeMaterial>>,
     colored_materials: &mut ResMut<Assets<ColoredCubeMaterial>>,
@@ -256,12 +238,6 @@ fn compile_material(
             texture_name.to_string(),
         ))?
         .clone();
-
-    if textures.get(&texture_handle).is_none() {
-        return Err(MaterialCompilationError::NoSuchTexture(
-            texture_name.to_string(),
-        ));
-    }
 
     let material_handle = match material_asset {
         MaterialAsset::TexturedCube { .. } => {
