@@ -82,13 +82,13 @@ impl AssetLoader for MaterialsDictAssetLoader {
             .to_owned();
 
             let mut material_asset: MaterialAsset = match material_type.as_str() {
-                "textured_cube" => Ok(MaterialAsset::TexturedCube {
+                "textured_cube" => Ok(MaterialAsset::Textured {
                     data: TexturedCubeMaterialData::default(),
                 }),
-                "colored_cube" => Ok(MaterialAsset::ColoredCube {
+                "colored_cube" => Ok(MaterialAsset::Colored {
                     data: ColoredCubeMaterialData::default(),
                 }),
-                "cutout_textured_cube" => Ok(MaterialAsset::CutoutTexturedCube {
+                "cutout_textured_cube" => Ok(MaterialAsset::CutoutTextured {
                     data: TexturedCubeMaterialData::default(),
                 }),
                 _ => Err(InvalidConfig(format!(
@@ -97,13 +97,13 @@ impl AssetLoader for MaterialsDictAssetLoader {
             }?;
 
             match material_asset {
-                MaterialAsset::TexturedCube { ref mut data } => {
+                MaterialAsset::Textured { ref mut data } => {
                     *data = load_textured_cube_data(material)?;
                 }
-                MaterialAsset::ColoredCube { ref mut data } => {
+                MaterialAsset::Colored { ref mut data } => {
                     *data = load_colored_cube_data(material)?;
                 }
-                MaterialAsset::CutoutTexturedCube { ref mut data } => {
+                MaterialAsset::CutoutTextured { ref mut data } => {
                     *data = load_textured_cube_data(material)?;
                 }
                 MaterialAsset::Placeholder => unreachable!(),

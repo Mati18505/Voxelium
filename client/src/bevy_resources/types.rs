@@ -195,9 +195,9 @@ impl MaterialsDictionary {
 
                 let maybe_texture_name: Option<String> = match material_asset {
                     MaterialAsset::Placeholder => None,
-                    MaterialAsset::TexturedCube { data } => Some(&data.texture_array_name),
-                    MaterialAsset::ColoredCube { data } => Some(&data.palette_name),
-                    MaterialAsset::CutoutTexturedCube { data } => Some(&data.texture_array_name),
+                    MaterialAsset::Textured { data } => Some(&data.texture_array_name),
+                    MaterialAsset::Colored { data } => Some(&data.palette_name),
+                    MaterialAsset::CutoutTextured { data } => Some(&data.texture_array_name),
                 }
                 .cloned();
 
@@ -274,9 +274,9 @@ fn compile_material_no_texture(
             };
             MaterialHandle::Placeholder(placeholder_materials.add(placeholder))
         }
-        MaterialAsset::TexturedCube { data } => unreachable!(),
-        MaterialAsset::ColoredCube { data } => unreachable!(),
-        MaterialAsset::CutoutTexturedCube { data } => unreachable!(),
+        MaterialAsset::Textured { data } => unreachable!(),
+        MaterialAsset::Colored { data } => unreachable!(),
+        MaterialAsset::CutoutTextured { data } => unreachable!(),
     };
 
     Ok(material_handle)
@@ -303,26 +303,26 @@ fn compile_material_with_texture(
         .clone();
 
     let material_handle = match material_asset {
-        MaterialAsset::TexturedCube { .. } => {
+        MaterialAsset::Textured { .. } => {
             let textured_mat = TexturedCubeMaterial {
                 array_texture: texture_handle,
             };
 
-            MaterialHandle::TexturedCube(textured_materials.add(textured_mat))
+            MaterialHandle::Textured(textured_materials.add(textured_mat))
         }
-        MaterialAsset::ColoredCube { .. } => {
+        MaterialAsset::Colored { .. } => {
             let colored_mat = ColoredCubeMaterial {
                 color_palette: texture_handle,
             };
 
-            MaterialHandle::ColoredCube(colored_materials.add(colored_mat))
+            MaterialHandle::Colored(colored_materials.add(colored_mat))
         }
-        MaterialAsset::CutoutTexturedCube { .. } => {
+        MaterialAsset::CutoutTextured { .. } => {
             let cutout_textured_mat = CutoutTexturedCubeMaterial {
                 array_texture: texture_handle,
             };
 
-            MaterialHandle::CutoutTexturedCube(cutout_materials.add(cutout_textured_mat))
+            MaterialHandle::CutoutTextured(cutout_materials.add(cutout_textured_mat))
         }
         MaterialAsset::Placeholder => unreachable!(),
     };
