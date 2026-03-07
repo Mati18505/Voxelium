@@ -4,7 +4,7 @@ use crate::bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, Textur
 
 #[derive(Debug, Clone)]
 pub enum MaterialHandle {
-    PlaceHolder(Handle<StandardMaterial>),
+    Placeholder(Handle<StandardMaterial>),
     TexturedCube(Handle<TexturedCubeMaterial>),
     ColoredCube(Handle<ColoredCubeMaterial>),
     CutoutTexturedCube(Handle<CutoutTexturedCubeMaterial>),
@@ -18,7 +18,7 @@ impl MaterialHandle {
         transform: Transform,
     ) -> Entity {
         match self {
-            MaterialHandle::PlaceHolder(mat) => commands
+            MaterialHandle::Placeholder(mat) => commands
                 .spawn((Mesh3d(mesh), MeshMaterial3d(mat.clone()), transform))
                 .id(),
             MaterialHandle::TexturedCube(mat) => commands

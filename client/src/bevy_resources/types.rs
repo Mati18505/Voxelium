@@ -272,7 +272,7 @@ fn compile_material_no_texture(
                 base_color: Color::srgba(0.54, 0.0, 0.54, 1.0),
                 ..Default::default()
             };
-            MaterialHandle::PlaceHolder(placeholder_materials.add(placeholder))
+            MaterialHandle::Placeholder(placeholder_materials.add(placeholder))
         }
         MaterialAsset::TexturedCube { data } => unreachable!(),
         MaterialAsset::ColoredCube { data } => unreachable!(),
