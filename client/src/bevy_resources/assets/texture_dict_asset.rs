@@ -8,6 +8,7 @@ use thiserror::Error;
 
 use crate::bevy_resources::{
     PaletteData, TextureArrayData, TextureAsset, TextureDictionary, TextureIndexDictionary,
+    TextureName,
 };
 
 use yaml_rust2::{yaml::Hash, Yaml, YamlLoader};
@@ -72,44 +73,62 @@ impl AssetLoader for TextureDictAssetLoader {
 
         let mut collected_textures = HashMap::default();
 
-        for texture in textures_array {
-            let texture: &Hash = texture
-                .as_hash()
-                .ok_or(InvalidConfig("texture should be a hash".to_string()))?;
-
-            for (k, v) in texture.iter() {
-                let name: &str = k
-                    .as_str()
-                    .ok_or(InvalidConfig("texture name should be a string".to_string()))?;
-                let texture_type: &str = v["type"]
-                    .as_str()
-                    .ok_or(InvalidConfig("missing texture type".to_string()))?;
-
-                let texture = match texture_type {
-                    "array" => Ok(TextureAsset::TextureArray {
-                        data: parse_array_texture_params(v)?,
-                    }),
-                    "palette" => Ok(TextureAsset::Palette {
-                        data: parse_palette_texture_params(v)?,
-                    }),
-                    _ => Err(InvalidConfig(format!(
-                        "unimplemented texture type {texture_type}"
-                    ))),
-                }?;
-
-                if collected_textures.contains_key(name) {
-                    warn!(
+        for texture_yaml in textures_array {
+            match parse_single_texture(texture_yaml) {
+                Ok((name, texture)) => {
+                    if collected_textures.contains_key(&name) {
+                        warn!(
                         "Duplicate texture entry \"{name}\" found in texture dict. Ignoring duplicate."
                     );
-                    continue;
-                }
+                        continue;
+                    }
 
-                collected_textures.insert(name.to_string(), texture);
+                    collected_textures.insert(name.to_string(), texture);
+                }
+                Err(err) => {
+                    warn!("Skipping render_desc entry: {err}");
+                }
             }
         }
 
         Ok(TextureDictAsset(TextureDictionary::new(collected_textures)))
     }
+}
+
+fn parse_single_texture(
+    texture: &Yaml,
+) -> Result<(TextureName, TextureAsset), TextureDictAssetLoaderError> {
+    use TextureDictAssetParseError::*;
+
+    let map: &Hash = texture
+        .as_hash()
+        .ok_or(InvalidConfig("texture should be a hash".to_string()))?;
+
+    let (k, v) = map
+        .iter()
+        .next()
+        .ok_or(InvalidConfig("too few entries".to_string()))?;
+
+    let name: &str = k
+        .as_str()
+        .ok_or(InvalidConfig("texture name should be a string".to_string()))?;
+    let texture_type: &str = v["type"]
+        .as_str()
+        .ok_or(InvalidConfig("missing texture type".to_string()))?;
+
+    let texture = match texture_type {
+        "array" => Ok(TextureAsset::TextureArray {
+            data: parse_array_texture_params(v)?,
+        }),
+        "palette" => Ok(TextureAsset::Palette {
+            data: parse_palette_texture_params(v)?,
+        }),
+        _ => Err(InvalidConfig(format!(
+            "unimplemented texture type {texture_type}"
+        ))),
+    }?;
+
+    Ok((name.to_string(), texture))
 }
 
 fn parse_array_texture_params(
