@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use bevy::{
     asset::RenderAssetUsages,
-    render::mesh::{Indices, Mesh, PrimitiveTopology},
+    mesh::{Indices, Mesh, PrimitiveTopology},
     transform::components::Transform,
 };
 

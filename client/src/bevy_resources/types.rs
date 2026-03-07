@@ -129,7 +129,7 @@ impl TextureDictionary {
                     TextureAsset::TextureArray { data } => &data.path,
                     TextureAsset::Palette { data } => &data.path,
                 };
-                let loading = asset_server.load(path);
+                let loading = asset_server.load(path.to_string());
 
                 result
                     .name_to_id

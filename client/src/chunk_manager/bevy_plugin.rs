@@ -27,8 +27,9 @@ pub struct ChunkManagerPlugin;
 impl Plugin for ChunkManagerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(AppStates::InGame), init_chunk_manager)
-            .add_event::<WorldChunkUpdateEvent>()
-            .add_systems(Update, update.run_if(in_state(AppStates::InGame)));
+            .add_message::<WorldChunkUpdateEvent>()
+            .add_systems(Update, update.run_if(in_state(AppStates::InGame)))
+            .add_observer(on_position_change);
     }
 }
 
@@ -70,21 +71,8 @@ fn update(
     mut meshes: ResMut<Assets<Mesh>>,
     game_resources: Res<GameResources>,
     mut chunk_manager_resources: ResMut<ChunkManagerResources>,
-    mut controller_events: EventReader<controller::PositionChangeEvent>,
-    chunk_manager_events: EventWriter<WorldChunkUpdateEvent>,
+    chunk_manager_events: MessageWriter<WorldChunkUpdateEvent>,
 ) {
-    for e in controller_events.read() {
-        let new_pos = e.new_pos;
-        let new_block_pos =
-            BlockPos::new(new_pos.x as isize, new_pos.y as isize, new_pos.z as isize);
-        let new_chunk_pos = ChunkPos::from(new_block_pos);
-
-        chunk_manager_resources
-            .chunk_manager
-            .update_controller_pos(new_chunk_pos);
-        // dbg!(&chunk_manager_resources.chunk_manager);
-    }
-
     chunk_manager_resources.chunk_manager.check_loaded_chunks();
     chunk_manager_resources.chunk_manager.check_built_chunks();
     chunk_manager_resources
@@ -97,4 +85,26 @@ fn update(
     chunk_manager_resources
         .event_manager
         .process_pending(chunk_manager_events);
+}
+
+fn on_position_change(
+    e: On<controller::PositionChangeEvent>,
+    mut chunk_manager_resources: Option<ResMut<ChunkManagerResources>>,
+    state: Res<State<AppStates>>,
+) {
+    if !matches!(state.get(), AppStates::InGame) {
+        return;
+    }
+
+    let new_pos = e.new_pos;
+    let new_block_pos = BlockPos::new(new_pos.x as isize, new_pos.y as isize, new_pos.z as isize);
+    let new_chunk_pos = ChunkPos::from(new_block_pos);
+
+    if let Some(chunk_manager_resources) = &mut chunk_manager_resources {
+        chunk_manager_resources
+            .chunk_manager
+            .update_controller_pos(new_chunk_pos);
+    } else {
+        warn!("chunk_manager_resources is null in on_position_change");
+    }
 }

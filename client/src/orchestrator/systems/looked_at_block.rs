@@ -19,10 +19,10 @@ pub fn initialize_looked_at_block(mut commands: Commands) {
 }
 
 pub fn update_looked_at_block(
-    q_controller: Query<&Transform, With<Controller>>,
-    world_chunk_update_ev: EventReader<WorldChunkUpdateEvent>,
+    mut commands: Commands,
     mut q_looked_at_block_data: Query<&mut LookedAtBlockData>,
-    looked_at_block_change_ev: EventWriter<LookedAtBlockChangedEvent>,
+    q_controller: Query<&Transform, With<Controller>>,
+    world_chunk_update_ev: MessageReader<WorldChunkUpdateEvent>,
     chunk_manager_resources: Res<ChunkManagerResources>,
     game_resources: Res<GameResources>,
 ) {
@@ -56,7 +56,7 @@ pub fn update_looked_at_block(
 
     if dirty {
         process_raycast_and_send_event(
-            looked_at_block_change_ev,
+            commands,
             chunk_manager_resources,
             game_resources,
             looked_at_block_data,
@@ -65,7 +65,7 @@ pub fn update_looked_at_block(
 }
 
 fn process_raycast_and_send_event(
-    mut looked_at_block_change_ev: EventWriter<'_, LookedAtBlockChangedEvent>,
+    mut commands: Commands,
     chunk_manager_resources: Res<'_, ChunkManagerResources>,
     game_resources: Res<'_, GameResources>,
     looked_at_block_data: Mut<'_, LookedAtBlockData>,
@@ -93,12 +93,12 @@ fn process_raycast_and_send_event(
                 }
             };
 
-            looked_at_block_change_ev.write(LookedAtBlockChangedEvent {
+            commands.trigger(LookedAtBlockChangedEvent {
                 block_pos,
                 block_type: block_type.clone(),
             });
         } else {
-            looked_at_block_change_ev.write(LookedAtBlockChangedEvent {
+            commands.trigger(LookedAtBlockChangedEvent {
                 block_pos,
                 block_type: default_block_type.clone(),
             });

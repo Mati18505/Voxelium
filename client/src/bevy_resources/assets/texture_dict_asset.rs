@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
+use bevy::asset::Asset;
 use bevy::asset::{io::Reader, AssetLoader, LoadContext};
 use bevy::log::warn;
+use bevy::reflect::TypePath;
 use thiserror::Error;
 
 use crate::bevy_resources::{
@@ -10,7 +12,7 @@ use crate::bevy_resources::{
 
 use yaml_rust2::{yaml::Hash, Yaml, YamlLoader};
 
-#[derive(Debug, bevy::asset::Asset, bevy::reflect::TypePath)]
+#[derive(Debug, Asset, TypePath)]
 pub struct TextureDictAsset(pub TextureDictionary);
 
 impl From<TextureDictAsset> for TextureDictionary {
@@ -19,7 +21,7 @@ impl From<TextureDictAsset> for TextureDictionary {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, TypePath)]
 pub struct TextureDictAssetLoader;
 
 #[derive(Debug, Clone, Error)]

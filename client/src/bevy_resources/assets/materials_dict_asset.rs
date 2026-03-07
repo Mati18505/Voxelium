@@ -3,7 +3,10 @@ use std::collections::HashMap;
 use shared::entities::BlockSide;
 use thiserror::Error;
 
-use bevy::asset::{io::Reader, AssetLoader, LoadContext};
+use bevy::{
+    asset::{io::Reader, AssetLoader, LoadContext},
+    reflect::TypePath,
+};
 
 use crate::bevy_resources::{
     ColoredCubeMaterialData, MaterialAsset, MaterialName, MaterialsDictionary,
@@ -13,7 +16,7 @@ use crate::bevy_resources::{
 #[derive(Debug, bevy::asset::Asset, bevy::reflect::TypePath)]
 pub struct MaterialsDictAsset(pub MaterialsDictionary);
 
-#[derive(Default)]
+#[derive(Default, TypePath)]
 pub struct MaterialsDictAssetLoader;
 
 #[derive(Debug, Clone, Error)]

@@ -197,7 +197,7 @@ fn check_all_textures_loaded(textures: Res<SourceTextures>, asset_server: Res<As
 
 fn create_texture_arrays(
     so_textures: Res<SourceTextures>,
-    mut events: EventReader<AssetEvent<Image>>,
+    mut messages: MessageReader<AssetEvent<Image>>,
     voxel_assets: Res<VoxelAssets>,
     texture_dict_asset: ResMut<Assets<TextureDictAsset>>,
     mut textures: ResMut<Assets<Image>>,
@@ -207,8 +207,8 @@ fn create_texture_arrays(
         .unwrap();
     let texture_dictionary: Arc<TextureDictionary> = Arc::new(texture_dictionary_asset.0.clone());
 
-    for event in events.read() {
-        if let AssetEvent::LoadedWithDependencies { id: asset_id } = event {
+    for message in messages.read() {
+        if let AssetEvent::LoadedWithDependencies { id: asset_id } = message {
             if let Some(texture_id) = so_textures.0.asset_id_to_id.get(asset_id) {
                 let texture_name = so_textures.0.id_to_name.get(texture_id).unwrap();
 

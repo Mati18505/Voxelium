@@ -87,7 +87,7 @@ fn main() {
                 .load_collection::<VoxelAssets>(),
         )
         .add_systems(OnExit(AppStates::Compile), init_level)
-        .add_systems(Update, update.run_if(in_state(AppStates::InGame)))
+        .add_observer(on_action_event)
         .run();
 }
 
@@ -107,7 +107,7 @@ fn init_level(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut ambient_light: ResMut<AmbientLight>,
+    mut ambient_light: ResMut<bevy::light::GlobalAmbientLight>,
 ) {
     commands.spawn((
         Mesh3d(meshes.add(Plane3d::new(Vec3::Y, Vec2::splat(5.0)))),
@@ -126,36 +126,38 @@ fn init_level(
     ));
 }
 
-fn update(
+fn on_action_event(
+    action: On<controller::ActionEvent>,
     mut chunk_manager_resources: ResMut<ChunkManagerResources>,
-    game_resources: ResMut<GameResources>,
-    mut controller_ev: EventReader<controller::ActionEvent>,
+    state: Res<State<AppStates>>,
+    game_resources: Res<GameResources>,
 ) {
-    for ev in controller_ev.read() {
-        let world = &chunk_manager_resources.chunk_manager.get_world().world;
-        let raycast_result = raycast_from_controller(
-            ev.controller_pos,
-            ev.controller_forward,
-            world,
-            &game_resources.server_block_type_storage,
-        );
+    if !matches!(state.get(), AppStates::InGame) {
+        return;
+    }
+    let world = &chunk_manager_resources.chunk_manager.get_world().world;
+    let raycast_result = raycast_from_controller(
+        action.controller_pos,
+        action.controller_forward,
+        world,
+        &game_resources.server_block_type_storage,
+    );
 
-        if raycast_result.collide {
-            let block_action: BlockAction = match ev.action_type {
-                ActionType::LeftClick => destroy_block_action(raycast_result),
-                ActionType::RightClick => place_block_action(raycast_result),
-            };
+    if raycast_result.collide {
+        let block_action: BlockAction = match action.action_type {
+            ActionType::LeftClick => destroy_block_action(raycast_result),
+            ActionType::RightClick => place_block_action(raycast_result),
+        };
 
-            if block_action.feasible {
-                voxel_edits::set_block_and_update_chunk(
-                    &mut chunk_manager_resources.chunk_manager,
-                    block_action.pos,
-                    block_action.new_block,
-                );
-            }
-        } else {
-            println!("Raycast don't collide.");
+        if block_action.feasible {
+            voxel_edits::set_block_and_update_chunk(
+                &mut chunk_manager_resources.chunk_manager,
+                block_action.pos,
+                block_action.new_block,
+            );
         }
+    } else {
+        println!("Raycast don't collide.");
     }
 }
 

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use bevy::reflect::TypePath;
 use shared::entities::BlockSide;
 use thiserror::Error;
 
@@ -13,7 +14,7 @@ use crate::bevy_resources::{
 #[derive(Debug, bevy::asset::Asset, bevy::reflect::TypePath, Clone)]
 pub struct RenderDescDictAsset(pub RenderDescDictionary);
 
-#[derive(Default)]
+#[derive(Default, TypePath)]
 pub struct RenderDescDictAssetLoader;
 
 #[derive(Debug, Clone, Error)]

@@ -7,7 +7,7 @@ use bevy::{
         system::{Commands, ResMut},
     },
     log,
-    render::mesh::Mesh,
+    mesh::Mesh,
 };
 
 use super::BevyChunkMesh;

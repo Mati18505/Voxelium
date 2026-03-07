@@ -1,7 +1,4 @@
-use bevy::{
-    prelude::*,
-    render::render_resource::{AsBindGroup, ShaderRef},
-};
+use bevy::{prelude::*, render::render_resource::AsBindGroup, shader::ShaderRef};
 
 pub struct VoxelRenderPlugin;
 impl Plugin for VoxelRenderPlugin {
