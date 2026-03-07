@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy::{
     asset::{AssetServer, Assets, Handle},
     color::palettes::css::GRAY,
-    ecs::system::{Res, ResMut},
+    ecs::system::ResMut,
     image::{Image, ImageArrayLayout, ImageLoaderSettings},
 };
 use shared::entities::{iterate_over_block_registry, name_to_block_id, BlockID};
@@ -68,18 +68,17 @@ impl RenderDescDictionary {
         let mut out = RenderDescDictionaryCompilationOutput::default();
 
         for (render_desc_name, _render_desc) in self.iter() {
-            if render_desc_name != "air" {
-                if name_to_block_id(render_desc_name) == BlockID::default() {
-                    out.warnings
-                        .push(NoCorrespondingBlockInRegistry(render_desc_name.to_string()));
-                }
+            if render_desc_name != "air" && name_to_block_id(render_desc_name) == BlockID::default()
+            {
+                out.warnings
+                    .push(NoCorrespondingBlockInRegistry(render_desc_name.to_string()));
             }
         }
 
         let mut block_registry: Vec<_> = iterate_over_block_registry().collect();
         block_registry.sort_by_key(|(_, block_id)| *block_id);
 
-        for (block_type_name, block_id) in block_registry {
+        for (block_type_name, _block_id) in block_registry {
             let render_shape = if let Some(render_desc) = self.get(block_type_name) {
                 let ctx = RenderDescCompileCtx {
                     material_name_to_id,
@@ -111,7 +110,6 @@ impl RenderDescDictionary {
 pub struct TextureDictionaryCompilationResult {
     pub name_to_id: Dictionary<TextureName, TextureId>,
     pub id_to_handle: TextureIdStorage,
-    pub texture_assets_to_load: Vec<String>,
 }
 
 impl TextureDictionary {
@@ -173,7 +171,6 @@ pub struct MaterialsDictionaryCompilationResult {
 impl MaterialsDictionary {
     pub fn compile(
         &self,
-        texture_assets: &TextureDictionary,
         compiled_textures: &TextureDictionaryCompilationResult,
         placeholder_materials: &mut ResMut<Assets<StandardMaterial>>,
         textured_materials: &mut ResMut<Assets<TexturedCubeMaterial>>,

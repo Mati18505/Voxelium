@@ -99,7 +99,7 @@ impl RenderDesc {
                 ))?;
         let texture_asset = ctx
             .texture_asset_dictionary
-            .get(&texture_name)
+            .get(texture_name)
             .ok_or(NoTextureAsset(texture_name.to_string()))?;
 
         let texture_dictionary = match texture_asset {

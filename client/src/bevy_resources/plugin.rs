@@ -6,10 +6,8 @@ use shared::entities::*;
 use crate::{
     bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
-        BevyBlockTypeStorageAsset, MaterialsDictAsset, MaterialsDictionary,
-        MaterialsDictionaryCompilationResult, RenderDescDictAsset, RenderDescDictionary, Storage,
-        TextureAsset, TextureDictAsset, TextureDictionary, TextureDictionaryCompilationResult,
-        TextureId, TextureIndexDictionary,
+        BevyBlockTypeStorageAsset, MaterialsDictAsset, MaterialsDictionaryCompilationResult,
+        RenderDescDictAsset, Storage, TextureDictAsset, TextureDictionaryCompilationResult,
     },
     bevy_types::{AppStates, GameResources},
     chunk_mesh_builder::RenderShape,
@@ -46,7 +44,6 @@ struct MaterialsResource(MaterialsDictionaryCompilationResult);
 struct RenderShapeStorageRes(Arc<Storage<RenderShape>>);
 
 fn init_block_registry(
-    mut commands: Commands,
     voxel_assets: Res<VoxelAssets>,
     server_block_type_assets: Res<Assets<BevyBlockTypeStorageAsset>>,
 ) {
@@ -54,8 +51,6 @@ fn init_block_registry(
         .get(&voxel_assets.server_blocks)
         .expect("Failed to get server_block_type_storage asset")
         .to_owned();
-    let server_block_type_storage: Arc<BlockTypeStorage> =
-        Arc::new(server_block_type_storage_asset.clone().into());
 
     init_block_names(server_block_type_storage_asset.into());
 }
@@ -84,23 +79,17 @@ fn compile_material_dictionary(
     mut textured_materials: ResMut<Assets<TexturedCubeMaterial>>,
     mut colored_materials: ResMut<Assets<ColoredCubeMaterial>>,
     mut cutout_materials: ResMut<Assets<CutoutTexturedCubeMaterial>>,
-    mut materials_dict_asset: ResMut<Assets<MaterialsDictAsset>>,
+    materials_dict_asset: Res<Assets<MaterialsDictAsset>>,
     voxel_assets: Res<VoxelAssets>,
-    texture_dict_asset: Res<Assets<TextureDictAsset>>,
     so_textures: Res<SourceTextures>,
 ) {
     let materials_dict_asset: &MaterialsDictAsset = materials_dict_asset
         .get(&voxel_assets.materials_dict_asset)
         .unwrap();
 
-    let texture_dictionary_asset: &TextureDictAsset = texture_dict_asset
-        .get(&voxel_assets.texture_dict_asset)
-        .unwrap();
-
     dbg!(&materials_dict_asset.0);
 
     let material_compilation_result = materials_dict_asset.0.compile(
-        &texture_dictionary_asset.0,
         &so_textures.0,
         &mut placeholder_materials,
         &mut textured_materials,

@@ -19,7 +19,7 @@ pub fn initialize_looked_at_block(mut commands: Commands) {
 }
 
 pub fn update_looked_at_block(
-    mut commands: Commands,
+    commands: Commands,
     mut q_looked_at_block_data: Query<&mut LookedAtBlockData>,
     q_controller: Query<&Transform, With<Controller>>,
     world_chunk_update_ev: MessageReader<WorldChunkUpdateEvent>,

@@ -3,9 +3,7 @@ use std::sync::Arc;
 use bevy::{ecs::resource::Resource, state::state::States};
 use shared::entities::BlockTypeStorage;
 
-use crate::bevy_resources::{
-    MaterialStorage, RenderDescDictionary, RenderShapeStorage, TextureIndexDictionary,
-};
+use crate::bevy_resources::{MaterialStorage, RenderShapeStorage};
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
 pub enum AppStates {

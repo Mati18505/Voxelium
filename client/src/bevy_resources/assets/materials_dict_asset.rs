@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use shared::entities::BlockSide;
 use thiserror::Error;
 
 use bevy::{
@@ -10,7 +9,7 @@ use bevy::{
 
 use crate::bevy_resources::{
     ColoredCubeMaterialData, MaterialAsset, MaterialName, MaterialsDictionary,
-    TexturedBlockTypeBuilder, TexturedCubeMaterialData,
+    TexturedCubeMaterialData,
 };
 
 #[derive(Debug, bevy::asset::Asset, bevy::reflect::TypePath)]
@@ -146,23 +145,4 @@ fn load_colored_cube_data(
     .to_owned();
 
     Ok(ColoredCubeMaterialData { palette_name })
-}
-
-fn add_textures(
-    builder: TexturedBlockTypeBuilder,
-    textures: &serde_json::Value,
-) -> TexturedBlockTypeBuilder {
-    let mut builder = builder;
-
-    if let Some(side_texture) = textures.get("side").and_then(|e| e.as_str()) {
-        builder = builder.texture(BlockSide::Left, side_texture);
-    }
-    if let Some(top_texture) = textures.get("top").and_then(|e| e.as_str()) {
-        builder = builder.texture(BlockSide::Top, top_texture);
-    }
-    if let Some(bottom_texture) = textures.get("bottom").and_then(|e| e.as_str()) {
-        builder = builder.texture(BlockSide::Bottom, bottom_texture);
-    }
-
-    builder
 }

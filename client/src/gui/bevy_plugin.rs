@@ -53,7 +53,7 @@ fn on_looked_at_block(
 }
 
 fn draw_gizmo(mut gizmos: Gizmos, q_block_cursor_data: Query<&BlockCursorData>) {
-    let mut block_cursor_data = match q_block_cursor_data.single() {
+    let block_cursor_data = match q_block_cursor_data.single() {
         Ok(block_cursor_data) => block_cursor_data,
         Err(_) => {
             warn!("Gizmo data not found for update_gizmo!");

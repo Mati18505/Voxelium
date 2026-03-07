@@ -63,11 +63,11 @@ impl RenderShape {
         match self {
             RenderShape::TexturedCube {
                 render_data,
-                textures,
+                textures: _,
             } => render_data,
             RenderShape::ColoredCube {
                 render_data,
-                color_index,
+                color_index: _,
             } => render_data,
             RenderShape::Invisible => &DEFAULT_RENDER_DATA,
         }
@@ -76,11 +76,11 @@ impl RenderShape {
     pub fn get_storage_index(&self, side: BlockSide) -> Option<StorageIndex> {
         match self {
             RenderShape::TexturedCube {
-                render_data,
+                render_data: _,
                 textures,
             } => Some(*textures.get(&side).unwrap()),
             RenderShape::ColoredCube {
-                render_data,
+                render_data: _,
                 color_index,
             } => Some(*color_index),
             _ => None,

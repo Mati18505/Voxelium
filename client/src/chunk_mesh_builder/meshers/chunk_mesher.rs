@@ -2,7 +2,7 @@ use std::{collections::HashMap, fmt::Debug};
 use thiserror::Error;
 
 use crate::chunk_mesh_builder::ChunkMesh;
-use shared::entities::{BlockID, BlockInChunkPos, Chunk};
+use shared::entities::{BlockID, Chunk};
 
 #[derive(Debug, Error, Clone, PartialEq, Eq, Hash)]
 pub enum MesherWarning {

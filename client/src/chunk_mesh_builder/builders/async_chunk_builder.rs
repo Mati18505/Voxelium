@@ -59,15 +59,9 @@ impl<T: Send + Sync + Default + Debug> AsyncChunkBuilder<T> {
 
     fn create_build_task(&self, chunk: Chunk) -> Task<MesherOutput> {
         let mesher = self.mesher.clone();
-
         let pool = AsyncComputeTaskPool::get();
-        let task = pool.spawn(async move {
-            let mesher_output = mesher.create_mesh(&chunk).clone();
 
-            mesher_output
-        });
-
-        task
+        pool.spawn(async move { mesher.create_mesh(&chunk).clone() })
     }
 
     fn collect_finished_results(&mut self) {
@@ -105,7 +99,7 @@ impl<T: Send + Sync + Default + Debug> AsyncChunkBuilder<T> {
             || self.completed.contains_key(&chunk_pos)
     }
 
-    fn log_warnings(&self, warnings: HashMap<MesherWarning, u32>) -> () {
+    fn log_warnings(&self, warnings: HashMap<MesherWarning, u32>) {
         for (warning, count) in warnings {
             let warn = match warning {
                 MesherWarning::UnknownRenderShape(block_id) => {
