@@ -49,6 +49,8 @@ pub enum RenderDescCompilationError {
     NoSuchMaterial(MaterialName),
     #[error("Texture asset was not found: {0}")]
     NoTextureAsset(TextureName),
+    #[error("Texture index was not found: {0}")]
+    NoTextureIndex(TextureName),
     #[error("Material {0} is invalid for use in: {1}, because {2}")]
     InvalidMaterial(MaterialName, String, String),
 }
@@ -121,16 +123,16 @@ impl RenderDesc {
         let mut textures = HashMap::<BlockSide, TextureIndex>::default();
 
         if let Some(top_texture) = desc.top_texture.clone() {
-            let index = Self::get_texture_index_from_name(&top_texture, texture_dictionary);
+            let index = Self::get_texture_index_from_name(&top_texture, texture_dictionary)?;
             textures.insert(BlockSide::Top, index);
         }
         if let Some(bottom_texture) = desc.bottom_texture.clone() {
-            let index = Self::get_texture_index_from_name(&bottom_texture, texture_dictionary);
+            let index = Self::get_texture_index_from_name(&bottom_texture, texture_dictionary)?;
             textures.insert(BlockSide::Bottom, index);
         }
 
         let side_texture_index =
-            Self::get_texture_index_from_name(&desc.side_texture, texture_dictionary);
+            Self::get_texture_index_from_name(&desc.side_texture, texture_dictionary)?;
 
         Ok(RenderShape::create_textured_cube(
             render_data,
@@ -142,14 +144,13 @@ impl RenderDesc {
     fn get_texture_index_from_name(
         name: &str,
         texture_dictionary: &TextureIndexDictionary,
-    ) -> TextureIndex {
-        match texture_dictionary.get(&name.to_string()) {
-            Some(t_id) => *t_id,
-            None => {
-                warn!("While compiling textured cube: texture \"{name}\" wasn't in texture_index.");
-                0
-            }
-        }
+    ) -> Result<u32, RenderDescCompilationError> {
+        use RenderDescCompilationError::*;
+
+        texture_dictionary
+            .get(&name.to_string())
+            .cloned()
+            .ok_or(NoTextureIndex(name.to_string()))
     }
 
     fn compile_colored_cube(
