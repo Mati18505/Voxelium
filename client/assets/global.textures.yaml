@@ -13,8 +13,6 @@ textures:
       stone: 7
       wood_side: 8
       wood_top: 9 
-      leaves: 10
-      glass: 11 
 - cutout:
     path: textures/cutout.png
     type: array
