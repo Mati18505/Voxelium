@@ -106,6 +106,7 @@ impl AssetLoader for MaterialsDictAssetLoader {
                 MaterialAsset::CutoutTexturedCube { ref mut data } => {
                     *data = load_textured_cube_data(material)?;
                 }
+                MaterialAsset::Placeholder => unreachable!(),
             }
 
             materials.insert(material_name, material_asset);

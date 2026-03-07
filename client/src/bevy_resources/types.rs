@@ -90,13 +90,13 @@ impl RenderDescDictionary {
                     Err(e) => {
                         out.warnings
                             .push(CannotCompile(block_type_name.to_string(), e));
-                        RenderShape::Invisible
+                        RenderShape::Placeholder
                     }
                 }
             } else {
                 out.warnings
                     .push(NoCorrespondingRenderDesc(block_type_name.to_string()));
-                RenderShape::Invisible
+                RenderShape::Placeholder
             };
 
             out.storage.add(render_shape);
@@ -180,21 +180,32 @@ impl MaterialsDictionary {
         use MaterialsDictionaryCompilationWarning::*;
         let mut result = MaterialsDictionaryCompilationResult::default();
 
-        self.iter()
+        let placeholder_name = "placeholder".to_string();
+        let placeholder_item = (&placeholder_name, &MaterialAsset::Placeholder);
+
+        // Material ID=0 is always placeholder.
+        let all_materials = std::iter::once(placeholder_item).chain(self.iter());
+
+        all_materials
             .enumerate()
             .for_each(|(id, (material_name, material_asset))| {
                 result
                     .name_to_id
                     .set(material_name.to_string(), id as MaterialId);
 
-                let texture_name: &String = match material_asset {
-                    MaterialAsset::TexturedCube { data } => &data.texture_array_name,
-                    MaterialAsset::ColoredCube { data } => &data.palette_name,
-                    MaterialAsset::CutoutTexturedCube { data } => &data.texture_array_name,
-                };
-                result
-                    .id_to_texture_name
-                    .set(id as MaterialId, texture_name.to_string());
+                let maybe_texture_name: Option<String> = match material_asset {
+                    MaterialAsset::Placeholder => None,
+                    MaterialAsset::TexturedCube { data } => Some(&data.texture_array_name),
+                    MaterialAsset::ColoredCube { data } => Some(&data.palette_name),
+                    MaterialAsset::CutoutTexturedCube { data } => Some(&data.texture_array_name),
+                }
+                .cloned();
+
+                if let Some(texture_name) = &maybe_texture_name {
+                    result
+                        .id_to_texture_name
+                        .set(id as MaterialId, texture_name.to_string());
+                }
 
                 match compile_material(
                     material_asset,
@@ -202,6 +213,8 @@ impl MaterialsDictionary {
                     textured_materials,
                     colored_materials,
                     cutout_materials,
+                    placeholder_materials,
+                    maybe_texture_name,
                 ) {
                     Ok(material_handle) => {
                         result.id_to_handle.add(material_handle);
@@ -237,14 +250,51 @@ fn compile_material(
     textured_materials: &mut ResMut<Assets<TexturedCubeMaterial>>,
     colored_materials: &mut ResMut<Assets<ColoredCubeMaterial>>,
     cutout_materials: &mut ResMut<Assets<CutoutTexturedCubeMaterial>>,
+    placeholder_materials: &mut ResMut<Assets<StandardMaterial>>,
+    maybe_texture_name: Option<TextureName>,
 ) -> Result<MaterialHandle, MaterialCompilationError> {
-    let texture_name: &String = match material_asset {
-        MaterialAsset::TexturedCube { data } => &data.texture_array_name,
-        MaterialAsset::ColoredCube { data } => &data.palette_name,
-        MaterialAsset::CutoutTexturedCube { data } => &data.texture_array_name,
+    match maybe_texture_name {
+        Some(texture_name) => compile_material_with_texture(
+            material_asset,
+            compiled_textures,
+            textured_materials,
+            colored_materials,
+            cutout_materials,
+            texture_name,
+        ),
+        None => compile_material_no_texture(material_asset, placeholder_materials),
+    }
+}
+
+fn compile_material_no_texture(
+    material_asset: &MaterialAsset,
+    placeholder_materials: &mut ResMut<Assets<StandardMaterial>>,
+) -> Result<MaterialHandle, MaterialCompilationError> {
+    let material_handle = match material_asset {
+        MaterialAsset::Placeholder => {
+            let placeholder = StandardMaterial {
+                base_color: Color::srgba(0.54, 0.0, 0.54, 1.0),
+                ..Default::default()
+            };
+            MaterialHandle::PlaceHolder(placeholder_materials.add(placeholder))
+        }
+        MaterialAsset::TexturedCube { data } => unreachable!(),
+        MaterialAsset::ColoredCube { data } => unreachable!(),
+        MaterialAsset::CutoutTexturedCube { data } => unreachable!(),
     };
 
-    let texture_id = *compiled_textures.name_to_id.get(texture_name).ok_or(
+    Ok(material_handle)
+}
+
+fn compile_material_with_texture(
+    material_asset: &MaterialAsset,
+    compiled_textures: &TextureDictionaryCompilationResult,
+    textured_materials: &mut ResMut<Assets<TexturedCubeMaterial>>,
+    colored_materials: &mut ResMut<Assets<ColoredCubeMaterial>>,
+    cutout_materials: &mut ResMut<Assets<CutoutTexturedCubeMaterial>>,
+    texture_name: TextureName,
+) -> Result<MaterialHandle, MaterialCompilationError> {
+    let texture_id = *compiled_textures.name_to_id.get(&texture_name).ok_or(
         MaterialCompilationError::NoSuchTexture(texture_name.to_string()),
     )?;
 
@@ -278,6 +328,7 @@ fn compile_material(
 
             MaterialHandle::CutoutTexturedCube(cutout_materials.add(cutout_textured_mat))
         }
+        MaterialAsset::Placeholder => unreachable!(),
     };
 
     Ok(material_handle)

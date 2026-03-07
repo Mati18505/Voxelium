@@ -20,6 +20,14 @@ impl VoxelRenderData {
             material: 0,
         }
     }
+
+    pub const fn placeholder() -> Self {
+        Self {
+            visible: true,
+            translucent: false,
+            material: 0,
+        }
+    }
 }
 
 /// Stores rendering data of particular BlockType.
@@ -33,6 +41,7 @@ pub enum RenderShape {
         render_data: VoxelRenderData,
         color_index: ColorIndex,
     },
+    Placeholder,
     Invisible,
 }
 
@@ -59,6 +68,7 @@ impl RenderShape {
 
     pub fn render_data(&self) -> &VoxelRenderData {
         static DEFAULT_RENDER_DATA: VoxelRenderData = VoxelRenderData::const_default();
+        static PLACEHOLDER_RENDER_DATA: VoxelRenderData = VoxelRenderData::placeholder();
 
         match self {
             RenderShape::TexturedCube {
@@ -69,6 +79,7 @@ impl RenderShape {
                 render_data,
                 color_index: _,
             } => render_data,
+            RenderShape::Placeholder => &PLACEHOLDER_RENDER_DATA,
             RenderShape::Invisible => &DEFAULT_RENDER_DATA,
         }
     }
@@ -83,6 +94,7 @@ impl RenderShape {
                 render_data: _,
                 color_index,
             } => Some(*color_index),
+            RenderShape::Placeholder => Some(0),
             _ => None,
         }
     }
