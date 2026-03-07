@@ -220,13 +220,9 @@ impl MaterialsDictionary {
                         result.id_to_handle.add(material_handle);
                     }
                     Err(err) => {
-                        let placeholder = placeholder_materials.add(StandardMaterial {
-                            base_color: GRAY.into(),
-                            ..Default::default()
-                        });
-                        result
-                            .id_to_handle
-                            .add(MaterialHandle::PlaceHolder(placeholder));
+                        let placeholder = result.id_to_handle.get_by_id(0).cloned().unwrap();
+
+                        result.id_to_handle.add(placeholder);
                         result
                             .warnings
                             .push(CannotCompile(material_name.to_string(), err));
