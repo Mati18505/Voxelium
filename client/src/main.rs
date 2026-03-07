@@ -128,13 +128,19 @@ fn init_level(
 
 fn on_action_event(
     action: On<controller::ActionEvent>,
-    mut chunk_manager_resources: ResMut<ChunkManagerResources>,
     state: Res<State<AppStates>>,
-    game_resources: Res<GameResources>,
+    mut chunk_manager_resources: Option<ResMut<ChunkManagerResources>>,
+    game_resources: Option<Res<GameResources>>,
 ) {
     if !matches!(state.get(), AppStates::InGame) {
         return;
     }
+    let (Some(mut chunk_manager_resources), Some(game_resources)) =
+        (chunk_manager_resources.take(), game_resources)
+    else {
+        return;
+    };
+
     let world = &chunk_manager_resources.chunk_manager.get_world().world;
     let raycast_result = raycast_from_controller(
         action.controller_pos,
