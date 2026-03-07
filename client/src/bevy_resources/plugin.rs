@@ -32,11 +32,6 @@ impl Plugin for ResourcesPlugin {
                     create_game_resources,
                 )
                     .chain(),
-            )
-            .add_systems(
-                Update,
-                (check_all_textures_loaded, create_texture_arrays)
-                    .run_if(in_state(AppStates::Compile)),
             );
     }
 }
@@ -177,58 +172,4 @@ fn create_game_resources(
     });
 
     next_state.set(AppStates::InGame);
-}
-
-fn check_all_textures_loaded(textures: Res<SourceTextures>, asset_server: Res<AssetServer>) {
-    let mut has_pending = false;
-
-    for (texture_id, handle) in textures.0.id_to_handle.iter().enumerate() {
-        match asset_server.get_load_state(handle) {
-            Some(load_state) if load_state.is_loaded() => {}
-            Some(load_state) if load_state.is_failed() => {
-                let texture_id = texture_id as TextureId;
-                let texture_name = textures.0.id_to_name.get(&texture_id).cloned().unwrap();
-                warn!("Texture failed to load and may render incorrectly: {texture_name}");
-            }
-            _ => has_pending = true,
-        }
-    }
-}
-
-fn create_texture_arrays(
-    so_textures: Res<SourceTextures>,
-    mut messages: MessageReader<AssetEvent<Image>>,
-    voxel_assets: Res<VoxelAssets>,
-    texture_dict_asset: ResMut<Assets<TextureDictAsset>>,
-    mut textures: ResMut<Assets<Image>>,
-) {
-    let texture_dictionary_asset: &TextureDictAsset = texture_dict_asset
-        .get(&voxel_assets.texture_dict_asset)
-        .unwrap();
-    let texture_dictionary: Arc<TextureDictionary> = Arc::new(texture_dictionary_asset.0.clone());
-
-    for message in messages.read() {
-        if let AssetEvent::LoadedWithDependencies { id: asset_id } = message {
-            if let Some(texture_id) = so_textures.0.asset_id_to_id.get(asset_id) {
-                let texture_name = so_textures.0.id_to_name.get(texture_id).unwrap();
-
-                if let TextureAsset::TextureArray { data } =
-                    texture_dictionary.get(texture_name).unwrap()
-                {
-                    info!("Creating texture array {:?}", texture_name);
-
-                    let texture_index_dictionary = &data.textures;
-
-                    let layers = texture_index_dictionary.iter().len();
-                    create_texture_array(layers as u32, *asset_id, &mut textures);
-                }
-            }
-        }
-    }
-}
-
-fn create_texture_array(layers: u32, asset_id: AssetId<Image>, images: &mut Assets<Image>) {
-    if let Some(image) = images.get_mut(asset_id) {
-        image.reinterpret_stacked_2d_as_array(layers);
-    }
 }

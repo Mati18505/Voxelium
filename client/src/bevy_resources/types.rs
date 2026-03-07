@@ -3,7 +3,7 @@ use bevy::{
     asset::{AssetServer, Assets, Handle},
     color::palettes::css::GRAY,
     ecs::system::{Res, ResMut},
-    image::Image,
+    image::{Image, ImageArrayLayout, ImageLoaderSettings},
 };
 use shared::entities::{iterate_over_block_registry, name_to_block_id, BlockID};
 use thiserror::Error;
@@ -112,10 +112,6 @@ pub struct TextureDictionaryCompilationResult {
     pub name_to_id: Dictionary<TextureName, TextureId>,
     pub id_to_handle: TextureIdStorage,
     pub texture_assets_to_load: Vec<String>,
-
-    // For texture array creation.
-    pub asset_id_to_id: Dictionary<AssetId<Image>, TextureId>,
-    pub id_to_name: Dictionary<TextureId, TextureName>,
 }
 
 impl TextureDictionary {
@@ -125,20 +121,29 @@ impl TextureDictionary {
         self.iter()
             .enumerate()
             .for_each(|(id, (texture_name, texture_asset))| {
-                let path: &str = match texture_asset {
-                    TextureAsset::TextureArray { data } => &data.path,
-                    TextureAsset::Palette { data } => &data.path,
+                let loading = match texture_asset {
+                    TextureAsset::TextureArray { data } => {
+                        let layer_count = data.textures.iter().len() as u32;
+                        let path = &data.path;
+
+                        asset_server.load_with_settings(
+                            path,
+                            move |settings: &mut ImageLoaderSettings| {
+                                settings.array_layout =
+                                    Some(ImageArrayLayout::RowCount { rows: layer_count })
+                            },
+                        )
+                    }
+                    TextureAsset::Palette { data } => {
+                        let path = &data.path;
+                        asset_server.load(path)
+                    }
                 };
-                let loading = asset_server.load(path.to_string());
 
                 result
                     .name_to_id
                     .set(texture_name.to_string(), id as TextureId);
-                result.asset_id_to_id.set(loading.id(), id as TextureId);
                 result.id_to_handle.add(loading);
-                result
-                    .id_to_name
-                    .set(id as TextureId, texture_name.to_string());
             });
 
         result
@@ -194,14 +199,29 @@ impl MaterialsDictionary {
                     .id_to_texture_name
                     .set(id as MaterialId, texture_name.to_string());
 
-                let placeholder = placeholder_materials.add(StandardMaterial {
-                    base_color: GRAY.into(),
-                    ..Default::default()
-                });
-
-                result
-                    .id_to_handle
-                    .add(MaterialHandle::PlaceHolder(placeholder));
+                match compile_material(
+                    material_asset,
+                    compiled_textures,
+                    textured_materials,
+                    colored_materials,
+                    cutout_materials,
+                ) {
+                    Ok(material_handle) => {
+                        result.id_to_handle.add(material_handle);
+                    }
+                    Err(err) => {
+                        let placeholder = placeholder_materials.add(StandardMaterial {
+                            base_color: GRAY.into(),
+                            ..Default::default()
+                        });
+                        result
+                            .id_to_handle
+                            .add(MaterialHandle::PlaceHolder(placeholder));
+                        result
+                            .warnings
+                            .push(CannotCompile(material_name.to_string(), err));
+                    }
+                }
             });
 
         result
