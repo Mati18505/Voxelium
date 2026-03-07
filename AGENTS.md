@@ -111,3 +111,8 @@ Its main goals are performance and ease of extensibility.
 - Don't expose internal mutability without justification
 - Don't ignore `Result` values with `_`
 - Don't use `unsafe` without proper justification and documentation
+
+## Collaboration Rule
+- Do not modify source code by default.
+- Only make code changes after the user clearly and explicitly asks for implementation/editing (e.g. "zrób", "zaimplementuj", "zmień kod", "apply patch").
+- If the request is ambiguous or sounds like analysis/review/question, provide explanation first and wait for explicit confirmation before editing files.
