@@ -1,13 +1,9 @@
-use cgmath::Vector2;
-
 use crate::entities::{ChunkPos, CHUNK_SIZE};
 
 /// Generates square of chunk positions around center.
 /// Generated square is 2D (without height (Y axis)).
 #[derive(Debug, Clone)]
 pub struct ChunkPosGenerator2D {
-    center: ChunkPos,
-    dist: usize,
     current: ChunkPos,
     start: ChunkPos,
     end: ChunkPos,
@@ -30,8 +26,6 @@ impl ChunkPosGenerator2D {
         let remaining = chunks_per_axis.pow(2);
 
         Self {
-            center,
-            dist,
             remaining,
             current: ChunkPos::new(start_x, 0, start_z),
             start: ChunkPos::new(start_x, 0, start_z),
@@ -71,8 +65,6 @@ impl ExactSizeIterator for ChunkPosGenerator2D {
 /// Generated square is 3D (with height (Z axis)).
 #[derive(Debug, Clone)]
 pub struct ChunkPosGenerator3D {
-    center: ChunkPos,
-    dist: usize,
     current: ChunkPos,
     start: ChunkPos,
     end: ChunkPos,
@@ -97,8 +89,6 @@ impl ChunkPosGenerator3D {
         let remaining = chunks_per_axis.pow(3);
 
         Self {
-            center,
-            dist,
             remaining,
             current: ChunkPos::new(start_x, start_y, start_z),
             start: ChunkPos::new(start_x, start_y, start_z),

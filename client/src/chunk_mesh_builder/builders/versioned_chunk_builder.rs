@@ -207,7 +207,6 @@ mod tests {
         let inner_builder = Box::new(DummyChunkBuilder::new());
         let mut builder = VersionedChunkBuilder::<()>::new(inner_builder);
         let chunk_pos = ChunkPos::new(0, 0, 0);
-        let chunk = Chunk::default();
 
         // Initial version should be 0.
         let version = builder.get_chunk_mesh_version(chunk_pos);
@@ -270,7 +269,7 @@ mod tests {
         );
 
         builder.update(player_pos);
-        assert_eq!(builder.is_chunk_with_latest_version_built(chunk_pos), true);
+        assert!(builder.is_chunk_with_latest_version_built(chunk_pos));
 
         builder.force_build(
             chunk_pos,
@@ -281,9 +280,9 @@ mod tests {
             },
         );
 
-        assert_eq!(builder.is_chunk_with_latest_version_built(chunk_pos), false);
+        assert!(!builder.is_chunk_with_latest_version_built(chunk_pos));
         builder.update(player_pos);
-        assert_eq!(builder.is_chunk_with_latest_version_built(chunk_pos), true);
+        assert!(builder.is_chunk_with_latest_version_built(chunk_pos));
     }
 
     #[test]
@@ -311,7 +310,7 @@ mod tests {
 
             builder.update(player_pos);
 
-            for (chunk_pos, (chunk_mesh, value)) in builder.poll_completed() {
+            for (_chunk_pos, (_chunk_mesh, value)) in builder.poll_completed() {
                 // Check if each built chunk returned from poll_completed is newest.
                 assert_eq!(value.custom_data, newest_data);
             }
@@ -353,10 +352,10 @@ mod tests {
             },
         );
 
-        for frame in 0..50 {
+        for _frame in 0..50 {
             builder.update(player_pos);
 
-            for (chunk_pos, (chunk_mesh, value)) in builder.poll_completed() {
+            for (_chunk_pos, (_chunk_mesh, value)) in builder.poll_completed() {
                 // Check if built chunk returned from poll_completed is newest.
                 assert_eq!(value.custom_data, 30);
                 total_built += 1;

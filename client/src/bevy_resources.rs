@@ -1,7 +1,17 @@
+pub mod assets;
 pub mod block_types;
-pub mod mesh_block_type_storage_resource;
-pub mod textures_config;
+pub mod dictionary;
+pub mod materials;
+pub mod plugin;
+pub mod storage;
+pub mod textures;
+pub mod types;
 
+pub use assets::*;
 pub use block_types::*;
-pub use mesh_block_type_storage_resource::*;
-pub use textures_config::*;
+pub use dictionary::*;
+pub use materials::*;
+pub use plugin::*;
+pub use storage::*;
+pub use textures::*;
+pub use types::*;

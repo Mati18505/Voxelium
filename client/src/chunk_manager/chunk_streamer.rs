@@ -46,7 +46,10 @@ impl Plugin for ChunkStreamerPlugin {
         app.insert_resource(self.config.clone())
             .insert_resource(ChunkManagerResource::default())
             .add_event::<ChunkStreamerRequest>()
-            .add_systems(Update, (chunk_streamer, update_controller_pos).run_if(in_state(AppStates::InGame)));
+            .add_systems(
+                Update,
+                (chunk_streamer, update_controller_pos).run_if(in_state(AppStates::InGame)),
+            );
     }
 }
 

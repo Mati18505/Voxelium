@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use bevy::{
     color::palettes::css::WHITE,
     pbr::wireframe::{WireframeConfig, WireframePlugin},
@@ -11,15 +9,13 @@ use bevy::{
 };
 use bevy_asset_loader::prelude::*;
 use bevy_common_assets::json::JsonAssetPlugin;
-use bevy_common_assets::yaml::YamlAssetPlugin;
 
 use bevy_render::VoxelRenderPlugin;
-use bevy_resources::{MeshBlockTypeStorageLoader, MeshBlockTypeStorageResource, TextureConfig};
+use bevy_resources::{MaterialsDictAsset, MaterialsDictAssetLoader};
 use bevy_types::{AppStates, GameResources};
-use chunk_mesh_builder::*;
 use controller::ControllerPlugin;
 use shared::{
-    entities::{init_block_names, name_to_block_id, BlockID, BlockPos, BlockTypeStorage},
+    entities::{name_to_block_id, BlockID, BlockPos},
     physics::RaycastResult,
 };
 
@@ -58,89 +54,56 @@ fn main() {
                     ..default()
                 }),
             WireframePlugin::default(),
-            YamlAssetPlugin::<TextureConfig>::new(&["config.yaml"]),
-            JsonAssetPlugin::<BevyBlockTypeStorageResource>::new(&["server_blocks.json"]),
+            JsonAssetPlugin::<BevyBlockTypeStorageAsset>::new(&["blocks.json"]),
             ControllerPlugin,
             VoxelRenderPlugin,
             ChunkManagerPlugin,
             OrchestratorPlugin,
             GUIPlugin,
+            ResourcesPlugin,
         ))
         .insert_resource(WireframeConfig {
             global: false,
             default_color: WHITE.into(),
         })
-        .init_asset_loader::<MeshBlockTypeStorageLoader>()
-        .init_asset::<MeshBlockTypeStorageResource>()
-        .init_asset::<BevyBlockTypeStorageResource>()
+        .init_asset_loader::<RenderDescDictAssetLoader>()
+        .init_asset::<RenderDescDictAsset>()
+        .init_asset_loader::<MaterialsDictAssetLoader>()
+        .init_asset::<MaterialsDictAsset>()
+        .init_asset_loader::<TextureDictAssetLoader>()
+        .init_asset::<TextureDictAsset>()
+        .init_asset::<BevyBlockTypeStorageAsset>()
         .init_state::<AppStates>()
         .add_loading_state(
             LoadingState::new(AppStates::Loading)
-                .continue_to_state(AppStates::InGame)
+                .continue_to_state(AppStates::Compile)
                 .with_dynamic_assets_file::<StandardDynamicAssetCollection>(
                     "texture_array.assets.ron",
                 )
                 .load_collection::<VoxelAssets>(),
         )
-        .add_systems(OnExit(AppStates::Loading), create_resources)
-        .add_systems(OnExit(AppStates::Loading), init_level)
-        .add_systems(Update, update.run_if(in_state(AppStates::InGame)))
+        .add_systems(OnExit(AppStates::Compile), init_level)
+        .add_observer(on_action_event)
         .run();
 }
 
 #[derive(AssetCollection, Resource)]
 struct VoxelAssets {
+    #[asset(path = "global.render_desc.json")]
+    render_desc_storage_res: Handle<RenderDescDictAsset>,
+    #[asset(path = "global.textures.yaml")]
+    texture_dict_asset: Handle<TextureDictAsset>,
     #[asset(path = "global.blocks.json")]
-    block_type_storage: Handle<MeshBlockTypeStorageResource>,
-    #[asset(key = "opaque")]
-    opaque_texture: Handle<Image>,
-    #[asset(path = "textures.config.yaml")]
-    texture_config: Handle<TextureConfig>,
-    #[asset(path = "global.server_blocks.json")]
-    server_blocks: Handle<BevyBlockTypeStorageResource>,
-}
-
-fn create_resources(
-    mut commands: Commands,
-    block_type_assets: Res<Assets<MeshBlockTypeStorageResource>>,
-    server_block_type_assets: Res<Assets<BevyBlockTypeStorageResource>>,
-    textures_assets: Res<Assets<TextureConfig>>,
-    voxel_assets: Res<VoxelAssets>,
-) {
-    let block_type_storage = block_type_assets
-        .get(&voxel_assets.block_type_storage)
-        .unwrap()
-        .to_owned();
-    let block_type_storage: Arc<MeshBlockTypeStorage> = Arc::new(block_type_storage.into());
-
-    let texture_dictionary: TextureConfig = textures_assets
-        .get(&voxel_assets.texture_config)
-        .unwrap()
-        .to_owned();
-    let texture_dictionary: Arc<TextureDictionary> = Arc::new(texture_dictionary.into());
-
-    let server_block_type_storage_asset = server_block_type_assets
-        .get(&voxel_assets.server_blocks)
-        .expect("Failed to get server_block_type_storage asset")
-        .to_owned();
-    let server_block_type_storage: Arc<BlockTypeStorage> =
-        Arc::new(server_block_type_storage_asset.clone().into());
-
-    commands.insert_resource(GameResources {
-        block_type_storage,
-        server_block_type_storage,
-        texture_dictionary,
-        opaque_texture: voxel_assets.opaque_texture.clone(),
-    });
-
-    init_block_names(server_block_type_storage_asset.into());
+    server_blocks: Handle<BevyBlockTypeStorageAsset>,
+    #[asset(path = "global.materials.json")]
+    materials_dict_asset: Handle<MaterialsDictAsset>,
 }
 
 fn init_level(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut ambient_light: ResMut<AmbientLight>,
+    mut ambient_light: ResMut<bevy::light::GlobalAmbientLight>,
 ) {
     commands.spawn((
         Mesh3d(meshes.add(Plane3d::new(Vec3::Y, Vec2::splat(5.0)))),
@@ -159,40 +122,44 @@ fn init_level(
     ));
 }
 
-// TODO: Fix this.
-fn update(
-    // mut chunk_manager_resources: ResMut<ChunkManagerResources>,
-    game_resources: ResMut<GameResources>,
-    mut controller_ev: EventReader<controller::ActionEvent>,
+fn on_action_event(
+    action: On<controller::ActionEvent>,
+    state: Res<State<AppStates>>,
+    mut chunk_manager_resources: Option<ResMut<ChunkManagerResources>>,
+    game_resources: Option<Res<GameResources>>,
 ) {
-    /*
-       for ev in controller_ev.read() {
-           let world = &chunk_manager_resources.chunk_manager.get_world().world;
-           let raycast_result = raycast_from_controller(
-               ev.controller_pos,
-               ev.controller_forward,
-               world,
-               &game_resources.server_block_type_storage,
-           );
+    if !matches!(state.get(), AppStates::InGame) {
+        return;
+    }
+    let (Some(mut chunk_manager_resources), Some(game_resources)) =
+        (chunk_manager_resources.take(), game_resources)
+    else {
+        return;
+    };
 
-           if raycast_result.collide {
-               let block_action: BlockAction = match ev.action_type {
-                   ActionType::LeftClick => destroy_block_action(raycast_result),
-                   ActionType::RightClick => place_block_action(raycast_result),
-               };
+    let world = &chunk_manager_resources.chunk_manager.get_world().world;
+    let raycast_result = raycast_from_controller(
+        action.controller_pos,
+        action.controller_forward,
+        world,
+        &game_resources.server_block_type_storage,
+    );
+    if raycast_result.collide {
+        let block_action: BlockAction = match action.action_type {
+            ActionType::LeftClick => destroy_block_action(raycast_result),
+            ActionType::RightClick => place_block_action(raycast_result),
+        };
 
-               if block_action.feasible {
-                   voxel_edits::set_block_and_update_chunk(
-                       &mut chunk_manager_resources.chunk_manager,
-                       block_action.pos,
-                       block_action.new_block,
-                   );
-               }
-           } else {
-               println!("Raycast don't collide.");
-           }
-       }
-    */
+        if block_action.feasible {
+            voxel_edits::set_block_and_update_chunk(
+                &mut chunk_manager_resources.chunk_manager,
+                block_action.pos,
+                block_action.new_block,
+            );
+        }
+    } else {
+        println!("Raycast don't collide.");
+    }
 }
 
 struct BlockAction {

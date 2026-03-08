@@ -1,7 +1,3 @@
-pub mod mesh_block_type;
-pub mod mesh_block_type_storage;
-pub mod texture_dictionary;
+pub mod render_shape;
 
-pub use mesh_block_type::*;
-pub use mesh_block_type_storage::*;
-pub use texture_dictionary::*;
+pub use render_shape::*;

@@ -8,17 +8,24 @@ use std::{
     sync::Arc,
 };
 
-use crate::chunk_mesh_builder::{builders::ChunkBuilder, meshers::ChunkMesher, ChunkMesh};
+use crate::{
+    bevy_resources::BlockTypeName,
+    chunk_mesh_builder::{
+        builders::ChunkBuilder,
+        meshers::{ChunkMesher, MesherOutput, MesherWarning},
+        ChunkMesh,
+    },
+};
 use shared::{
     chunk_io::pending_chunk_queue::PendingChunkQueue,
-    entities::{Chunk, ChunkPos},
+    entities::{iterate_over_block_registry, BlockID, Chunk, ChunkPos},
 };
 
 use super::BuilderError;
 
 // struct ChunkBuildTask<T: Send + Sync + Default>(Task<ChunkMesh>);
 #[derive(Resource)]
-struct ChunkBuildTask(Task<ChunkMesh>);
+struct ChunkBuildTask(Task<MesherOutput>);
 
 pub struct AsyncChunkBuilder<T>
 where
@@ -29,44 +36,51 @@ where
     chunks_to_build: HashMap<ChunkPos, (Chunk, T)>,
     tasks: HashMap<ChunkPos, (ChunkBuildTask, T)>,
     completed: HashMap<ChunkPos, (ChunkMesh, T)>,
+    block_id_to_name: HashMap<BlockID, BlockTypeName>,
 }
 
 impl<T: Send + Sync + Default + Debug> AsyncChunkBuilder<T> {
     const MAX_BUILD_JOBS: usize = 16;
 
     pub fn new(mesher: Arc<dyn ChunkMesher>) -> Self {
+        let block_id_to_name = iterate_over_block_registry()
+            .map(|(name, block_id)| (*block_id, name.to_string()))
+            .collect();
+
         Self {
             mesher,
             pending_chunk_queue: PendingChunkQueue::new(),
             chunks_to_build: HashMap::default(),
             tasks: HashMap::default(),
             completed: HashMap::default(),
+            block_id_to_name,
         }
     }
 
-    fn create_build_task(&self, chunk: Chunk) -> Task<ChunkMesh> {
+    fn create_build_task(&self, chunk: Chunk) -> Task<MesherOutput> {
         let mesher = self.mesher.clone();
-
         let pool = AsyncComputeTaskPool::get();
-        let task = pool.spawn(async move {
-            let mesher_result = mesher.create_mesh(&chunk).clone();
 
-            for warning in mesher_result.warnings {
-                warn!("{warning}");
-            }
-
-            mesher_result.mesh
-        });
-
-        task
+        pool.spawn(async move { mesher.create_mesh(&chunk).clone() })
     }
 
     fn collect_finished_results(&mut self) {
         let mut completed: HashMap<ChunkPos, (ChunkMesh, T)> = HashMap::default();
+        let mut warnings: HashMap<MesherWarning, u32> = HashMap::default();
 
         for (chunk_pos, (build_task, additional_data)) in self.tasks.iter_mut() {
-            if let Some(chunk_mesh) = future::block_on(future::poll_once(&mut build_task.0)) {
-                completed.insert(*chunk_pos, (chunk_mesh, std::mem::take(additional_data)));
+            if let Some(mesher_output) = future::block_on(future::poll_once(&mut build_task.0)) {
+                completed.insert(
+                    *chunk_pos,
+                    (mesher_output.mesh, std::mem::take(additional_data)),
+                );
+
+                for (warning, count) in mesher_output.warnings {
+                    warnings
+                        .entry(warning)
+                        .and_modify(|e| *e += count)
+                        .or_insert(count);
+                }
             }
         }
 
@@ -75,12 +89,31 @@ impl<T: Send + Sync + Default + Debug> AsyncChunkBuilder<T> {
         }
 
         self.completed.extend(completed);
+
+        self.log_warnings(warnings);
     }
 
     fn is_chunk_in_builder(&self, chunk_pos: ChunkPos) -> bool {
         self.chunks_to_build.contains_key(&chunk_pos)
             || self.tasks.contains_key(&chunk_pos)
             || self.completed.contains_key(&chunk_pos)
+    }
+
+    fn log_warnings(&self, warnings: HashMap<MesherWarning, u32>) {
+        for (warning, count) in warnings {
+            let warn = match warning {
+                MesherWarning::UnknownRenderShape(block_id) => {
+                    let block_type_name = self
+                        .block_id_to_name
+                        .get(&block_id)
+                        .cloned()
+                        .unwrap_or("<unknown>".to_string());
+
+                    format!("{warning} ({block_type_name}) - occured {count} times")
+                }
+            };
+            warn!(warn);
+        }
     }
 }
 

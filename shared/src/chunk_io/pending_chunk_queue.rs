@@ -106,6 +106,15 @@ impl Default for PendingChunkQueue {
     }
 }
 
+impl fmt::Debug for PendingChunkQueue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PendingChunkQueue")
+            .field("pending_chunks", &self.pending_chunks.len())
+            .field("index_map", &self.index_map.len())
+            .finish()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
@@ -280,14 +289,5 @@ mod tests {
 
         assert_eq!(queue.pending_chunks.len(), 0);
         assert_eq!(queue.index_map.len(), 0);
-    }
-}
-
-impl fmt::Debug for PendingChunkQueue {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("PendingChunkQueue")
-            .field("pending_chunks", &self.pending_chunks.len())
-            .field("index_map", &self.index_map.len())
-            .finish()
     }
 }

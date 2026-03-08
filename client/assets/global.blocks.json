@@ -1,56 +1,48 @@
 {
 	"blocks": [
 		{
-			"block_type": "air",
-			"visible": false
+			"name": "air",
+			"affect_raycast": false
 		},
 		{
-			"block_type": "dirt",
-			"textures": { "side": "dirt" }
+			"name": "dirt",
+			"affect_raycast": true
 		},
 		{
-			"block_type": "stone",
-			"textures": { "side": "stone" }
+			"name": "stone",
+			"affect_raycast": true
 		},
 		{
-			"block_type": "wood",
-			"textures": {
-				"side": "wood_side",
-				"top": "wood_top",
-				"bottom": "wood_top"
-			}
+			"name": "wood",
+			"affect_raycast": true
 		},
 		{
-			"block_type": "grass",
-			"textures": {
-				"side": "grass_side",
-				"top": "grass",
-				"bottom": "dirt"
-			}
+			"name": "grass",
+			"affect_raycast": true
 		},
 		{
-			"block_type": "sand",
-			"textures": { "side": "sand" }
+			"name": "sand",
+			"affect_raycast": true
 		},
 		{
-			"block_type": "sandstone",
-			"textures": {
-				"side": "sandstone",
-				"top": "sandstone_top",
-				"bottom": "sandstone_bottom"
-			}
+			"name": "sandstone",
+			"affect_raycast": true
 		},
 		{
-			"block_type": "glass",
-			"textures": { "side": "glass" },
-			"material": "translucent",
-			"translucent": true
+			"name": "red",
+			"affect_raycast": true
 		},
 		{
-			"block_type": "leaves",
-			"textures": { "side": "oak_leaves" },
-			"material": "biomeColoredTranslucent",
-			"translucent": true
+			"name": "green",
+			"affect_raycast": true
+		},
+		{
+			"name": "leaves",
+			"affect_raycast": true
+		},
+		{
+			"name": "glass",
+			"affect_raycast": true
 		}
 	]
 }

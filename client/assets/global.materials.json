@@ -1,0 +1,19 @@
+{
+	"materials": [
+		{
+			"name": "default",
+			"type": "textured_cube",
+			"texture_array": "opaque"
+		},
+		{
+			"name": "colored",
+			"type": "colored_cube",
+			"palette": "default"
+		},
+		{
+      "name": "cutout",
+			"type": "cutout_textured_cube",
+			"texture_array": "cutout"
+		}
+  ]
+}

@@ -10,8 +10,6 @@ impl Plugin for ControllerPlugin {
                 speed: 100.0,
                 ..default()
             })
-            .add_event::<PositionChangeEvent>()
-            .add_event::<ActionEvent>()
             .add_systems(Startup, setup_controller)
             .add_systems(Update, (update, player_action));
     }
@@ -33,17 +31,16 @@ fn setup_controller(mut commands: Commands) {
 
 pub fn update(
     mut q_controller: Query<&mut Controller>,
-    position_ev: EventWriter<PositionChangeEvent>,
+    mut commands: Commands,
     q_fly_cam: Query<&Transform, With<FlyCam>>,
 ) {
     if let Ok(mut controller) = q_controller.single_mut() {
         if let Ok(transform) = q_fly_cam.single() {
             if controller.last_player_pos.floor() != transform.translation.floor() {
-                position_changed(
-                    position_ev,
-                    controller.last_player_pos,
-                    transform.translation,
-                );
+                commands.trigger(PositionChangeEvent {
+                    prev_pos: controller.last_player_pos,
+                    new_pos: transform.translation,
+                });
 
                 controller.last_player_pos = transform.translation;
             }
@@ -54,27 +51,23 @@ pub fn update(
 }
 
 pub fn player_action(
-    mut action_ev: EventWriter<ActionEvent>,
+    mut commands: Commands,
     mouse: Res<ButtonInput<MouseButton>>,
     q_fly_cam: Query<&Transform, With<FlyCam>>,
 ) {
     if let Ok(transform) = q_fly_cam.single() {
         if mouse.just_pressed(MouseButton::Left) {
-            action_ev.write(ActionEvent {
+            commands.trigger(ActionEvent {
                 action_type: ActionType::LeftClick,
                 controller_forward: *transform.forward(),
                 controller_pos: transform.translation,
             });
         } else if mouse.just_pressed(MouseButton::Right) {
-            action_ev.write(ActionEvent {
+            commands.trigger(ActionEvent {
                 action_type: ActionType::RightClick,
                 controller_forward: *transform.forward(),
                 controller_pos: transform.translation,
             });
         }
     }
-}
-
-fn position_changed(mut events: EventWriter<PositionChangeEvent>, prev_pos: Vec3, new_pos: Vec3) {
-    events.write(PositionChangeEvent { prev_pos, new_pos });
 }
