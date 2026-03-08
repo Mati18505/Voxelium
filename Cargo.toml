@@ -5,3 +5,10 @@ members = [
     "shared",
 ]
 resolver = "2"
+
+[profile.tracy]
+inherits = "release"
+opt-level = 2
+debug = true
+strip = false
+lto = false

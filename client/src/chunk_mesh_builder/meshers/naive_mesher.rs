@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use bevy::log::info_span;
 use cgmath::Vector3;
 use shared::entities::{BlockID, BlockInChunkPos, BlockSide, BlockStorage, Chunk, Direction};
 
@@ -17,6 +18,12 @@ pub struct NaiveMesher {
 
 impl ChunkMesher for NaiveMesher {
     fn create_mesh(&self, chunk: &Chunk) -> MesherOutput {
+        let my_span = info_span!(
+            "naive_mesher_create_mesh",
+            name = "naive_mesher_create_mesh"
+        )
+        .entered();
+
         let mut chunk_mesh = ChunkMesh::default();
         let mut warnings: Vec<MesherWarning> = Vec::default();
         let block_storage = chunk.get_block_storage();
@@ -134,53 +141,53 @@ impl NaiveMesher {
         let pos = Vector3::new(pos_x, pos_y, pos_z);
 
         let front_vertices: [Vector3<f32>; 4] = [
-            [-0.5, 0.5, -0.5].into(),
-            [0.5, 0.5, -0.5].into(),
-            [0.5, 0.5, 0.5].into(),
-            [-0.5, 0.5, 0.5].into(),
-        ];
-        let back_vertices: [Vector3<f32>; 4] = [
-            [-0.5, -0.5, -0.5].into(),
-            [0.5, -0.5, -0.5].into(),
-            [0.5, -0.5, 0.5].into(),
-            [-0.5, -0.5, 0.5].into(),
-        ];
-        let right_vertices: [Vector3<f32>; 4] = [
-            [0.5, -0.5, -0.5].into(),
-            [0.5, -0.5, 0.5].into(),
-            [0.5, 0.5, 0.5].into(),
-            [0.5, 0.5, -0.5].into(),
-        ];
-        let left_vertices: [Vector3<f32>; 4] = [
-            [-0.5, -0.5, -0.5].into(),
-            [-0.5, -0.5, 0.5].into(),
-            [-0.5, 0.5, 0.5].into(),
-            [-0.5, 0.5, -0.5].into(),
-        ];
-        let top_vertices: [Vector3<f32>; 4] = [
-            [-0.5, -0.5, 0.5].into(),
-            [-0.5, 0.5, 0.5].into(),
-            [0.5, 0.5, 0.5].into(),
-            [0.5, -0.5, 0.5].into(),
-        ];
-        let bottom_vertices: [Vector3<f32>; 4] = [
-            [-0.5, -0.5, -0.5].into(),
-            [-0.5, 0.5, -0.5].into(),
-            [0.5, 0.5, -0.5].into(),
-            [0.5, -0.5, -0.5].into(),
+            [-0.5, -0.5, 0.5].into(), // 0: bottom-left
+            [0.5, -0.5, 0.5].into(),  // 1: bottom-right
+            [0.5, 0.5, 0.5].into(),   // 2: top-right
+            [-0.5, 0.5, 0.5].into(),  // 3: top-left
         ];
 
-        let front_triangles: [usize; 6] = [0, 3, 1, 1, 3, 2];
-        let back_triangles: [usize; 6] = [0, 1, 3, 1, 2, 3];
-        let right_triangles: [usize; 6] = [0, 3, 1, 1, 3, 2];
-        let left_triangles: [usize; 6] = [0, 1, 3, 1, 2, 3];
-        let top_triangles: [usize; 6] = [0, 3, 1, 1, 3, 2];
-        let bottom_triangles: [usize; 6] = [0, 1, 3, 1, 2, 3];
+        let back_vertices: [Vector3<f32>; 4] = [
+            [0.5, -0.5, -0.5].into(),  // 0: bottom-left (mirror)
+            [-0.5, -0.5, -0.5].into(), // 1: bottom-right
+            [-0.5, 0.5, -0.5].into(),  // 2: top-right
+            [0.5, 0.5, -0.5].into(),   // 3: top-left
+        ];
+
+        let right_vertices: [Vector3<f32>; 4] = [
+            [0.5, -0.5, 0.5].into(),  // 0: bottom-left
+            [0.5, -0.5, -0.5].into(), // 1: bottom-right
+            [0.5, 0.5, -0.5].into(),  // 2: top-right
+            [0.5, 0.5, 0.5].into(),   // 3: top-left
+        ];
+
+        let left_vertices: [Vector3<f32>; 4] = [
+            [-0.5, -0.5, -0.5].into(), // 0: bottom-left
+            [-0.5, -0.5, 0.5].into(),  // 1: bottom-right
+            [-0.5, 0.5, 0.5].into(),   // 2: top-right
+            [-0.5, 0.5, -0.5].into(),  // 3: top-left
+        ];
+
+        let top_vertices: [Vector3<f32>; 4] = [
+            [-0.5, 0.5, 0.5].into(),  // 0: bottom-left
+            [0.5, 0.5, 0.5].into(),   // 1: bottom-right
+            [0.5, 0.5, -0.5].into(),  // 2: top-right
+            [-0.5, 0.5, -0.5].into(), // 3: top-left
+        ];
+
+        let bottom_vertices: [Vector3<f32>; 4] = [
+            [-0.5, -0.5, -0.5].into(), // 0: bottom-left
+            [0.5, -0.5, -0.5].into(),  // 1: bottom-right
+            [0.5, -0.5, 0.5].into(),   // 2: top-right
+            [-0.5, -0.5, 0.5].into(),  // 3: top-left
+        ];
+
+        let triangles: [usize; 6] = [0, 1, 3, 1, 2, 3];
 
         let front_uvs = [[1.0, 1.0], [0.0, 1.0], [0.0, 0.0], [1.0, 0.0]];
         let back_uvs = [[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]];
-        let right_uvs = [[0.0, 1.0], [0.0, 0.0], [1.0, 0.0], [1.0, 1.0]];
-        let left_uvs = [[0.0, 1.0], [0.0, 0.0], [1.0, 0.0], [1.0, 1.0]];
+        let right_uvs = [[1.0, 1.0], [0.0, 1.0], [0.0, 0.0], [1.0, 0.0]];
+        let left_uvs = [[1.0, 1.0], [0.0, 1.0], [0.0, 0.0], [1.0, 0.0]];
         let top_uvs = [[0.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, 0.0]];
         let bottom_uvs = [[0.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, 0.0]];
 
@@ -226,7 +233,7 @@ impl NaiveMesher {
         let side_dir = Direction::from(side);
 
         for _ in 0..4 {
-            mesh.normals.push([side_dir.x, side_dir.z, side_dir.y]);
+            mesh.normals.push([side_dir.x, side_dir.y, side_dir.z]);
         }
 
         let uvs = match side {
@@ -262,15 +269,8 @@ impl NaiveMesher {
             mesh.texture_indexes.push(texture_index);
         }
 
-        for i in 0..6 {
-            match side {
-                BlockSide::Front => mesh.triangles.push(mesh.vertex_index + front_triangles[i]),
-                BlockSide::Back => mesh.triangles.push(mesh.vertex_index + back_triangles[i]),
-                BlockSide::Left => mesh.triangles.push(mesh.vertex_index + left_triangles[i]),
-                BlockSide::Right => mesh.triangles.push(mesh.vertex_index + right_triangles[i]),
-                BlockSide::Top => mesh.triangles.push(mesh.vertex_index + top_triangles[i]),
-                BlockSide::Bottom => mesh.triangles.push(mesh.vertex_index + bottom_triangles[i]),
-            }
+        for t in triangles {
+            mesh.triangles.push(mesh.vertex_index + t);
         }
 
         mesh.vertex_index += 4;

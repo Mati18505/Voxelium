@@ -10,7 +10,7 @@ pub type Direction = Vector3<isize>;
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
 pub struct ChunkPos(Vector3<isize>);
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct BlockInChunkPos(Vector3<usize>);
 
 impl ChunkPos {
@@ -57,12 +57,12 @@ impl ChunkPos {
     pub fn is_within_distance_2d(&self, other: ChunkPos, mut dist_in_chunks: usize) -> bool {
         dist_in_chunks *= CHUNK_SIZE;
 
-        let y_start = other.y - dist_in_chunks as isize;
-        let y_end = other.y + dist_in_chunks as isize;
+        let z_start = other.z - dist_in_chunks as isize;
+        let z_end = other.z + dist_in_chunks as isize;
         let x_start = other.x - dist_in_chunks as isize;
         let x_end = other.x + dist_in_chunks as isize;
 
-        if self.x >= x_start && self.x <= x_end && self.y >= y_start && self.y <= y_end {
+        if self.x >= x_start && self.x <= x_end && self.z >= z_start && self.z <= z_end {
             return true;
         }
 
@@ -118,13 +118,13 @@ impl BlockInChunkPos {
     }
 
     pub fn index(&self) -> usize {
-        self.y * CHUNK_SIZE * CHUNK_SIZE + self.z * CHUNK_SIZE + self.x
+        self.z * CHUNK_SIZE * CHUNK_SIZE + self.y * CHUNK_SIZE + self.x
     }
 
     pub fn from_index(index: usize) -> Self {
-        let y = index / (CHUNK_SIZE * CHUNK_SIZE);
+        let z = index / (CHUNK_SIZE * CHUNK_SIZE);
         let rem = index % (CHUNK_SIZE * CHUNK_SIZE);
-        let z = rem / CHUNK_SIZE;
+        let y = rem / CHUNK_SIZE;
         let x = rem % CHUNK_SIZE;
 
         BlockInChunkPos::new(x, y, z)
@@ -167,16 +167,16 @@ pub enum BlockSide {
     Bottom,
 }
 
-// Z=UP, right handed
+// Y=up, right handed (like Bevy)
 impl From<BlockSide> for Direction {
     fn from(side: BlockSide) -> Self {
         match side {
-            BlockSide::Front => Direction::new(0, 1, 0),
-            BlockSide::Back => Direction::new(0, -1, 0),
+            BlockSide::Front => Direction::new(0, 0, 1),
+            BlockSide::Back => Direction::new(0, 0, -1),
             BlockSide::Right => Direction::new(1, 0, 0),
             BlockSide::Left => Direction::new(-1, 0, 0),
-            BlockSide::Top => Direction::new(0, 0, 1),
-            BlockSide::Bottom => Direction::new(0, 0, -1),
+            BlockSide::Top => Direction::new(0, 1, 0),
+            BlockSide::Bottom => Direction::new(0, -1, 0),
         }
     }
 }
@@ -217,10 +217,11 @@ mod test {
         let pos = BlockInChunkPos::new(15, 0, 0);
         assert_eq!(pos.index(), 15);
 
-        let pos = BlockInChunkPos::new(0, 0, 15);
+        // Y=up
+        let pos = BlockInChunkPos::new(0, 15, 0);
         assert_eq!(pos.index(), 15 * CHUNK_SIZE);
 
-        let pos = BlockInChunkPos::new(0, 15, 0);
+        let pos = BlockInChunkPos::new(0, 0, 15);
         assert_eq!(pos.index(), 15 * CHUNK_SIZE * CHUNK_SIZE);
     }
 
@@ -234,13 +235,29 @@ mod test {
         let expected = BlockInChunkPos::new(15, 0, 0);
         assert_eq!(BlockInChunkPos::from_index(idx), expected);
 
+        // Y=up
         let idx = 15 * CHUNK_SIZE;
-        let expected = BlockInChunkPos::new(0, 0, 15);
+        let expected = BlockInChunkPos::new(0, 15, 0);
         assert_eq!(BlockInChunkPos::from_index(idx), expected);
 
         let idx = 15 * CHUNK_SIZE * CHUNK_SIZE;
-        let expected = BlockInChunkPos::new(0, 15, 0);
+        let expected = BlockInChunkPos::new(0, 0, 15);
         assert_eq!(BlockInChunkPos::from_index(idx), expected);
+    }
+
+    #[test]
+    fn test_index_from_index() {
+        let idx = 0;
+        assert_eq!(BlockInChunkPos::from_index(idx).index(), idx);
+
+        let idx = 15;
+        assert_eq!(BlockInChunkPos::from_index(idx).index(), idx);
+
+        let idx = 15 * CHUNK_SIZE;
+        assert_eq!(BlockInChunkPos::from_index(idx).index(), idx);
+
+        let idx = 15 * CHUNK_SIZE * CHUNK_SIZE;
+        assert_eq!(BlockInChunkPos::from_index(idx).index(), idx);
     }
 
     #[test]

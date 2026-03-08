@@ -11,12 +11,11 @@ pub fn raycast_from_controller(
     world: &shared::entities::World,
     server_block_type_storage: &BlockTypeStorage,
 ) -> RaycastResult {
-    // Convert bevy direction to our direction
-    let mut start = Vector3::new(controller_pos.x, -controller_pos.z, controller_pos.y);
+    let mut start = Vector3::new(controller_pos.x, controller_pos.y, controller_pos.z);
     let dir = Vector3::new(
         controller_forward.x,
-        -controller_forward.z,
         controller_forward.y,
+        controller_forward.z,
     );
 
     let config = RaycastConfig {

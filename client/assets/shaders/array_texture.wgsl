@@ -17,7 +17,7 @@ fn fragment(
     @builtin(front_facing) is_front: bool,
     mesh: VertexOutput,
 ) -> @location(0) vec4<f32> {
-    let layer = i32(mesh.uv_b.r);
+    let layer = i32(round(mesh.uv_b.r));
 
     // Prepare a 'processed' StandardMaterial by sampling all textures to resolve
     // the material members

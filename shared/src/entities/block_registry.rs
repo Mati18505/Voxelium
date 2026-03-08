@@ -1,28 +1,27 @@
-use once_cell::sync::Lazy;
+use once_cell::sync::OnceCell;
 use std::collections::HashMap;
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 use super::BlockID;
 
-static BLOCK_NAME_TO_ID: Lazy<RwLock<HashMap<String, BlockID>>> =
-    Lazy::new(|| RwLock::new(HashMap::new()));
+static BLOCK_NAME_TO_ID: OnceCell<Arc<HashMap<String, BlockID>>> = OnceCell::new();
 
 pub fn init_block_names(blocks: Vec<(String, BlockID)>) {
-    let mut map = BLOCK_NAME_TO_ID.write().unwrap();
+    let map = blocks.into_iter().collect();
 
-    for (name, id) in blocks {
-        map.insert(name, id);
-    }
+    BLOCK_NAME_TO_ID
+        .set(Arc::new(map))
+        .expect("BLOCK_NAME_TO_ID already initialized");
 }
 
 pub fn name_to_block_id(name: &str) -> BlockID {
-    let map = BLOCK_NAME_TO_ID.read().unwrap();
+    let map = BLOCK_NAME_TO_ID
+        .get()
+        .expect("BLOCK_NAME_TO_ID not initialized");
 
-    if let Some(block_id) = map.get(name).copied() {
-        block_id
-    } else {
+    map.get(name).copied().unwrap_or_else(|| {
         assert!(name != "air", "Missing air block");
 
         BlockID::default()
-    }
+    })
 }

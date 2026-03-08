@@ -55,8 +55,8 @@ fn update_block_cursor(
             {
                 let translation = Vec3::new(
                     block_cursor_data.block_pos.x as f32,
+                    block_cursor_data.block_pos.y as f32,
                     block_cursor_data.block_pos.z as f32,
-                    -block_cursor_data.block_pos.y as f32,
                 );
                 Transform {
                     translation,
