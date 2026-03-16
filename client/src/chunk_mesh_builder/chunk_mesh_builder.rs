@@ -1,4 +1,5 @@
-use std::iter;
+use std::{collections::HashMap, iter};
+use lazy_static::lazy_static;
 
 use bevy::{asset::RenderAssetUsages, log::info_span, math::Vec3, mesh::{Indices, Mesh, MeshBuilder, PrimitiveTopology}};
 use shared::entities::{BlockSide, Direction};
@@ -10,6 +11,7 @@ pub struct ChunkMeshBuilder {
     pub chunk_mesh_data: ChunkMeshData,
 }
 
+#[derive(Debug, Default)]
 struct MeshData {
     positions: Vec<Vec3>,
     normals: Vec<[f32; 3]>,
@@ -19,7 +21,7 @@ struct MeshData {
 
 impl ChunkMeshBuilder {
     /// Plane mesh builder without rotation, scale and subdivision.
-    fn build_face(quad: &Quad) -> MeshData {
+    fn build_face(facing_side: BlockSide) -> MeshData {
         let z_vertex_count = 2;
         let x_vertex_count = 2;
         let num_vertices = (z_vertex_count * x_vertex_count) as usize;
@@ -37,13 +39,13 @@ impl ChunkMeshBuilder {
                 let u = -0.5 + tx;
                 let v = -0.5 + tz;
 
-                let normal: Direction = quad.facing_side.into();
+                let normal: Direction = facing_side.into();
                 let normal = Vec3 {
                     x: normal.x as f32,
                     y: normal.y as f32,
                     z: normal.z as f32,
                 };
-                let pos = Self::map_face(quad.facing_side, u, v);
+                let pos = Self::map_face(facing_side, u, v);
                 positions.push(pos);
                 normals.push(normal.to_array());
                 uvs.push([tx, tz]);
@@ -79,6 +81,18 @@ impl ChunkMeshBuilder {
     }
 }
 
+lazy_static! {
+    static ref FACES: [MeshData; 6] = {
+        let mut faces: [MeshData; 6] = Default::default();
+
+        for side in BlockSide::iterator().cloned() {
+            faces[side as usize] = ChunkMeshBuilder::build_face(side);
+        }
+
+        faces
+    };
+}
+
 impl MeshBuilder for ChunkMeshBuilder {
     fn build(&self) -> Mesh {
         let _ = info_span!(
@@ -103,7 +117,7 @@ impl MeshBuilder for ChunkMeshBuilder {
                 y: quad.block_pos.y as f32,
                 z: quad.block_pos.z as f32,
             }; 
-            let face = Self::build_face(quad);
+            let face = &FACES[quad.facing_side as usize];
 
             let normal: Direction = quad.facing_side.into();
             let normal = Vec3 {
@@ -112,10 +126,14 @@ impl MeshBuilder for ChunkMeshBuilder {
                 z: normal.z as f32,
             };
 
-            positions.extend(face.positions.iter().map(|pos| pos + normal * 0.5 + translation));
-            normals.extend(face.normals);
-            uvs.extend(face.uvs);
-            indices.extend(face.indices.iter().map(|e| *e + 4*i as u32));
+            let pos_offset = translation + normal * 0.5;
+            let base_index = 4*i as u32;
+
+            positions.extend(face.positions.iter().map(|pos| pos + pos_offset));
+            normals.extend(&face.normals);
+            uvs.extend(&face.uvs);
+
+            indices.extend(face.indices.iter().map(|e| *e + base_index));
             uvs_2.extend(iter::repeat_n([quad.uv_2 as f32, 0.0], 4));
         }
 
