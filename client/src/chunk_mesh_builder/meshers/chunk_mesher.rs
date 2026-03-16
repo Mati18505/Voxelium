@@ -1,8 +1,10 @@
 use std::{collections::HashMap, fmt::Debug};
+use bevy::{math::primitives::Plane3d, mesh::Meshable};
 use thiserror::Error;
 
-use crate::chunk_mesh_builder::ChunkMesh;
-use shared::entities::{BlockID, Chunk};
+use shared::entities::{BlockID, BlockInChunkPos, BlockSide, Chunk};
+
+use crate::chunk_mesh_builder::ChunkMeshBuilder;
 
 #[derive(Debug, Error, Clone, PartialEq, Eq, Hash)]
 pub enum MesherWarning {
@@ -10,12 +12,43 @@ pub enum MesherWarning {
     UnknownRenderShape(BlockID),
 }
 
+#[derive(Debug, Clone)]
+pub struct Quad {
+    pub facing_side: BlockSide,
+    pub block_pos: BlockInChunkPos,
+}
+
+#[derive(Debug, Clone)]
+pub struct ChunkMeshData {
+    pub quads: Vec<Quad>,
+}
+
+impl Default for ChunkMeshData {
+    fn default() -> Self {
+        Self {
+            quads: Vec::new()
+        }
+    }
+}
+
+impl Meshable for ChunkMeshData {
+    type Output = ChunkMeshBuilder;
+
+    fn mesh(&self) -> Self::Output {
+        ChunkMeshBuilder {
+            chunk_mesh_data: self.clone(),
+        }
+    }
+}
+
+pub type MesherWarnings = HashMap<MesherWarning, u32>;
+
 #[derive(Debug, Default, Clone)]
 pub struct MesherOutput {
     /// Generated chunk mesh.
-    pub mesh: ChunkMesh,
+    pub mesh: ChunkMeshData,
     /// Non-fatal issues encountered during mesh creation and repetition count.
-    pub warnings: HashMap<MesherWarning, u32>,
+    pub warnings: MesherWarnings,
 }
 
 pub trait ChunkMesher: Send + Sync + Debug {

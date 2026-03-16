@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use bevy::mesh::Mesh;
+
 pub type TextureIndex = u32;
 pub type ColorIndex = u32;
 pub type StorageIndex = u32;
@@ -15,7 +17,4 @@ pub struct LayerMesh {
     pub indexes: Vec<StorageIndex>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
-pub struct ChunkMesh {
-    pub layers: HashMap<MaterialId, LayerMesh>,
-}
+pub type ChunkMesh = Mesh;
