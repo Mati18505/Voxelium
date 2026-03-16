@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
-use bevy::{log::info_span, math::{primitives::Plane3d, Vec2, Vec3}};
+use bevy::log::info_span;
 
 use super::{ChunkMesher, MesherOutput, MesherWarning};
 use crate::{
     bevy_resources::RenderShapeStorage,
-    chunk_mesh_builder::{meshers::{ChunkMeshData, MesherWarnings, Quad}, RenderShape},
+    chunk_mesh_builder::{meshers::{ChunkMeshData, MesherWarnings, Quad}, MaterialId, RenderShape},
 };
 use shared::entities::*;
 
@@ -22,7 +22,7 @@ impl ChunkMesher for NaiveMesher {
         )
         .entered();
 
-        let mut out = ChunkMeshData::default();
+        let mut out: HashMap::<MaterialId, ChunkMeshData> = Default::default();
         let mut warnings: MesherWarnings = Default::default();
         let block_storage = chunk.get_block_storage();
 
@@ -32,13 +32,16 @@ impl ChunkMesher for NaiveMesher {
 
             match result {
                 Some(render_shape) => {
+                    let layer_mesh: &mut ChunkMeshData = out
+                        .entry(render_shape.render_data().material)
+                        .or_default();
+
                     self.create_block(
                         render_shape,
                         BlockInChunkPos::new(pos.x, pos.y, pos.z),
-                        &mut out,
+                        layer_mesh,
                         block_storage,
                         &mut warnings,
-                        *block_id,
                     );
                 }
                 None => {
@@ -51,7 +54,7 @@ impl ChunkMesher for NaiveMesher {
         }
 
         MesherOutput {
-            mesh: out,
+            layers: out,
             warnings,
         }
     }
@@ -71,7 +74,6 @@ impl NaiveMesher {
         out: &mut ChunkMeshData,
         block_storage: &BlockStorage,
         warnings: &mut MesherWarnings,
-        block_id: BlockID
     ) {
         if !render_shape.render_data().visible {
             return;
@@ -89,7 +91,7 @@ impl NaiveMesher {
             };
 
             if has_transparent_neighbor {
-                let quad = self.create_block_side(side, pos, block_id);
+                let quad = self.create_block_side(side, pos, render_shape);
                 out.quads.push(quad);
             }
         }
@@ -124,11 +126,13 @@ impl NaiveMesher {
         &self,
         side: BlockSide,
         block_pos: BlockInChunkPos,
-        block_id: BlockID,
+        render_shape: &RenderShape,
     ) -> Quad {
+        
         Quad {
             facing_side: side,
             block_pos,
+            uv_2: render_shape.get_storage_index(side).unwrap_or_default(),
         }
     }
 }

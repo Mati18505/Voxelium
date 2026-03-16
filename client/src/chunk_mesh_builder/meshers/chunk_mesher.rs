@@ -1,10 +1,10 @@
 use std::{collections::HashMap, fmt::Debug};
-use bevy::{math::primitives::Plane3d, mesh::Meshable};
+use bevy::mesh::Meshable;
 use thiserror::Error;
 
 use shared::entities::{BlockID, BlockInChunkPos, BlockSide, Chunk};
 
-use crate::chunk_mesh_builder::ChunkMeshBuilder;
+use crate::chunk_mesh_builder::{ChunkMeshBuilder, MaterialId, StorageIndex};
 
 #[derive(Debug, Error, Clone, PartialEq, Eq, Hash)]
 pub enum MesherWarning {
@@ -16,19 +16,12 @@ pub enum MesherWarning {
 pub struct Quad {
     pub facing_side: BlockSide,
     pub block_pos: BlockInChunkPos,
+    pub uv_2: StorageIndex,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct ChunkMeshData {
     pub quads: Vec<Quad>,
-}
-
-impl Default for ChunkMeshData {
-    fn default() -> Self {
-        Self {
-            quads: Vec::new()
-        }
-    }
 }
 
 impl Meshable for ChunkMeshData {
@@ -46,7 +39,7 @@ pub type MesherWarnings = HashMap<MesherWarning, u32>;
 #[derive(Debug, Default, Clone)]
 pub struct MesherOutput {
     /// Generated chunk mesh.
-    pub mesh: ChunkMeshData,
+    pub layers: HashMap<MaterialId, ChunkMeshData>,
     /// Non-fatal issues encountered during mesh creation and repetition count.
     pub warnings: MesherWarnings,
 }

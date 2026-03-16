@@ -12,7 +12,7 @@ use crate::{
     bevy_resources::BlockTypeName,
     chunk_mesh_builder::{
         builders::ChunkBuilder,
-        meshers::{ChunkMesher, MesherOutput, MesherWarning, MesherWarnings},
+        meshers::{ChunkMesher, MesherWarning, MesherWarnings},
         ChunkMesh,
     },
 };
@@ -63,9 +63,13 @@ impl<T: Send + Sync + Default + Debug> AsyncChunkBuilder<T> {
 
         let future = async move { 
             let mesh_data = mesher.create_mesh(&chunk).clone();
-            let mesh = mesh_data.mesh.mesh().build();
+            let mut chunk_mesh: ChunkMesh = Default::default();
 
-            (mesh, mesh_data.warnings)
+            for (material_id, mesh) in mesh_data.layers.iter() {
+                chunk_mesh.layers.insert(*material_id, mesh.mesh().build());
+            }
+
+            (chunk_mesh, mesh_data.warnings)
         };
 
         ChunkBuildTask(pool.spawn(future))

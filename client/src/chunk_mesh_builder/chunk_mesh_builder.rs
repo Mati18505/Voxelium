@@ -1,3 +1,5 @@
+use std::iter;
+
 use bevy::{asset::RenderAssetUsages, log::info_span, math::Vec3, mesh::{Indices, Mesh, MeshBuilder, PrimitiveTopology}};
 use shared::entities::{BlockSide, Direction};
 
@@ -93,6 +95,7 @@ impl MeshBuilder for ChunkMeshBuilder {
         let mut normals: Vec<[f32; 3]> = Vec::with_capacity(num_vertices);
         let mut uvs: Vec<[f32; 2]> = Vec::with_capacity(num_vertices);
         let mut indices: Vec<u32> = Vec::with_capacity(num_indices);
+        let mut uvs_2: Vec<[f32; 2]> = Vec::with_capacity(num_vertices);
 
         for (i, quad) in self.chunk_mesh_data.quads.iter().enumerate() {
             let translation = Vec3{
@@ -113,6 +116,7 @@ impl MeshBuilder for ChunkMeshBuilder {
             normals.extend(face.normals);
             uvs.extend(face.uvs);
             indices.extend(face.indices.iter().map(|e| *e + 4*i as u32));
+            uvs_2.extend(iter::repeat_n([quad.uv_2 as f32, 0.0], 4));
         }
 
         Mesh::new(
@@ -123,5 +127,6 @@ impl MeshBuilder for ChunkMeshBuilder {
         .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions)
         .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, normals)
         .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs)
+        .with_inserted_attribute(Mesh::ATTRIBUTE_UV_1, uvs_2)
     }
 }

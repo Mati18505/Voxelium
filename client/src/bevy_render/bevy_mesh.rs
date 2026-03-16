@@ -21,9 +21,9 @@ impl BevyChunkMesh {
 
 impl From<ChunkMesh> for BevyChunkMesh {
     fn from(chunk_mesh: ChunkMesh) -> Self {
-        let mut bevy_mesh = BevyChunkMesh::default();
-        bevy_mesh.layers.insert(0, chunk_mesh);
-
-        bevy_mesh
+        BevyChunkMesh {
+            layers: chunk_mesh.layers,
+            transform: Transform::IDENTITY,
+        }
     }
 }
