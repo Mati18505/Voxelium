@@ -5,7 +5,7 @@ use bevy::log::info_span;
 use super::{ChunkMesher, MesherOutput, MesherWarning};
 use crate::{
     bevy_resources::RenderShapeStorage,
-    chunk_mesh_builder::{meshers::MesherWarnings, ChunkMeshData, MaterialId, Quad, RenderShape},
+    chunk_mesh_builder::{meshers::MesherWarnings, ChunkMeshData, MaterialId, FaceData, RenderShape},
 };
 use shared::entities::*;
 
@@ -127,9 +127,9 @@ impl NaiveMesher {
         side: BlockSide,
         block_pos: BlockInChunkPos,
         render_shape: &RenderShape,
-    ) -> Quad {
+    ) -> FaceData {
         
-        Quad {
+        FaceData {
             facing_side: side,
             block_pos,
             uv_2: render_shape.get_storage_index(side).unwrap_or_default(),

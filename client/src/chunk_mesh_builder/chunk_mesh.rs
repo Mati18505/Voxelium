@@ -16,7 +16,7 @@ pub struct ChunkMesh {
 }
 
 #[derive(Debug, Clone)]
-pub struct Quad {
+pub struct FaceData {
     pub facing_side: BlockSide,
     pub block_pos: BlockInChunkPos,
     pub uv_2: StorageIndex,
@@ -24,7 +24,7 @@ pub struct Quad {
 
 #[derive(Debug, Default, Clone)]
 pub struct ChunkMeshData {
-    pub quads: Vec<Quad>,
+    pub quads: Vec<FaceData>,
 }
 
 impl Meshable for ChunkMeshData {
