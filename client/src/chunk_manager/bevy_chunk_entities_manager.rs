@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use shared::entities::ChunkPos;
 
 use super::ChunkObjectEvent;
-use crate::bevy_render::{BevyChunkEntity, BevyChunkMesh};
+use crate::bevy_render::BevyChunkEntity;
 use crate::bevy_resources::MaterialStorage;
 use crate::chunk_mesh_builder::ChunkMesh;
 
@@ -60,14 +60,13 @@ impl ChunkEntitiesManager {
             "Potential memory leak!"
         );
 
-        let mut mesh = BevyChunkMesh::from(mesh);
-        mesh.apply_transform(Transform::from_xyz(
+        let transform = Transform::from_xyz(
             pos.x as f32,
             pos.y as f32,
             pos.z as f32,
-        ));
+        );
 
-        let chunk_entity = BevyChunkEntity::new(mesh, commands, meshes, material_storage);
+        let chunk_entity = BevyChunkEntity::new(mesh, commands, meshes, material_storage, transform);
 
         self.chunk_entities.insert(pos, chunk_entity);
     }
