@@ -24,4 +24,4 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-LD_LIBRARY_PATH=target/${PROFILE}/deps:${HOME}/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib: rustup run stable  target/${PROFILE}/${PACKAGE}
+BEVY_ASSET_ROOT=${PACKAGE} LD_LIBRARY_PATH=target/${PROFILE}/deps:${HOME}/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib: rustup run stable  target/${PROFILE}/${PACKAGE}
