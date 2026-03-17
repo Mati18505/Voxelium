@@ -62,7 +62,7 @@ impl<T: Send + Sync + Default + Debug> AsyncChunkBuilder<T> {
         let pool = AsyncComputeTaskPool::get();
 
         let future = async move { 
-            let mesh_data = mesher.create_mesh(&chunk).clone();
+            let mesh_data = mesher.create_mesh(&chunk);
             let mut chunk_mesh: ChunkMesh = Default::default();
 
             for (material_id, mesh) in mesh_data.layers.iter() {
