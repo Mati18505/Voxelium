@@ -8,11 +8,12 @@ use std::{
     sync::Arc,
 };
 
+use crate::chunk_mesh_builder::{builders::ChunkBuilder, meshers::ChunkMesher, ChunkMesh};
 use crate::{
     bevy_resources::BlockTypeName,
     chunk_mesh_builder::{
         builders::ChunkBuilder,
-        meshers::{ChunkMesher, MesherOutput, MesherWarning},
+        meshers::{ChunkMesher, MesherWarning, MesherWarnings},
         ChunkMesh,
     },
 };
@@ -25,7 +26,7 @@ use super::BuilderError;
 
 // struct ChunkBuildTask<T: Send + Sync + Default>(Task<ChunkMesh>);
 #[derive(Resource)]
-struct ChunkBuildTask(Task<MesherOutput>);
+struct ChunkBuildTask(Task<(ChunkMesh, MesherWarnings)>);
 
 pub struct AsyncChunkBuilder<T>
 where
@@ -57,11 +58,22 @@ impl<T: Send + Sync + Default + Debug> AsyncChunkBuilder<T> {
         }
     }
 
-    fn create_build_task(&self, chunk: Chunk) -> Task<MesherOutput> {
+    fn create_build_task(&self, chunk: Chunk) -> ChunkBuildTask {
         let mesher = self.mesher.clone();
         let pool = AsyncComputeTaskPool::get();
 
-        pool.spawn(async move { mesher.create_mesh(&chunk).clone() })
+        let future = async move {
+            let mesh_data = mesher.create_mesh(&chunk);
+            let mut chunk_mesh: ChunkMesh = Default::default();
+
+            for (material_id, mesh) in mesh_data.layers.iter() {
+                chunk_mesh.layers.insert(*material_id, mesh.mesh().build());
+            }
+
+            (chunk_mesh, mesh_data.warnings)
+        };
+
+        ChunkBuildTask(pool.spawn(future))
     }
 
     fn collect_finished_results(&mut self) {
@@ -69,13 +81,10 @@ impl<T: Send + Sync + Default + Debug> AsyncChunkBuilder<T> {
         let mut warnings: HashMap<MesherWarning, u32> = HashMap::default();
 
         for (chunk_pos, (build_task, additional_data)) in self.tasks.iter_mut() {
-            if let Some(mesher_output) = future::block_on(future::poll_once(&mut build_task.0)) {
-                completed.insert(
-                    *chunk_pos,
-                    (mesher_output.mesh, std::mem::take(additional_data)),
-                );
+            if let Some(out) = future::block_on(future::poll_once(&mut build_task.0)) {
+                completed.insert(*chunk_pos, (out.0, std::mem::take(additional_data)));
 
-                for (warning, count) in mesher_output.warnings {
+                for (warning, count) in out.1 {
                     warnings
                         .entry(warning)
                         .and_modify(|e| *e += count)
@@ -151,8 +160,7 @@ impl<T: Send + Sync + Default + Debug> ChunkBuilder<T> for AsyncChunkBuilder<T> 
         for pos in nearest_chunks {
             if let Some((chunk, additional_data)) = self.chunks_to_build.remove(&pos) {
                 let task = self.create_build_task(chunk);
-                self.tasks
-                    .insert(pos, (ChunkBuildTask(task), additional_data));
+                self.tasks.insert(pos, (task, additional_data));
             }
         }
 
