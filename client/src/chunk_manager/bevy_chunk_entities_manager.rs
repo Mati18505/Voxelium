@@ -60,13 +60,10 @@ impl ChunkEntitiesManager {
             "Potential memory leak!"
         );
 
-        let transform = Transform::from_xyz(
-            pos.x as f32,
-            pos.y as f32,
-            pos.z as f32,
-        );
+        let transform = Transform::from_xyz(pos.x as f32, pos.y as f32, pos.z as f32);
 
-        let chunk_entity = BevyChunkEntity::new(mesh, commands, meshes, material_storage, transform);
+        let chunk_entity =
+            BevyChunkEntity::new(mesh, commands, meshes, material_storage, transform);
 
         self.chunk_entities.insert(pos, chunk_entity);
     }

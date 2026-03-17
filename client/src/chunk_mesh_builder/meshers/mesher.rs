@@ -1,7 +1,12 @@
-use std::iter;
 use lazy_static::lazy_static;
+use std::iter;
 
-use bevy::{asset::RenderAssetUsages, log::info_span, math::Vec3, mesh::{Indices, Mesh, MeshBuilder, PrimitiveTopology}};
+use bevy::{
+    asset::RenderAssetUsages,
+    log::info_span,
+    math::Vec3,
+    mesh::{Indices, Mesh, MeshBuilder, PrimitiveTopology},
+};
 use shared::entities::{BlockSide, Direction};
 
 use crate::chunk_mesh_builder::ChunkMeshData;
@@ -64,7 +69,12 @@ impl ChunkMeshBuilder {
             }
         }
 
-        MeshData { positions, normals, uvs, indices }
+        MeshData {
+            positions,
+            normals,
+            uvs,
+            indices,
+        }
     }
 
     fn map_face(facing_side: BlockSide, u: f32, v: f32) -> Vec3 {
@@ -95,11 +105,7 @@ lazy_static! {
 
 impl MeshBuilder for ChunkMeshBuilder {
     fn build(&self) -> Mesh {
-        let _ = info_span!(
-            "chunk_mesh_builder",
-            name = "chunk_mesh_builder"
-        )
-            .entered();
+        let _ = info_span!("chunk_mesh_builder", name = "chunk_mesh_builder").entered();
 
         let num_planes = self.chunk_mesh_data.faces.len();
         let num_vertices = num_planes * 4;
@@ -112,11 +118,11 @@ impl MeshBuilder for ChunkMeshBuilder {
         let mut uvs_2: Vec<[f32; 2]> = Vec::with_capacity(num_vertices);
 
         for (i, quad) in self.chunk_mesh_data.faces.iter().enumerate() {
-            let translation = Vec3{
+            let translation = Vec3 {
                 x: quad.block_pos.x as f32,
                 y: quad.block_pos.y as f32,
                 z: quad.block_pos.z as f32,
-            }; 
+            };
             let face = &FACES[quad.facing_side as usize];
 
             let normal: Direction = quad.facing_side.into();
@@ -127,7 +133,7 @@ impl MeshBuilder for ChunkMeshBuilder {
             };
 
             let pos_offset = translation + normal * 0.5;
-            let base_index = 4*i as u32;
+            let base_index = 4 * i as u32;
 
             positions.extend(face.positions.iter().map(|pos| pos + pos_offset));
             normals.extend(&face.normals);

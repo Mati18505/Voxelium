@@ -7,7 +7,8 @@ use bevy::{
         system::{Commands, ResMut},
     },
     log,
-    mesh::Mesh, transform::components::Transform,
+    mesh::Mesh,
+    transform::components::Transform,
 };
 
 use crate::{bevy_resources::MaterialStorage, chunk_mesh_builder::ChunkMesh};

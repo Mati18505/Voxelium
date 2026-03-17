@@ -61,7 +61,7 @@ impl<T: Send + Sync + Default + Debug> AsyncChunkBuilder<T> {
         let mesher = self.mesher.clone();
         let pool = AsyncComputeTaskPool::get();
 
-        let future = async move { 
+        let future = async move {
             let mesh_data = mesher.create_mesh(&chunk);
             let mut chunk_mesh: ChunkMesh = Default::default();
 
@@ -81,10 +81,7 @@ impl<T: Send + Sync + Default + Debug> AsyncChunkBuilder<T> {
 
         for (chunk_pos, (build_task, additional_data)) in self.tasks.iter_mut() {
             if let Some(out) = future::block_on(future::poll_once(&mut build_task.0)) {
-                completed.insert(
-                    *chunk_pos,
-                    (out.0, std::mem::take(additional_data)),
-                );
+                completed.insert(*chunk_pos, (out.0, std::mem::take(additional_data)));
 
                 for (warning, count) in out.1 {
                     warnings
@@ -162,8 +159,7 @@ impl<T: Send + Sync + Default + Debug> ChunkBuilder<T> for AsyncChunkBuilder<T> 
         for pos in nearest_chunks {
             if let Some((chunk, additional_data)) = self.chunks_to_build.remove(&pos) {
                 let task = self.create_build_task(chunk);
-                self.tasks
-                    .insert(pos, (task, additional_data));
+                self.tasks.insert(pos, (task, additional_data));
             }
         }
 

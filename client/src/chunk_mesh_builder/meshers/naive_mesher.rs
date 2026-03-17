@@ -5,7 +5,9 @@ use bevy::log::info_span;
 use super::{ChunkMesher, MesherOutput, MesherWarning};
 use crate::{
     bevy_resources::RenderShapeStorage,
-    chunk_mesh_builder::{meshers::MesherWarnings, ChunkMeshData, MaterialId, FaceData, RenderShape},
+    chunk_mesh_builder::{
+        meshers::MesherWarnings, ChunkMeshData, FaceData, MaterialId, RenderShape,
+    },
 };
 use shared::entities::*;
 
@@ -22,7 +24,7 @@ impl ChunkMesher for NaiveMesher {
         )
         .entered();
 
-        let mut out: HashMap::<MaterialId, ChunkMeshData> = Default::default();
+        let mut out: HashMap<MaterialId, ChunkMeshData> = Default::default();
         let mut warnings: MesherWarnings = Default::default();
         let block_storage = chunk.get_block_storage();
 
@@ -32,9 +34,8 @@ impl ChunkMesher for NaiveMesher {
 
             match result {
                 Some(render_shape) => {
-                    let layer_mesh: &mut ChunkMeshData = out
-                        .entry(render_shape.render_data().material)
-                        .or_default();
+                    let layer_mesh: &mut ChunkMeshData =
+                        out.entry(render_shape.render_data().material).or_default();
 
                     self.create_block(
                         render_shape,
@@ -127,7 +128,6 @@ impl NaiveMesher {
         block_pos: BlockInChunkPos,
         render_shape: &RenderShape,
     ) -> FaceData {
-        
         FaceData {
             facing_side: side,
             block_pos,
