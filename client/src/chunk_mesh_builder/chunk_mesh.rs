@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use bevy::mesh::{Mesh, Meshable};
 use shared::entities::{BlockInChunkPos, BlockSide};
 
-use crate::chunk_mesh_builder::ChunkMeshBuilder;
+use crate::chunk_mesh_builder::meshers::ChunkMeshBuilder;
 
 pub type TextureIndex = u32;
 pub type ColorIndex = u32;
