@@ -24,7 +24,7 @@ pub struct FaceData {
 
 #[derive(Debug, Default, Clone)]
 pub struct ChunkMeshData {
-    pub quads: Vec<FaceData>,
+    pub faces: Vec<FaceData>,
 }
 
 impl Meshable for ChunkMeshData {

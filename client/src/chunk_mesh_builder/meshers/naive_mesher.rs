@@ -91,8 +91,7 @@ impl NaiveMesher {
             };
 
             if has_transparent_neighbor {
-                let quad = self.create_block_side(side, pos, render_shape);
-                out.quads.push(quad);
+                out.faces.push(self.create_face(side, pos, render_shape));
             }
         }
     }
@@ -122,7 +121,7 @@ impl NaiveMesher {
         pos.checked_add(neighbor_dir)
     }
 
-    fn create_block_side(
+    fn create_face(
         &self,
         side: BlockSide,
         block_pos: BlockInChunkPos,

@@ -101,7 +101,7 @@ impl MeshBuilder for ChunkMeshBuilder {
         )
             .entered();
 
-        let num_planes = self.chunk_mesh_data.quads.len();
+        let num_planes = self.chunk_mesh_data.faces.len();
         let num_vertices = num_planes * 4;
         let num_indices = num_planes * 6;
 
@@ -111,7 +111,7 @@ impl MeshBuilder for ChunkMeshBuilder {
         let mut indices: Vec<u32> = Vec::with_capacity(num_indices);
         let mut uvs_2: Vec<[f32; 2]> = Vec::with_capacity(num_vertices);
 
-        for (i, quad) in self.chunk_mesh_data.quads.iter().enumerate() {
+        for (i, quad) in self.chunk_mesh_data.faces.iter().enumerate() {
             let translation = Vec3{
                 x: quad.block_pos.x as f32,
                 y: quad.block_pos.y as f32,
