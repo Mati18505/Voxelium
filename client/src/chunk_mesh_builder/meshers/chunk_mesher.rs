@@ -1,37 +1,14 @@
 use std::{collections::HashMap, fmt::Debug};
-use bevy::mesh::Meshable;
 use thiserror::Error;
 
-use shared::entities::{BlockID, BlockInChunkPos, BlockSide, Chunk};
+use shared::entities::{BlockID, Chunk};
 
-use crate::chunk_mesh_builder::{ChunkMeshBuilder, MaterialId, StorageIndex};
+use crate::chunk_mesh_builder::{ChunkMeshData, MaterialId};
 
 #[derive(Debug, Error, Clone, PartialEq, Eq, Hash)]
 pub enum MesherWarning {
     #[error("Mesher encountered unknown render shape id: {0}")]
     UnknownRenderShape(BlockID),
-}
-
-#[derive(Debug, Clone)]
-pub struct Quad {
-    pub facing_side: BlockSide,
-    pub block_pos: BlockInChunkPos,
-    pub uv_2: StorageIndex,
-}
-
-#[derive(Debug, Default, Clone)]
-pub struct ChunkMeshData {
-    pub quads: Vec<Quad>,
-}
-
-impl Meshable for ChunkMeshData {
-    type Output = ChunkMeshBuilder;
-
-    fn mesh(&self) -> Self::Output {
-        ChunkMeshBuilder {
-            chunk_mesh_data: self.clone(),
-        }
-    }
 }
 
 pub type MesherWarnings = HashMap<MesherWarning, u32>;

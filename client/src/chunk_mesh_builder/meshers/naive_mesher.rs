@@ -5,7 +5,7 @@ use bevy::log::info_span;
 use super::{ChunkMesher, MesherOutput, MesherWarning};
 use crate::{
     bevy_resources::RenderShapeStorage,
-    chunk_mesh_builder::{meshers::{ChunkMeshData, MesherWarnings, Quad}, MaterialId, RenderShape},
+    chunk_mesh_builder::{meshers::MesherWarnings, ChunkMeshData, MaterialId, Quad, RenderShape},
 };
 use shared::entities::*;
 

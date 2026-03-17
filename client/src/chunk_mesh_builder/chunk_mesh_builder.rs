@@ -4,7 +4,7 @@ use lazy_static::lazy_static;
 use bevy::{asset::RenderAssetUsages, log::info_span, math::Vec3, mesh::{Indices, Mesh, MeshBuilder, PrimitiveTopology}};
 use shared::entities::{BlockSide, Direction};
 
-use crate::chunk_mesh_builder::meshers::ChunkMeshData;
+use crate::chunk_mesh_builder::ChunkMeshData;
 
 #[derive(Clone, Debug, Default)]
 pub struct ChunkMeshBuilder {
