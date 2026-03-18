@@ -1,14 +1,14 @@
-use bevy::log::{self, info_span};
+use bevy::{ecs::message::MessageWriter, log::{self, info_span}};
 use shared::{
     chunk_io::chunk_loader,
     entities::{Chunk, ChunkPos, ChunkPosGenerator2D, ChunkPosGenerator3D, ChunkRepository},
 };
 use std::fmt;
 
-use crate::chunk_mesh_builder::{
+use crate::{chunk_manager::{chunk_builder::{self, BuildChunk}, RemoveChunk}, chunk_mesh_builder::{
     builders::{ChunkBuilder, Versioned},
     ChunkMesh,
-};
+}};
 
 use super::{chunk_state, ChunkState, ChunkStatus, ChunkTransition};
 
@@ -64,6 +64,7 @@ pub struct ChunkManager {
     event_tx: Option<crossbeam_channel::Sender<WorldChunkUpdate>>,
     config: Config,
     controller_pos: ChunkPos,
+    chunks_to_build: Vec<ChunkPos>,
 }
 
 impl ChunkManager {
@@ -80,6 +81,7 @@ impl ChunkManager {
             event_tx: None,
             config,
             controller_pos: ChunkPos::new(0, 0, 0),
+            chunks_to_build: Vec::default(),
         }
     }
 
@@ -145,6 +147,12 @@ impl ChunkManager {
         self.load_chunk_if_is_empty(pos);
 
         self.get_chunk(pos)
+    }
+
+    pub fn send_messages_to_builder(&mut self, chunks_to_build: &mut MessageWriter<BuildChunk>, chunks_to_remove: &mut MessageWriter<RemoveChunk>) {
+        for chunk_pos in std::mem::take(&mut self.chunks_to_build) {
+            chunks_to_build.write(BuildChunk(chunk_pos));
+        }
     }
 
     fn update_chunk_states_in_world(&mut self) {
@@ -273,27 +281,21 @@ impl ChunkManager {
                     .expect("ChunkState is drawn, but mesh is not built.")
                     .0;
 
-                self.world.add_chunk_mesh(pos, mesh.clone());
-
                 self.create_chunk_object(pos, &mesh);
             }
             DrawnToToDraw => {
                 self.pass_chunk_to_builder(pos);
             }
             DrawnToLoaded => {
-                self.world.chunk_meshes.remove(&pos);
                 self.remove_chunk_object(pos);
             }
         }
     }
 
     fn pass_chunk_to_builder(&mut self, pos: ChunkPos) {
-        let chunk = self
-            .world
-            .get_chunk(pos)
-            .expect("Chunk is passed to builder, but it is not loaded.");
+        self.chunks_to_build.push(pos);
 
-        self.chunk_builder.force_build(pos, chunk, ());
+
         self.world.remove_chunk_need_rebuild(pos);
     }
 

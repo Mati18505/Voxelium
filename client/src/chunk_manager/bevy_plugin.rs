@@ -8,7 +8,7 @@ use shared::{
 
 use crate::{
     bevy_types::{AppStates, GameResources},
-    chunk_manager::{ChunkObjectEvent, WorldChunkUpdate},
+    chunk_manager::{BuildChunk, ChunkBuilderPlugin, ChunkObjectEvent, RemoveChunk, WorldChunkUpdate},
     chunk_mesh_builder::{
         builders::{
             async_chunk_builder::AsyncChunkBuilder, versioned_chunk_builder::VersionedChunkBuilder,
@@ -26,7 +26,8 @@ use super::{
 pub struct ChunkManagerPlugin;
 impl Plugin for ChunkManagerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppStates::InGame), init_chunk_manager)
+        app.add_plugins(ChunkBuilderPlugin)
+            .add_systems(OnEnter(AppStates::InGame), init_chunk_manager)
             .add_message::<WorldChunkUpdateEvent>()
             .add_systems(Update, update.run_if(in_state(AppStates::InGame)))
             .add_observer(on_position_change);
@@ -72,6 +73,8 @@ fn update(
     game_resources: Res<GameResources>,
     mut chunk_manager_resources: ResMut<ChunkManagerResources>,
     chunk_manager_events: MessageWriter<WorldChunkUpdateEvent>,
+    mut chunks_to_build: MessageWriter<BuildChunk>,
+    mut chunks_to_remove: MessageWriter<RemoveChunk>,
 ) {
     chunk_manager_resources.chunk_manager.check_loaded_chunks();
     chunk_manager_resources.chunk_manager.check_built_chunks();
@@ -85,6 +88,8 @@ fn update(
     chunk_manager_resources
         .event_manager
         .process_pending(chunk_manager_events);
+
+    chunk_manager_resources.chunk_manager.send_messages_to_builder(&mut chunks_to_build, &mut chunks_to_remove);
 }
 
 fn on_position_change(
