@@ -1,14 +1,23 @@
-use bevy::{ecs::{message::MessageWriter, system::Res}, log::{self, info_span}};
+use bevy::{
+    ecs::{message::MessageWriter, system::Res},
+    log::{self, info_span},
+};
 use shared::{
     chunk_io::chunk_loader,
     entities::{Chunk, ChunkPos, ChunkPosGenerator2D, ChunkPosGenerator3D, ChunkRepository},
 };
 use std::fmt;
 
-use crate::{chunk_manager::{chunk_builder::{self, BuildChunk}, ChunkStorage, RemoveChunk}, chunk_mesh_builder::{
-    builders::{ChunkBuilder, Versioned},
-    ChunkMesh,
-}};
+use crate::{
+    chunk_manager::{
+        chunk_builder::{self, BuildChunk},
+        ChunkStorage, RemoveChunk,
+    },
+    chunk_mesh_builder::{
+        builders::{ChunkBuilder, Versioned},
+        ChunkMesh,
+    },
+};
 
 use super::{chunk_state, ChunkState, ChunkStatus, ChunkTransition};
 
@@ -99,7 +108,11 @@ impl ChunkManager {
     }
 
     /// Updates the controller position and triggers chunk state updates if position has changed.
-    pub fn update_controller_pos(&mut self, new_controller_pos: ChunkPos, chunks: &mut ChunkStorage) {
+    pub fn update_controller_pos(
+        &mut self,
+        new_controller_pos: ChunkPos,
+        chunks: &mut ChunkStorage,
+    ) {
         if new_controller_pos != self.controller_pos {
             self.controller_pos = new_controller_pos;
             self.update_chunk_states_in_world(chunks);
@@ -149,7 +162,11 @@ impl ChunkManager {
         chunks.get_chunk(pos).cloned()
     }
 
-    pub fn send_messages_to_builder(&mut self, chunks_to_build: &mut MessageWriter<BuildChunk>, chunks_to_remove: &mut MessageWriter<RemoveChunk>) {
+    pub fn send_messages_to_builder(
+        &mut self,
+        chunks_to_build: &mut MessageWriter<BuildChunk>,
+        chunks_to_remove: &mut MessageWriter<RemoveChunk>,
+    ) {
         for chunk_pos in std::mem::take(&mut self.chunks_to_build) {
             chunks_to_build.write(BuildChunk(chunk_pos));
         }
@@ -198,7 +215,12 @@ impl ChunkManager {
     }
 
     /// Always use this instead of set_chunk_state directly – handles transitions.
-    fn change_chunk_state(&mut self, pos: ChunkPos, new_state: ChunkState, chunks: &mut ChunkStorage) {
+    fn change_chunk_state(
+        &mut self,
+        pos: ChunkPos,
+        new_state: ChunkState,
+        chunks: &mut ChunkStorage,
+    ) {
         let prev_state = self.world.get_chunk_state(pos);
 
         if prev_state != new_state {
@@ -251,7 +273,12 @@ impl ChunkManager {
         }
     }
 
-    fn apply_transition(&mut self, pos: ChunkPos, transition: ChunkTransition, chunks: &mut ChunkStorage) {
+    fn apply_transition(
+        &mut self,
+        pos: ChunkPos,
+        transition: ChunkTransition,
+        chunks: &mut ChunkStorage,
+    ) {
         use ChunkTransition::*;
 
         match transition {
@@ -294,7 +321,6 @@ impl ChunkManager {
 
     fn pass_chunk_to_builder(&mut self, pos: ChunkPos) {
         self.chunks_to_build.push(pos);
-
 
         self.world.remove_chunk_need_rebuild(pos);
     }

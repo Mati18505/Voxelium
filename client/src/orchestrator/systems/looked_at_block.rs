@@ -55,12 +55,7 @@ pub fn update_looked_at_block(
     let dirty = moved || looking_dir_changed || world_updated;
 
     if dirty {
-        process_raycast_and_send_event(
-            commands,
-            chunks,
-            game_resources,
-            looked_at_block_data,
-        );
+        process_raycast_and_send_event(commands, chunks, game_resources, looked_at_block_data);
     }
 }
 

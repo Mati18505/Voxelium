@@ -1,5 +1,5 @@
-use std::sync::Arc;
 use std::ops::{Deref, DerefMut};
+use std::sync::Arc;
 
 use bevy::prelude::*;
 use shared::{
@@ -9,7 +9,9 @@ use shared::{
 
 use crate::{
     bevy_types::{AppStates, GameResources},
-    chunk_manager::{BuildChunk, ChunkBuilderPlugin, ChunkObjectEvent, RemoveChunk, WorldChunkUpdate},
+    chunk_manager::{
+        BuildChunk, ChunkBuilderPlugin, ChunkObjectEvent, RemoveChunk, WorldChunkUpdate,
+    },
     chunk_mesh_builder::{
         builders::{
             async_chunk_builder::AsyncChunkBuilder, versioned_chunk_builder::VersionedChunkBuilder,
@@ -44,9 +46,7 @@ pub struct ChunkManagerResources {
 }
 
 #[derive(Resource, Default)]
-pub struct ChunkStorage (
-    pub shared::entities::World, 
-);
+pub struct ChunkStorage(pub shared::entities::World);
 
 impl Deref for ChunkStorage {
     type Target = shared::entities::World;
@@ -98,8 +98,12 @@ fn update(
     mut chunks_to_remove: MessageWriter<RemoveChunk>,
     mut chunks: ResMut<ChunkStorage>,
 ) {
-    chunk_manager_resources.chunk_manager.check_loaded_chunks(&mut chunks);
-    chunk_manager_resources.chunk_manager.check_built_chunks(&mut chunks);
+    chunk_manager_resources
+        .chunk_manager
+        .check_loaded_chunks(&mut chunks);
+    chunk_manager_resources
+        .chunk_manager
+        .check_built_chunks(&mut chunks);
     chunk_manager_resources
         .chunk_entities_manager
         .process_pending(
@@ -111,7 +115,9 @@ fn update(
         .event_manager
         .process_pending(chunk_manager_events);
 
-    chunk_manager_resources.chunk_manager.send_messages_to_builder(&mut chunks_to_build, &mut chunks_to_remove);
+    chunk_manager_resources
+        .chunk_manager
+        .send_messages_to_builder(&mut chunks_to_build, &mut chunks_to_remove);
 }
 
 fn on_position_change(

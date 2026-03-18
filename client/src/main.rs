@@ -25,7 +25,11 @@ use crate::{
     bevy_resources::{
         BevyBlockTypeStorageAsset, RenderDescDictAsset, RenderDescDictAssetLoader, ResourcesPlugin,
         TextureDictAsset, TextureDictAssetLoader,
-    }, chunk_manager::ChunkStorage, controller::ActionType, gui::GUIPlugin, orchestrator::{utils::raycast_from_controller, OrchestratorPlugin}
+    },
+    chunk_manager::ChunkStorage,
+    controller::ActionType,
+    gui::GUIPlugin,
+    orchestrator::{utils::raycast_from_controller, OrchestratorPlugin},
 };
 
 mod bevy_render;
@@ -132,9 +136,7 @@ fn on_action_event(
     if !matches!(state.get(), AppStates::InGame) {
         return;
     }
-    let (Some(game_resources), Some(mut chunks)) =
-        (game_resources, chunks)
-    else {
+    let (Some(game_resources), Some(mut chunks)) = (game_resources, chunks) else {
         return;
     };
 
