@@ -25,10 +25,7 @@ use crate::{
     bevy_resources::{
         BevyBlockTypeStorageAsset, RenderDescDictAsset, RenderDescDictAssetLoader, ResourcesPlugin,
         TextureDictAsset, TextureDictAssetLoader,
-    },
-    controller::ActionType,
-    gui::GUIPlugin,
-    orchestrator::{utils::raycast_from_controller, OrchestratorPlugin},
+    }, chunk_manager::ChunkStorage, controller::ActionType, gui::GUIPlugin, orchestrator::{utils::raycast_from_controller, OrchestratorPlugin}
 };
 
 mod bevy_render;
@@ -129,23 +126,22 @@ fn init_level(
 fn on_action_event(
     action: On<controller::ActionEvent>,
     state: Res<State<AppStates>>,
-    mut chunk_manager_resources: Option<ResMut<ChunkManagerResources>>,
+    chunks: Option<ResMut<ChunkStorage>>,
     game_resources: Option<Res<GameResources>>,
 ) {
     if !matches!(state.get(), AppStates::InGame) {
         return;
     }
-    let (Some(mut chunk_manager_resources), Some(game_resources)) =
-        (chunk_manager_resources.take(), game_resources)
+    let (Some(game_resources), Some(mut chunks)) =
+        (game_resources, chunks)
     else {
         return;
     };
 
-    let world = &chunk_manager_resources.chunk_manager.get_world().world;
     let raycast_result = raycast_from_controller(
         action.controller_pos,
         action.controller_forward,
-        world,
+        &chunks,
         &game_resources.server_block_type_storage,
     );
 
@@ -157,7 +153,7 @@ fn on_action_event(
 
         if block_action.feasible {
             voxel_edits::set_block_and_update_chunk(
-                &mut chunk_manager_resources.chunk_manager,
+                &mut chunks.0,
                 block_action.pos,
                 block_action.new_block,
             );

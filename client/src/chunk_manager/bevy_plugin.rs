@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::ops::{Deref, DerefMut};
 
 use bevy::prelude::*;
 use shared::{
@@ -27,6 +28,7 @@ pub struct ChunkManagerPlugin;
 impl Plugin for ChunkManagerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(ChunkBuilderPlugin)
+            .init_resource::<ChunkStorage>()
             .add_systems(OnEnter(AppStates::InGame), init_chunk_manager)
             .add_message::<WorldChunkUpdateEvent>()
             .add_systems(Update, update.run_if(in_state(AppStates::InGame)))
@@ -39,6 +41,25 @@ pub struct ChunkManagerResources {
     pub chunk_manager: ChunkManager,
     chunk_entities_manager: ChunkEntitiesManager,
     event_manager: EventManager,
+}
+
+#[derive(Resource, Default)]
+pub struct ChunkStorage (
+    pub shared::entities::World, 
+);
+
+impl Deref for ChunkStorage {
+    type Target = shared::entities::World;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for ChunkStorage {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
 }
 
 fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>) {
@@ -75,9 +96,10 @@ fn update(
     chunk_manager_events: MessageWriter<WorldChunkUpdateEvent>,
     mut chunks_to_build: MessageWriter<BuildChunk>,
     mut chunks_to_remove: MessageWriter<RemoveChunk>,
+    mut chunks: ResMut<ChunkStorage>,
 ) {
-    chunk_manager_resources.chunk_manager.check_loaded_chunks();
-    chunk_manager_resources.chunk_manager.check_built_chunks();
+    chunk_manager_resources.chunk_manager.check_loaded_chunks(&mut chunks);
+    chunk_manager_resources.chunk_manager.check_built_chunks(&mut chunks);
     chunk_manager_resources
         .chunk_entities_manager
         .process_pending(
@@ -96,6 +118,7 @@ fn on_position_change(
     e: On<controller::PositionChangeEvent>,
     mut chunk_manager_resources: Option<ResMut<ChunkManagerResources>>,
     state: Res<State<AppStates>>,
+    mut chunks: ResMut<ChunkStorage>,
 ) {
     if !matches!(state.get(), AppStates::InGame) {
         return;
@@ -108,7 +131,7 @@ fn on_position_change(
     if let Some(chunk_manager_resources) = &mut chunk_manager_resources {
         chunk_manager_resources
             .chunk_manager
-            .update_controller_pos(new_chunk_pos);
+            .update_controller_pos(new_chunk_pos, &mut chunks);
     } else {
         warn!("chunk_manager_resources is null in on_position_change");
     }

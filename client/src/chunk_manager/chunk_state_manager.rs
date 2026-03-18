@@ -1,11 +1,11 @@
-use bevy::{ecs::message::MessageWriter, log::{self, info_span}};
+use bevy::{ecs::{message::MessageWriter, system::Res}, log::{self, info_span}};
 use shared::{
     chunk_io::chunk_loader,
     entities::{Chunk, ChunkPos, ChunkPosGenerator2D, ChunkPosGenerator3D, ChunkRepository},
 };
 use std::fmt;
 
-use crate::{chunk_manager::{chunk_builder::{self, BuildChunk}, RemoveChunk}, chunk_mesh_builder::{
+use crate::{chunk_manager::{chunk_builder::{self, BuildChunk}, ChunkStorage, RemoveChunk}, chunk_mesh_builder::{
     builders::{ChunkBuilder, Versioned},
     ChunkMesh,
 }};
@@ -99,28 +99,28 @@ impl ChunkManager {
     }
 
     /// Updates the controller position and triggers chunk state updates if position has changed.
-    pub fn update_controller_pos(&mut self, new_controller_pos: ChunkPos) {
+    pub fn update_controller_pos(&mut self, new_controller_pos: ChunkPos, chunks: &mut ChunkStorage) {
         if new_controller_pos != self.controller_pos {
             self.controller_pos = new_controller_pos;
-            self.update_chunk_states_in_world();
+            self.update_chunk_states_in_world(chunks);
         }
     }
 
     /// Processes chunks ready to be loaded.
     /// Should be called once per frame.
-    pub fn check_loaded_chunks(&mut self) {
+    pub fn check_loaded_chunks(&mut self, chunks: &mut ChunkStorage) {
         self.chunk_loader.update(self.controller_pos);
         let completed = self.chunk_loader.poll_loaded_chunks();
 
         for (pos, chunk) in completed {
-            self.world.set_chunk(pos, chunk);
-            self.update_chunk_state(pos);
+            chunks.set_chunk(pos, chunk);
+            self.update_chunk_state(pos, chunks);
         }
     }
 
     /// Checks and processes chunks ready to be drawn.
     /// Should be called once per frame.
-    pub fn check_built_chunks(&mut self) {
+    pub fn check_built_chunks(&mut self, chunks: &mut ChunkStorage) {
         let _ = info_span!("check_built_chunks", name = "check_built_chunks").entered();
 
         self.chunk_builder.update(self.controller_pos);
@@ -128,7 +128,7 @@ impl ChunkManager {
         let chunks_to_draw: Vec<ChunkPos> = self.world.get_chunks_with_state(ChunkState::ToDraw);
 
         for chunk_pos in chunks_to_draw {
-            self.update_chunk_state(chunk_pos);
+            self.update_chunk_state(chunk_pos, chunks);
         }
     }
 
@@ -139,14 +139,14 @@ impl ChunkManager {
     /// Gets chunk from the world or loads it if it is not loaded yet.
     /// Returns None only if the position is outside the world scope.
     #[allow(dead_code)]
-    pub fn get_or_load_chunk(&mut self, pos: ChunkPos) -> Option<&Chunk> {
+    pub fn get_or_load_chunk(&mut self, pos: ChunkPos, chunks: &mut ChunkStorage) -> Option<Chunk> {
         if !self.is_in_world_scope(pos) {
             return None;
         }
 
-        self.load_chunk_if_is_empty(pos);
+        self.load_chunk_if_is_empty(pos, chunks);
 
-        self.get_chunk(pos)
+        chunks.get_chunk(pos).cloned()
     }
 
     pub fn send_messages_to_builder(&mut self, chunks_to_build: &mut MessageWriter<BuildChunk>, chunks_to_remove: &mut MessageWriter<RemoveChunk>) {
@@ -155,7 +155,7 @@ impl ChunkManager {
         }
     }
 
-    fn update_chunk_states_in_world(&mut self) {
+    fn update_chunk_states_in_world(&mut self, chunks: &mut ChunkStorage) {
         // Load missing chunks within the load distance.
         let generator: Box<dyn Iterator<Item = ChunkPos>> =
             match self.config.dynamic_vertical_loading {
@@ -170,14 +170,14 @@ impl ChunkManager {
             };
 
         for pos in generator {
-            self.load_chunk_if_is_empty(pos);
+            self.load_chunk_if_is_empty(pos, chunks);
         }
 
         // Update all existing chunks in the world.
         let chunks_in_world: Vec<ChunkPos> = self.world.chunk_states.keys().copied().collect();
 
         for pos in chunks_in_world {
-            self.update_chunk_state(pos);
+            self.update_chunk_state(pos, chunks);
         }
 
         // Remove all chunks that are still empty.
@@ -185,7 +185,7 @@ impl ChunkManager {
             self.world.get_chunks_with_state(ChunkState::Empty);
 
         for pos in empty_chunks_in_world {
-            self.world.remove_chunk(pos);
+            chunks.remove_chunk(pos);
         }
     }
 
@@ -198,7 +198,7 @@ impl ChunkManager {
     }
 
     /// Always use this instead of set_chunk_state directly – handles transitions.
-    fn change_chunk_state(&mut self, pos: ChunkPos, new_state: ChunkState) {
+    fn change_chunk_state(&mut self, pos: ChunkPos, new_state: ChunkState, chunks: &mut ChunkStorage) {
         let prev_state = self.world.get_chunk_state(pos);
 
         if prev_state != new_state {
@@ -209,25 +209,25 @@ impl ChunkManager {
                 "Unsupported transition in chunk {pos:?}: {prev_state:?} -> {new_state:?}"
             );
 
-            self.apply_transition(pos, transition.unwrap());
+            self.apply_transition(pos, transition.unwrap(), chunks);
             self.world.set_chunk_state(pos, new_state);
         }
     }
 
-    fn update_chunk_state(&mut self, pos: ChunkPos) {
+    fn update_chunk_state(&mut self, pos: ChunkPos, chunks: &mut ChunkStorage) {
         const MAX_ITERATIONS: u32 = 16;
         let mut iterations = 1;
         let mut prev_state = self.world.get_chunk_state(pos);
 
         loop {
-            let chunk_status = self.create_chunk_status(pos);
+            let chunk_status = self.create_chunk_status(pos, chunks);
             let next_state = chunk_state::get_next_chunk_state(prev_state, chunk_status);
 
             if next_state == prev_state {
                 break;
             }
 
-            self.change_chunk_state(pos, next_state);
+            self.change_chunk_state(pos, next_state, chunks);
             log::trace!("Chunk {:?}: {:?} -> {:?}", pos, prev_state, next_state);
 
             if iterations >= MAX_ITERATIONS {
@@ -251,7 +251,7 @@ impl ChunkManager {
         }
     }
 
-    fn apply_transition(&mut self, pos: ChunkPos, transition: ChunkTransition) {
+    fn apply_transition(&mut self, pos: ChunkPos, transition: ChunkTransition, chunks: &mut ChunkStorage) {
         use ChunkTransition::*;
 
         match transition {
@@ -265,7 +265,7 @@ impl ChunkManager {
                 log::debug!("Loaded chunk {:?}", pos);
             }
             LoadedToEmpty => {
-                self.world.world.remove_chunk(pos);
+                chunks.remove_chunk(pos);
             }
             LoadedToToDraw => {
                 self.pass_chunk_to_builder(pos);
@@ -317,18 +317,18 @@ impl ChunkManager {
         }
     }
 
-    fn load_chunk_if_is_empty(&mut self, pos: ChunkPos) {
+    fn load_chunk_if_is_empty(&mut self, pos: ChunkPos, chunks: &mut ChunkStorage) {
         let curr_chunk_state = self.world.get_chunk_state(pos);
 
         if curr_chunk_state == ChunkState::Empty {
-            self.change_chunk_state(pos, ChunkState::Loading);
+            self.change_chunk_state(pos, ChunkState::Loading, chunks);
         }
     }
 
-    fn create_chunk_status(&self, pos: ChunkPos) -> ChunkStatus {
+    fn create_chunk_status(&self, pos: ChunkPos, chunks: &ChunkStorage) -> ChunkStatus {
         let is_within_render = self.is_within_distance(pos, self.config.render_distance);
         let is_within_load = self.is_within_distance(pos, self.config.load_distance);
-        let loaded = self.world.get_chunk(pos).is_some();
+        let loaded = chunks.get_chunk(pos).is_some();
         let mesh_built = self.chunk_builder.is_chunk_with_latest_version_built(pos);
         let needs_rebuild = self.world.get_chunk_need_rebuild(pos);
 
@@ -339,52 +339,6 @@ impl ChunkManager {
             mesh_built,
             needs_rebuild,
         }
-    }
-}
-
-// public API
-impl ChunkRepository for ChunkManager {
-    /// Sets and redraws chunk without loading it.
-    fn set_chunk(&mut self, pos: ChunkPos, new_chunk: Chunk) {
-        self.world.set_chunk(pos, new_chunk.clone());
-
-        let curr_chunk_state: ChunkState = self.world.get_chunk_state(pos);
-
-        if curr_chunk_state == ChunkState::Empty {
-            self.world.set_chunk_state(pos, ChunkState::Loaded);
-        }
-
-        self.world.set_chunk_need_rebuild(pos);
-        self.update_chunk_state(pos);
-
-        self.emit_event(WorldChunkUpdate {
-            chunk_pos: pos,
-            chunk: new_chunk,
-        });
-    }
-
-    /// Unloads chunk and removes it from world.
-    fn remove_chunk(&mut self, pos: ChunkPos) {
-        if let Some(chunk) = self.world.get_chunk(pos) {
-            self.emit_event(WorldChunkUpdate {
-                chunk_pos: pos,
-                chunk: chunk.clone(),
-            });
-
-            let chunk_state = self.world.get_chunk_state(pos);
-
-            if chunk_state == ChunkState::Drawn || chunk_state == ChunkState::ToDraw {
-                self.change_chunk_state(pos, ChunkState::Loaded);
-            }
-
-            self.change_chunk_state(pos, ChunkState::Empty);
-        }
-
-        self.world.remove_chunk(pos);
-    }
-
-    fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
-        self.world.get_chunk(pos)
     }
 }
 

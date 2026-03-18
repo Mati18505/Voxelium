@@ -1,9 +1,9 @@
 use std::collections::{HashMap};
 
 use bevy::prelude::*;
-use shared::entities::ChunkPos;
+use shared::entities::{ChunkPos, ChunkRepository};
 
-use crate::{bevy_types::AppStates, chunk_mesh_builder::ChunkMesh};
+use crate::{bevy_types::AppStates, chunk_manager::ChunkStorage, chunk_mesh_builder::ChunkMesh};
 
 #[derive(Message, Debug, Clone, PartialEq)]
 pub struct BuildChunk (
@@ -30,17 +30,17 @@ pub struct BuilderResources {
     pub chunk_meshes: HashMap<ChunkPos, ChunkMesh>,
 }
 
-pub fn process_chunks_to_build(mut reader: MessageReader<BuildChunk>) {
+pub fn process_chunks_to_build(mut reader: MessageReader<BuildChunk>, chunks: Res<ChunkStorage>) {
     for message in reader.read() {
         let chunk_pos = message.0;
 
-        /*
-        let chunk = world
-            .get_chunk(pos)
-            .expect("Chunk is passed to builder, but it is not loaded.");
-        */
+        if let Some(chunk) = chunks.get_chunk(chunk_pos) {
+            info!("Building chunk {:?}", &chunk_pos);
+            
+        } else {
+            warn!("Chunk is passed to builder, but it is not loaded.");
+        }
 
-        info!("Building chunk {:?}", &chunk_pos);
     }
 }
 

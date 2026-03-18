@@ -11,7 +11,6 @@ use super::ChunkState;
 
 #[derive(Default, Clone, PartialEq)]
 pub struct PhysicalWorld {
-    pub world: World,
     pub chunk_states: HashMap<ChunkPos, ChunkState>,
     chunks_need_rebuild: HashSet<ChunkPos>,
 }
@@ -48,21 +47,6 @@ impl PhysicalWorld {
     }
 }
 
-impl ChunkRepository for PhysicalWorld {
-    fn set_chunk(&mut self, pos: ChunkPos, new_chunk: Chunk) {
-        self.world.set_chunk(pos, new_chunk);
-    }
-
-    fn remove_chunk(&mut self, pos: ChunkPos) {
-        self.chunk_states.remove(&pos);
-        self.world.remove_chunk(pos);
-    }
-
-    fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
-        self.world.get_chunk(pos)
-    }
-}
-
 impl fmt::Debug for PhysicalWorld {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let empty = self
@@ -83,7 +67,6 @@ impl fmt::Debug for PhysicalWorld {
         let chunks_need_rebuild = self.chunks_need_rebuild.len();
 
         f.debug_struct("PhysicalWorld")
-            .field("chunks", &self.world.chunks.len())
             .field("chunk_states", &self.chunk_states.len())
             .field("empty", &empty)
             .field("loading", &loading)

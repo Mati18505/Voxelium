@@ -4,7 +4,7 @@ use shared::entities::name_to_block_id;
 use super::{super::utils::raycast_from_controller, super::LookedAtBlockChangedEvent};
 use crate::{
     bevy_types::GameResources,
-    chunk_manager::{ChunkManagerResources, WorldChunkUpdateEvent},
+    chunk_manager::{ChunkStorage, WorldChunkUpdateEvent},
     controller::Controller,
 };
 
@@ -23,7 +23,7 @@ pub fn update_looked_at_block(
     mut q_looked_at_block_data: Query<&mut LookedAtBlockData>,
     q_controller: Query<&Transform, With<Controller>>,
     world_chunk_update_ev: MessageReader<WorldChunkUpdateEvent>,
-    chunk_manager_resources: Res<ChunkManagerResources>,
+    chunks: Res<ChunkStorage>,
     game_resources: Res<GameResources>,
 ) {
     let transform = match q_controller.single() {
@@ -57,7 +57,7 @@ pub fn update_looked_at_block(
     if dirty {
         process_raycast_and_send_event(
             commands,
-            chunk_manager_resources,
+            chunks,
             game_resources,
             looked_at_block_data,
         );
@@ -66,15 +66,14 @@ pub fn update_looked_at_block(
 
 fn process_raycast_and_send_event(
     mut commands: Commands,
-    chunk_manager_resources: Res<'_, ChunkManagerResources>,
+    chunks: Res<'_, ChunkStorage>,
     game_resources: Res<'_, GameResources>,
     looked_at_block_data: Mut<'_, LookedAtBlockData>,
 ) {
-    let world = &chunk_manager_resources.chunk_manager.get_world().world;
     let raycast_result = raycast_from_controller(
         looked_at_block_data.last_player_pos,
         looked_at_block_data.last_looking_dir,
-        world,
+        &chunks,
         &game_resources.server_block_type_storage,
     );
     let block_pos = raycast_result.hitpoint.pos;
