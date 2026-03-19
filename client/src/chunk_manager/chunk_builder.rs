@@ -3,7 +3,11 @@ use std::collections::HashMap;
 use bevy::prelude::*;
 use shared::entities::{ChunkPos, ChunkRepository};
 
-use crate::{bevy_types::AppStates, chunk_manager::ChunkStorage, chunk_mesh_builder::ChunkMesh};
+use crate::{
+    bevy_types::AppStates,
+    chunk_manager::{ChunkStorage, ControllerPos},
+    chunk_mesh_builder::ChunkMesh,
+};
 
 #[derive(Message, Debug, Clone, PartialEq)]
 pub struct BuildChunk(pub ChunkPos);
@@ -28,7 +32,15 @@ pub struct BuilderResources {
     pub chunk_meshes: HashMap<ChunkPos, ChunkMesh>,
 }
 
-pub fn process_chunks_to_build(mut reader: MessageReader<BuildChunk>, chunks: Res<ChunkStorage>) {
+pub fn process_chunks_to_build(
+    mut reader: MessageReader<BuildChunk>,
+    chunks: Res<ChunkStorage>,
+    controller_pos: Res<ControllerPos>,
+) {
+    if !reader.is_empty() {
+        info!("controller_pos: {:?}", &controller_pos.0);
+    }
+
     for message in reader.read() {
         let chunk_pos = message.0;
 

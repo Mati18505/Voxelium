@@ -31,6 +31,7 @@ impl Plugin for ChunkManagerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(ChunkBuilderPlugin)
             .init_resource::<ChunkStorage>()
+            .init_resource::<ControllerPos>()
             .add_systems(OnEnter(AppStates::InGame), init_chunk_manager)
             .add_message::<WorldChunkUpdateEvent>()
             .add_systems(Update, update.run_if(in_state(AppStates::InGame)))
@@ -57,6 +58,29 @@ impl Deref for ChunkStorage {
 }
 
 impl DerefMut for ChunkStorage {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[derive(Resource)]
+pub struct ControllerPos(pub ChunkPos);
+
+impl Default for ControllerPos {
+    fn default() -> Self {
+        Self(ChunkPos::new(0, 0, 0))
+    }
+}
+
+impl Deref for ControllerPos {
+    type Target = ChunkPos;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for ControllerPos {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -97,13 +121,14 @@ fn update(
     mut chunks_to_build: MessageWriter<BuildChunk>,
     mut chunks_to_remove: MessageWriter<RemoveChunk>,
     mut chunks: ResMut<ChunkStorage>,
+    controller_pos: Res<ControllerPos>,
 ) {
     chunk_manager_resources
         .chunk_manager
-        .check_loaded_chunks(&mut chunks);
+        .check_loaded_chunks(&mut chunks, &controller_pos);
     chunk_manager_resources
         .chunk_manager
-        .check_built_chunks(&mut chunks);
+        .check_built_chunks(&mut chunks, &controller_pos);
     chunk_manager_resources
         .chunk_entities_manager
         .process_pending(
@@ -125,6 +150,7 @@ fn on_position_change(
     mut chunk_manager_resources: Option<ResMut<ChunkManagerResources>>,
     state: Res<State<AppStates>>,
     mut chunks: ResMut<ChunkStorage>,
+    controller_pos: ResMut<ControllerPos>,
 ) {
     if !matches!(state.get(), AppStates::InGame) {
         return;
@@ -135,9 +161,11 @@ fn on_position_change(
     let new_chunk_pos = ChunkPos::from(new_block_pos);
 
     if let Some(chunk_manager_resources) = &mut chunk_manager_resources {
-        chunk_manager_resources
-            .chunk_manager
-            .update_controller_pos(new_chunk_pos, &mut chunks);
+        chunk_manager_resources.chunk_manager.update_controller_pos(
+            controller_pos,
+            new_chunk_pos,
+            &mut chunks,
+        );
     } else {
         warn!("chunk_manager_resources is null in on_position_change");
     }

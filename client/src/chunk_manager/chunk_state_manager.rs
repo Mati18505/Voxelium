@@ -1,5 +1,8 @@
 use bevy::{
-    ecs::{message::MessageWriter, system::Res},
+    ecs::{
+        message::MessageWriter,
+        system::{Res, ResMut},
+    },
     log::{self, info_span},
 };
 use shared::{
@@ -11,7 +14,7 @@ use std::fmt;
 use crate::{
     chunk_manager::{
         chunk_builder::{self, BuildChunk},
-        ChunkStorage, RemoveChunk,
+        ChunkStorage, ControllerPos, RemoveChunk,
     },
     chunk_mesh_builder::{
         builders::{ChunkBuilder, Versioned},
@@ -72,7 +75,6 @@ pub struct ChunkManager {
     chunk_object_tx: Option<crossbeam_channel::Sender<ChunkObjectEvent>>,
     event_tx: Option<crossbeam_channel::Sender<WorldChunkUpdate>>,
     config: Config,
-    controller_pos: ChunkPos,
     chunks_to_build: Vec<ChunkPos>,
 }
 
@@ -89,7 +91,6 @@ impl ChunkManager {
             chunk_object_tx: None,
             event_tx: None,
             config,
-            controller_pos: ChunkPos::new(0, 0, 0),
             chunks_to_build: Vec::default(),
         }
     }
@@ -110,38 +111,47 @@ impl ChunkManager {
     /// Updates the controller position and triggers chunk state updates if position has changed.
     pub fn update_controller_pos(
         &mut self,
+        mut controller_pos: ResMut<ControllerPos>,
         new_controller_pos: ChunkPos,
         chunks: &mut ChunkStorage,
     ) {
-        if new_controller_pos != self.controller_pos {
-            self.controller_pos = new_controller_pos;
-            self.update_chunk_states_in_world(chunks);
+        if new_controller_pos != controller_pos.0 {
+            controller_pos.0 = new_controller_pos;
+            self.update_chunk_states_in_world(chunks, &controller_pos);
         }
     }
 
     /// Processes chunks ready to be loaded.
     /// Should be called once per frame.
-    pub fn check_loaded_chunks(&mut self, chunks: &mut ChunkStorage) {
-        self.chunk_loader.update(self.controller_pos);
+    pub fn check_loaded_chunks(
+        &mut self,
+        chunks: &mut ChunkStorage,
+        controller_pos: &ControllerPos,
+    ) {
+        self.chunk_loader.update(controller_pos.0);
         let completed = self.chunk_loader.poll_loaded_chunks();
 
         for (pos, chunk) in completed {
             chunks.set_chunk(pos, chunk);
-            self.update_chunk_state(pos, chunks);
+            self.update_chunk_state(pos, chunks, controller_pos);
         }
     }
 
     /// Checks and processes chunks ready to be drawn.
     /// Should be called once per frame.
-    pub fn check_built_chunks(&mut self, chunks: &mut ChunkStorage) {
+    pub fn check_built_chunks(
+        &mut self,
+        chunks: &mut ChunkStorage,
+        controller_pos: &ControllerPos,
+    ) {
         let _ = info_span!("check_built_chunks", name = "check_built_chunks").entered();
 
-        self.chunk_builder.update(self.controller_pos);
+        self.chunk_builder.update(controller_pos.0);
 
         let chunks_to_draw: Vec<ChunkPos> = self.world.get_chunks_with_state(ChunkState::ToDraw);
 
         for chunk_pos in chunks_to_draw {
-            self.update_chunk_state(chunk_pos, chunks);
+            self.update_chunk_state(chunk_pos, chunks, controller_pos);
         }
     }
 
@@ -172,16 +182,20 @@ impl ChunkManager {
         }
     }
 
-    fn update_chunk_states_in_world(&mut self, chunks: &mut ChunkStorage) {
+    fn update_chunk_states_in_world(
+        &mut self,
+        chunks: &mut ChunkStorage,
+        controller_pos: &ControllerPos,
+    ) {
         // Load missing chunks within the load distance.
         let generator: Box<dyn Iterator<Item = ChunkPos>> =
             match self.config.dynamic_vertical_loading {
                 true => Box::new(ChunkPosGenerator3D::new(
-                    self.controller_pos,
+                    controller_pos.0,
                     self.config.load_distance,
                 )),
                 false => Box::new(ChunkPosGenerator2D::new(
-                    self.controller_pos,
+                    controller_pos.0,
                     self.config.load_distance,
                 )),
             };
@@ -194,7 +208,7 @@ impl ChunkManager {
         let chunks_in_world: Vec<ChunkPos> = self.world.chunk_states.keys().copied().collect();
 
         for pos in chunks_in_world {
-            self.update_chunk_state(pos, chunks);
+            self.update_chunk_state(pos, chunks, controller_pos);
         }
 
         // Remove all chunks that are still empty.
@@ -236,13 +250,18 @@ impl ChunkManager {
         }
     }
 
-    fn update_chunk_state(&mut self, pos: ChunkPos, chunks: &mut ChunkStorage) {
+    fn update_chunk_state(
+        &mut self,
+        pos: ChunkPos,
+        chunks: &mut ChunkStorage,
+        controller_pos: &ControllerPos,
+    ) {
         const MAX_ITERATIONS: u32 = 16;
         let mut iterations = 1;
         let mut prev_state = self.world.get_chunk_state(pos);
 
         loop {
-            let chunk_status = self.create_chunk_status(pos, chunks);
+            let chunk_status = self.create_chunk_status(pos, chunks, controller_pos);
             let next_state = chunk_state::get_next_chunk_state(prev_state, chunk_status);
 
             if next_state == prev_state {
@@ -266,10 +285,15 @@ impl ChunkManager {
         }
     }
 
-    fn is_within_distance(&self, pos: ChunkPos, distance_in_chunks: usize) -> bool {
+    fn is_within_distance(
+        &self,
+        pos: ChunkPos,
+        distance_in_chunks: usize,
+        controller_pos: &ControllerPos,
+    ) -> bool {
         match self.config.dynamic_vertical_loading {
-            true => pos.is_within_distance(self.controller_pos, distance_in_chunks),
-            false => pos.is_within_distance_2d(self.controller_pos, distance_in_chunks),
+            true => pos.is_within_distance(controller_pos.0, distance_in_chunks),
+            false => pos.is_within_distance_2d(controller_pos.0, distance_in_chunks),
         }
     }
 
@@ -351,9 +375,16 @@ impl ChunkManager {
         }
     }
 
-    fn create_chunk_status(&self, pos: ChunkPos, chunks: &ChunkStorage) -> ChunkStatus {
-        let is_within_render = self.is_within_distance(pos, self.config.render_distance);
-        let is_within_load = self.is_within_distance(pos, self.config.load_distance);
+    fn create_chunk_status(
+        &self,
+        pos: ChunkPos,
+        chunks: &ChunkStorage,
+        controller_pos: &ControllerPos,
+    ) -> ChunkStatus {
+        let is_within_render =
+            self.is_within_distance(pos, self.config.render_distance, controller_pos);
+        let is_within_load =
+            self.is_within_distance(pos, self.config.load_distance, controller_pos);
         let loaded = chunks.get_chunk(pos).is_some();
         let mesh_built = self.chunk_builder.is_chunk_with_latest_version_built(pos);
         let needs_rebuild = self.world.get_chunk_need_rebuild(pos);
