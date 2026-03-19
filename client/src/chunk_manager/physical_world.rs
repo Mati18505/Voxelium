@@ -12,6 +12,7 @@ use super::ChunkState;
 #[derive(Default, Clone, PartialEq)]
 pub struct PhysicalWorld {
     pub chunk_states: HashMap<ChunkPos, ChunkState>,
+    pub built_chunks: HashSet<ChunkPos>,
     chunks_need_rebuild: HashSet<ChunkPos>,
 }
 
@@ -74,6 +75,7 @@ impl fmt::Debug for PhysicalWorld {
             .field("to_draw", &to_draw)
             .field("drawn", &drawn)
             .field("chunks_need_rebuild", &chunks_need_rebuild)
+            .field("built_chunks", &self.built_chunks.len())
             .finish()
     }
 }

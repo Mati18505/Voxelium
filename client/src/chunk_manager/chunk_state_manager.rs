@@ -1,6 +1,6 @@
 use bevy::{
     ecs::{
-        message::MessageWriter,
+        message::{MessageReader, MessageWriter},
         system::{Res, ResMut},
     },
     log::{self, info_span},
@@ -14,7 +14,7 @@ use std::fmt;
 use crate::{
     chunk_manager::{
         chunk_builder::{self, BuildChunk},
-        ChunkStorage, ControllerPos, RemoveChunk,
+        ChunkBuilt, ChunkStorage, ControllerPos, RemoveChunk,
     },
     chunk_mesh_builder::{
         builders::{ChunkBuilder, Versioned},
@@ -131,22 +131,17 @@ impl ChunkManager {
         }
     }
 
-    /// Checks and processes chunks ready to be drawn.
-    /// Should be called once per frame.
-    pub fn check_built_chunks(
+    pub fn update_built_chunks(
         &mut self,
+        mut reader: MessageReader<ChunkBuilt>,
         chunks: &mut ChunkStorage,
         controller_pos: &ControllerPos,
     ) {
-        let _ = info_span!("check_built_chunks", name = "check_built_chunks").entered();
-
-        //self.chunk_builder.update(controller_pos.0);
-
-        let chunks_to_draw: Vec<ChunkPos> = self.world.get_chunks_with_state(ChunkState::ToDraw);
-
-        for chunk_pos in chunks_to_draw {
-            self.update_chunk_state(chunk_pos, chunks, controller_pos);
+        for message in reader.read() {
+            self.world.built_chunks.insert(message.0);
+            self.update_chunk_state(message.0, chunks, controller_pos);
         }
+        dbg!(&self.world);
     }
 
     pub fn get_world(&self) -> &PhysicalWorld {
@@ -322,10 +317,10 @@ impl ChunkManager {
             ToDrawToDrawn => {
                 /*
                 let mesh = self
-                    .chunk_builder
-                    .take_chunk_built_with_latest_version(pos)
-                    .expect("ChunkState is drawn, but mesh is not built.")
-                    .0;
+                .chunk_builder
+                .take_chunk_built_with_latest_version(pos)
+                .expect("ChunkState is drawn, but mesh is not built.")
+                .0;
 
                 self.create_chunk_object(pos, &mesh);
                 */
@@ -382,8 +377,7 @@ impl ChunkManager {
         let is_within_load =
             self.is_within_distance(pos, self.config.load_distance, controller_pos);
         let loaded = chunks.get_chunk(pos).is_some();
-        //let mesh_built = self.chunk_builder.is_chunk_with_latest_version_built(pos);
-        let mesh_built = false;
+        let mesh_built = self.world.built_chunks.contains(&pos);
         let needs_rebuild = self.world.get_chunk_need_rebuild(pos);
 
         ChunkStatus {

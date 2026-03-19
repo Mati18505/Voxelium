@@ -7,6 +7,7 @@ use shared::{
     entities::{BlockPos, ChunkPos},
 };
 
+use crate::chunk_manager::ChunkBuilt;
 use crate::chunk_mesh_builder::meshers::ChunkMesher;
 use crate::{
     bevy_types::{AppStates, GameResources},
@@ -125,13 +126,16 @@ fn update(
     mut chunks_to_remove: MessageWriter<RemoveChunk>,
     mut chunks: ResMut<ChunkStorage>,
     controller_pos: Res<ControllerPos>,
+    mut built_chunks: MessageReader<ChunkBuilt>,
 ) {
     chunk_manager_resources
         .chunk_manager
         .check_loaded_chunks(&mut chunks, &controller_pos);
-    chunk_manager_resources
-        .chunk_manager
-        .check_built_chunks(&mut chunks, &controller_pos);
+    chunk_manager_resources.chunk_manager.update_built_chunks(
+        built_chunks,
+        &mut chunks,
+        &controller_pos,
+    );
     chunk_manager_resources
         .chunk_entities_manager
         .process_pending(

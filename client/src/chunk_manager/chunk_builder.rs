@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt, sync::Arc, thread::sleep, time::Duration};
+use std::{collections::HashMap, fmt, time::Duration};
 
 use bevy::{
     prelude::*,
@@ -25,6 +25,9 @@ pub struct BuildChunk(pub ChunkPos);
 #[derive(Message, Debug, Clone, PartialEq)]
 pub struct RemoveChunk(pub ChunkPos);
 
+#[derive(Message, Debug, Clone, PartialEq)]
+pub struct ChunkBuilt(pub ChunkPos);
+
 #[derive(Resource, Debug, Clone)]
 pub struct ChunkBuilderConfig {
     pub max_build_tasks: usize,
@@ -46,6 +49,7 @@ impl Plugin for ChunkBuilderPlugin {
             )))
             .add_message::<BuildChunk>()
             .add_message::<RemoveChunk>()
+            .add_message::<ChunkBuilt>()
             .add_systems(
                 Update,
                 (
@@ -147,7 +151,10 @@ fn create_build_task(chunk: &Chunk, mesher: &ChunkMesherResource) -> ChunkBuildT
     ChunkBuildTask(pool.spawn(future))
 }
 
-fn collect_finished(mut data: ResMut<BuilderResources>) {
+fn collect_finished(
+    mut data: ResMut<BuilderResources>,
+    mut built_chunks: MessageWriter<ChunkBuilt>,
+) {
     let mut completed: HashMap<ChunkPos, ChunkMesh> = HashMap::default();
     let mut warnings: HashMap<MesherWarning, u32> = HashMap::default();
 
@@ -166,6 +173,7 @@ fn collect_finished(mut data: ResMut<BuilderResources>) {
 
     for pos in completed.keys() {
         data.tasks.remove(pos);
+        built_chunks.write(ChunkBuilt(*pos));
     }
 
     data.chunk_meshes.extend(completed);
