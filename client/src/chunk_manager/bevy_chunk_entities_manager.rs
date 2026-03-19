@@ -16,13 +16,14 @@ pub struct RemoveEntity(pub ChunkPos);
 pub struct ChunkEntitiesPlugin;
 impl Plugin for ChunkEntitiesPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_message::<CreateEntity>()
+        app.add_message::<CreateEntity>()
             .add_message::<RemoveEntity>()
-            .init_resource::<ChunkEntitiesResource>().add_systems(
-            Update,
-            (process_create_requests, process_remove_requests).run_if(in_state(AppStates::InGame)),
-        );
+            .init_resource::<ChunkEntitiesResource>()
+            .add_systems(
+                Update,
+                (process_create_requests, process_remove_requests)
+                    .run_if(in_state(AppStates::InGame)),
+            );
     }
 }
 

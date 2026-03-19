@@ -7,14 +7,14 @@ use shared::{
     entities::{BlockPos, ChunkPos},
 };
 
-use crate::chunk_manager::bevy_chunk_entities_manager::{ChunkEntitiesPlugin, CreateEntity};
-use crate::chunk_manager::ChunkBuilt;
+use crate::chunk_manager::bevy_chunk_entities_manager::{
+    ChunkEntitiesPlugin, CreateEntity, RemoveEntity,
+};
+use crate::chunk_manager::{ChunkBuilt, ChunkRemoved};
 use crate::chunk_mesh_builder::meshers::ChunkMesher;
 use crate::{
     bevy_types::{AppStates, GameResources},
-    chunk_manager::{
-        BuildChunk, ChunkBuilderPlugin, RemoveChunk, WorldChunkUpdate,
-    },
+    chunk_manager::{BuildChunk, ChunkBuilderPlugin, RemoveChunk, WorldChunkUpdate},
     chunk_mesh_builder::meshers::naive_mesher::NaiveMesher,
     controller,
 };
@@ -35,7 +35,11 @@ impl Plugin for ChunkManagerPlugin {
         .init_resource::<ControllerPos>()
         .add_systems(OnEnter(AppStates::InGame), init_chunk_manager)
         .add_message::<WorldChunkUpdateEvent>()
-        .add_systems(Update, (update, create_chunk_entities).run_if(in_state(AppStates::InGame)))
+        .add_systems(
+            Update,
+            (update, create_chunk_entities, remove_chunk_entities)
+                .run_if(in_state(AppStates::InGame)),
+        )
         .add_observer(on_position_change);
     }
 }
@@ -121,12 +125,14 @@ fn update(
     mut chunks: ResMut<ChunkStorage>,
     controller_pos: Res<ControllerPos>,
     built_chunks: MessageReader<ChunkBuilt>,
+    removed_chunks: MessageReader<ChunkRemoved>,
 ) {
     chunk_manager_resources
         .chunk_manager
         .check_loaded_chunks(&mut chunks, &controller_pos);
     chunk_manager_resources.chunk_manager.update_built_chunks(
         built_chunks,
+        removed_chunks,
         &mut chunks,
         &controller_pos,
     );
@@ -149,7 +155,17 @@ fn create_chunk_entities(
 
         request.write(CreateEntity(pos, mesh));
     }
+}
 
+fn remove_chunk_entities(
+    mut removed_chunks: MessageReader<ChunkRemoved>,
+    mut request: MessageWriter<RemoveEntity>,
+) {
+    for removed in removed_chunks.read() {
+        let pos = removed.0;
+
+        request.write(RemoveEntity(pos));
+    }
 }
 
 fn on_position_change(

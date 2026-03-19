@@ -1,9 +1,9 @@
 use bevy::{
     ecs::{
         message::{MessageReader, MessageWriter},
-        system::{Res, ResMut},
+        system::ResMut,
     },
-    log::{self, info_span},
+    log::{self, warn},
 };
 use shared::{
     chunk_io::chunk_loader,
@@ -13,13 +13,10 @@ use std::fmt;
 
 use crate::{
     chunk_manager::{
-        chunk_builder::{self, BuildChunk},
-        ChunkBuilt, ChunkStorage, ControllerPos, RemoveChunk,
+        chunk_builder::BuildChunk, ChunkBuilt, ChunkRemoved, ChunkStorage, ControllerPos,
+        RemoveChunk,
     },
-    chunk_mesh_builder::{
-        builders::{ChunkBuilder, Versioned},
-        ChunkMesh,
-    },
+    chunk_mesh_builder::builders::{ChunkBuilder, Versioned},
 };
 
 use super::{chunk_state, ChunkState, ChunkStatus, ChunkTransition};
@@ -68,6 +65,7 @@ pub struct ChunkManager {
     event_tx: Option<crossbeam_channel::Sender<WorldChunkUpdate>>,
     config: Config,
     chunks_to_build: Vec<ChunkPos>,
+    chunks_to_remove: Vec<ChunkPos>,
 }
 
 impl ChunkManager {
@@ -78,6 +76,7 @@ impl ChunkManager {
             event_tx: None,
             config,
             chunks_to_build: Vec::default(),
+            chunks_to_remove: Vec::default(),
         }
     }
 
@@ -117,12 +116,18 @@ impl ChunkManager {
 
     pub fn update_built_chunks(
         &mut self,
-        mut reader: MessageReader<ChunkBuilt>,
+        mut built_chunks: MessageReader<ChunkBuilt>,
+        mut removed_chunks: MessageReader<ChunkRemoved>,
         chunks: &mut ChunkStorage,
         controller_pos: &ControllerPos,
     ) {
-        for message in reader.read() {
+        for message in built_chunks.read() {
             self.world.built_chunks.insert(message.0);
+            self.update_chunk_state(message.0, chunks, controller_pos);
+        }
+
+        for message in removed_chunks.read() {
+            self.world.built_chunks.remove(&message.0);
             self.update_chunk_state(message.0, chunks, controller_pos);
         }
         dbg!(&self.world);
@@ -152,6 +157,9 @@ impl ChunkManager {
     ) {
         for chunk_pos in std::mem::take(&mut self.chunks_to_build) {
             chunks_to_build.write(BuildChunk(chunk_pos));
+        }
+        for chunk_pos in std::mem::take(&mut self.chunks_to_remove) {
+            chunks_to_remove.write(RemoveChunk(chunk_pos));
         }
     }
 
@@ -295,14 +303,14 @@ impl ChunkManager {
                 self.pass_chunk_to_builder(pos);
             }
             ToDrawToLoaded => {
-                // TODO: Remove mesh from chunk builder.
-                // self.chunk_builder.remove_chunk(chunk_pos);
+                self.chunks_to_remove.push(pos);
             }
             ToDrawToDrawn => {}
             DrawnToToDraw => {
                 self.pass_chunk_to_builder(pos);
             }
             DrawnToLoaded => {
+                self.chunks_to_remove.push(pos);
             }
         }
     }
@@ -311,12 +319,6 @@ impl ChunkManager {
         self.chunks_to_build.push(pos);
 
         self.world.remove_chunk_need_rebuild(pos);
-    }
-
-    fn emit_event(&self, ev: WorldChunkUpdate) {
-        if let Some(event_tx) = &self.event_tx {
-            let _ = event_tx.send(ev);
-        }
     }
 
     fn load_chunk_if_is_empty(&mut self, pos: ChunkPos, chunks: &mut ChunkStorage) {

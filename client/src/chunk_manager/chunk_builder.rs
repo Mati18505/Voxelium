@@ -28,6 +28,9 @@ pub struct RemoveChunk(pub ChunkPos);
 #[derive(Message, Debug, Clone, PartialEq)]
 pub struct ChunkBuilt(pub ChunkPos, pub ChunkMesh);
 
+#[derive(Message, Debug, Clone, PartialEq)]
+pub struct ChunkRemoved(pub ChunkPos);
+
 #[derive(Resource, Debug, Clone)]
 pub struct ChunkBuilderConfig {
     pub max_build_tasks: usize,
@@ -50,10 +53,11 @@ impl Plugin for ChunkBuilderPlugin {
             .add_message::<BuildChunk>()
             .add_message::<RemoveChunk>()
             .add_message::<ChunkBuilt>()
+            .add_message::<ChunkRemoved>()
             .add_systems(
                 Update,
                 (
-                    process_chunks_to_build,
+                    (process_chunks_to_build, process_chunks_to_remove).chain(),
                     add_tasks,
                     collect_finished,
                     debug_state,
@@ -99,11 +103,21 @@ pub fn process_chunks_to_build(
     }
 }
 
-pub fn process_chunks_to_remove(mut reader: MessageReader<RemoveChunk>) {
+pub fn process_chunks_to_remove(
+    mut reader: MessageReader<RemoveChunk>,
+    mut removed: MessageWriter<ChunkRemoved>,
+    mut data: ResMut<BuilderResources>,
+) {
     for message in reader.read() {
         let chunk_pos = message.0;
 
         info!("Removing chunk {:?}", &chunk_pos);
+
+        data.tasks.remove(&chunk_pos);
+        data.chunk_meshes.remove(&chunk_pos);
+        data.pending_chunk_queue.remove_chunk(chunk_pos);
+
+        removed.write(ChunkRemoved(chunk_pos));
     }
 }
 
