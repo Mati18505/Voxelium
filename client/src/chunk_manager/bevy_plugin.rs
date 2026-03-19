@@ -7,20 +7,17 @@ use shared::{
     entities::{BlockPos, ChunkPos},
 };
 
+use crate::chunk_mesh_builder::meshers::ChunkMesher;
 use crate::{
     bevy_types::{AppStates, GameResources},
     chunk_manager::{
         BuildChunk, ChunkBuilderPlugin, ChunkObjectEvent, RemoveChunk, WorldChunkUpdate,
     },
-    chunk_mesh_builder::{
-        builders::{
-            async_chunk_builder::AsyncChunkBuilder, versioned_chunk_builder::VersionedChunkBuilder,
-        },
-        meshers::naive_mesher::NaiveMesher,
-    },
+    chunk_mesh_builder::meshers::naive_mesher::NaiveMesher,
     controller,
 };
 
+use super::ChunkBuilderConfig;
 use super::{
     bevy_event_manager::WorldChunkUpdateEvent, ChunkEntitiesManager, ChunkManager, Config,
     EventManager,
@@ -29,13 +26,15 @@ use super::{
 pub struct ChunkManagerPlugin;
 impl Plugin for ChunkManagerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(ChunkBuilderPlugin)
-            .init_resource::<ChunkStorage>()
-            .init_resource::<ControllerPos>()
-            .add_systems(OnEnter(AppStates::InGame), init_chunk_manager)
-            .add_message::<WorldChunkUpdateEvent>()
-            .add_systems(Update, update.run_if(in_state(AppStates::InGame)))
-            .add_observer(on_position_change);
+        app.add_plugins(ChunkBuilderPlugin::new(ChunkBuilderConfig {
+            max_build_tasks: 16,
+        }))
+        .init_resource::<ChunkStorage>()
+        .init_resource::<ControllerPos>()
+        .add_systems(OnEnter(AppStates::InGame), init_chunk_manager)
+        .add_message::<WorldChunkUpdateEvent>()
+        .add_systems(Update, update.run_if(in_state(AppStates::InGame)))
+        .add_observer(on_position_change);
     }
 }
 
@@ -86,11 +85,10 @@ impl DerefMut for ControllerPos {
     }
 }
 
-fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>) {
-    let voxel_mesher = NaiveMesher::new((*game_resources.render_shape_storage).clone());
+#[derive(Resource)]
+pub struct ChunkMesherResource(pub Arc<dyn ChunkMesher>);
 
-    let inner_builder = Box::new(AsyncChunkBuilder::new(Arc::new(voxel_mesher)));
-    let chunk_builder = Box::new(VersionedChunkBuilder::<()>::new(inner_builder));
+fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>) {
     let mut config = Config::new(20, 19);
     config.dynamic_vertical_loading = false;
 
@@ -99,7 +97,7 @@ fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>
     let chunk_loader_provider = Box::new(GeneratedChunkProvider::new());
     let chunk_loader = ChunkLoader::new(chunk_loader_provider);
 
-    let mut chunk_manager = ChunkManager::new(chunk_loader, chunk_builder, config);
+    let mut chunk_manager = ChunkManager::new(chunk_loader, config);
 
     chunk_manager.set_chunk_object_tx(Some(chunk_object_tx));
     chunk_manager.set_event_tx(Some(event_tx));
@@ -109,7 +107,12 @@ fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>
         chunk_entities_manager: ChunkEntitiesManager::new(chunk_object_rx),
         event_manager: EventManager::new(event_rx),
     };
+
     commands.insert_resource(chunk_manager_resources);
+
+    let voxel_mesher = NaiveMesher::new((*game_resources.render_shape_storage).clone());
+    let voxel_mesher = Arc::new(voxel_mesher);
+    commands.insert_resource(ChunkMesherResource(voxel_mesher));
 }
 
 fn update(

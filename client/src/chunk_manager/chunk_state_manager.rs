@@ -71,7 +71,6 @@ impl<T: Send + Sync + Default, U> VersionedChunkBuilder<T> for U where
 pub struct ChunkManager {
     world: PhysicalWorld,
     chunk_loader: chunk_loader::ChunkLoader,
-    chunk_builder: Box<dyn VersionedChunkBuilder<()>>,
     chunk_object_tx: Option<crossbeam_channel::Sender<ChunkObjectEvent>>,
     event_tx: Option<crossbeam_channel::Sender<WorldChunkUpdate>>,
     config: Config,
@@ -79,15 +78,10 @@ pub struct ChunkManager {
 }
 
 impl ChunkManager {
-    pub fn new(
-        chunk_loader: chunk_loader::ChunkLoader,
-        chunk_builder: Box<dyn VersionedChunkBuilder<()>>,
-        config: Config,
-    ) -> Self {
+    pub fn new(chunk_loader: chunk_loader::ChunkLoader, config: Config) -> Self {
         ChunkManager {
             world: PhysicalWorld::default(),
             chunk_loader,
-            chunk_builder,
             chunk_object_tx: None,
             event_tx: None,
             config,
@@ -146,7 +140,7 @@ impl ChunkManager {
     ) {
         let _ = info_span!("check_built_chunks", name = "check_built_chunks").entered();
 
-        self.chunk_builder.update(controller_pos.0);
+        //self.chunk_builder.update(controller_pos.0);
 
         let chunks_to_draw: Vec<ChunkPos> = self.world.get_chunks_with_state(ChunkState::ToDraw);
 
@@ -326,6 +320,7 @@ impl ChunkManager {
                 // self.chunk_builder.remove_chunk(chunk_pos);
             }
             ToDrawToDrawn => {
+                /*
                 let mesh = self
                     .chunk_builder
                     .take_chunk_built_with_latest_version(pos)
@@ -333,6 +328,7 @@ impl ChunkManager {
                     .0;
 
                 self.create_chunk_object(pos, &mesh);
+                */
             }
             DrawnToToDraw => {
                 self.pass_chunk_to_builder(pos);
@@ -386,7 +382,8 @@ impl ChunkManager {
         let is_within_load =
             self.is_within_distance(pos, self.config.load_distance, controller_pos);
         let loaded = chunks.get_chunk(pos).is_some();
-        let mesh_built = self.chunk_builder.is_chunk_with_latest_version_built(pos);
+        //let mesh_built = self.chunk_builder.is_chunk_with_latest_version_built(pos);
+        let mesh_built = false;
         let needs_rebuild = self.world.get_chunk_need_rebuild(pos);
 
         ChunkStatus {
