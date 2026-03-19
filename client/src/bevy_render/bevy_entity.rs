@@ -23,7 +23,7 @@ impl BevyChunkEntity {
         chunk_mesh: ChunkMesh,
         commands: &mut Commands,
         meshes: &mut ResMut<Assets<Mesh>>,
-        material_storage: Arc<MaterialStorage>,
+        material_storage: &MaterialStorage,
         transform: Transform,
     ) -> Self {
         let mut render_resource = BevyChunkEntity::default();

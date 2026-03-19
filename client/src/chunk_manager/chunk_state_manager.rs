@@ -33,12 +33,6 @@ pub struct WorldChunkUpdate {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum ChunkObjectEvent {
-    Created(ChunkPos, ChunkMesh),
-    Removed(ChunkPos),
-}
-
-#[derive(Debug, Clone, PartialEq)]
 pub struct Config {
     /// Horizontal radius (in chunks) within which chunks are loaded.
     pub load_distance: usize,
@@ -71,7 +65,6 @@ impl<T: Send + Sync + Default, U> VersionedChunkBuilder<T> for U where
 pub struct ChunkManager {
     world: PhysicalWorld,
     chunk_loader: chunk_loader::ChunkLoader,
-    chunk_object_tx: Option<crossbeam_channel::Sender<ChunkObjectEvent>>,
     event_tx: Option<crossbeam_channel::Sender<WorldChunkUpdate>>,
     config: Config,
     chunks_to_build: Vec<ChunkPos>,
@@ -82,19 +75,10 @@ impl ChunkManager {
         ChunkManager {
             world: PhysicalWorld::default(),
             chunk_loader,
-            chunk_object_tx: None,
             event_tx: None,
             config,
             chunks_to_build: Vec::default(),
         }
-    }
-
-    /// Sets the callback used when a chunk is drawn or mesh is removed.
-    pub fn set_chunk_object_tx(
-        &mut self,
-        callback: Option<crossbeam_channel::Sender<ChunkObjectEvent>>,
-    ) {
-        self.chunk_object_tx = callback;
     }
 
     /// Sets the callback used after chunk has been modified.
@@ -314,22 +298,11 @@ impl ChunkManager {
                 // TODO: Remove mesh from chunk builder.
                 // self.chunk_builder.remove_chunk(chunk_pos);
             }
-            ToDrawToDrawn => {
-                /*
-                let mesh = self
-                .chunk_builder
-                .take_chunk_built_with_latest_version(pos)
-                .expect("ChunkState is drawn, but mesh is not built.")
-                .0;
-
-                self.create_chunk_object(pos, &mesh);
-                */
-            }
+            ToDrawToDrawn => {}
             DrawnToToDraw => {
                 self.pass_chunk_to_builder(pos);
             }
             DrawnToLoaded => {
-                self.remove_chunk_object(pos);
             }
         }
     }
@@ -343,18 +316,6 @@ impl ChunkManager {
     fn emit_event(&self, ev: WorldChunkUpdate) {
         if let Some(event_tx) = &self.event_tx {
             let _ = event_tx.send(ev);
-        }
-    }
-
-    fn create_chunk_object(&self, pos: ChunkPos, mesh: &ChunkMesh) {
-        if let Some(chunk_object_tx) = &self.chunk_object_tx {
-            let _ = chunk_object_tx.send(ChunkObjectEvent::Created(pos, mesh.clone()));
-        }
-    }
-
-    fn remove_chunk_object(&self, pos: ChunkPos) {
-        if let Some(chunk_object_tx) = &self.chunk_object_tx {
-            let _ = chunk_object_tx.send(ChunkObjectEvent::Removed(pos));
         }
     }
 

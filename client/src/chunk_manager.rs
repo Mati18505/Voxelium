@@ -11,5 +11,3 @@ pub use bevy_plugin::*;
 pub use chunk_builder::*;
 pub use chunk_state::*;
 pub use chunk_state_manager::*;
-
-use bevy_chunk_entities_manager::*;

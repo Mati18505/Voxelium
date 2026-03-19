@@ -26,7 +26,7 @@ pub struct BuildChunk(pub ChunkPos);
 pub struct RemoveChunk(pub ChunkPos);
 
 #[derive(Message, Debug, Clone, PartialEq)]
-pub struct ChunkBuilt(pub ChunkPos);
+pub struct ChunkBuilt(pub ChunkPos, pub ChunkMesh);
 
 #[derive(Resource, Debug, Clone)]
 pub struct ChunkBuilderConfig {
@@ -171,9 +171,9 @@ fn collect_finished(
         }
     }
 
-    for pos in completed.keys() {
+    for (pos, mesh) in completed.iter() {
         data.tasks.remove(pos);
-        built_chunks.write(ChunkBuilt(*pos));
+        built_chunks.write(ChunkBuilt(*pos, mesh.clone()));
     }
 
     data.chunk_meshes.extend(completed);

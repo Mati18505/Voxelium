@@ -1,77 +1,76 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use bevy::prelude::*;
 use shared::entities::ChunkPos;
 
-use super::ChunkObjectEvent;
 use crate::bevy_render::BevyChunkEntity;
-use crate::bevy_resources::MaterialStorage;
+use crate::bevy_types::{AppStates, GameResources};
 use crate::chunk_mesh_builder::ChunkMesh;
 
-#[derive(Debug, Clone)]
-pub struct ChunkEntitiesManager {
-    rx: crossbeam_channel::Receiver<ChunkObjectEvent>,
+#[derive(Message, Debug, Clone, PartialEq)]
+pub struct CreateEntity(pub ChunkPos, pub ChunkMesh);
+
+#[derive(Message, Debug, Clone, PartialEq)]
+pub struct RemoveEntity(pub ChunkPos);
+
+pub struct ChunkEntitiesPlugin;
+impl Plugin for ChunkEntitiesPlugin {
+    fn build(&self, app: &mut App) {
+        app
+            .add_message::<CreateEntity>()
+            .add_message::<RemoveEntity>()
+            .init_resource::<ChunkEntitiesResource>().add_systems(
+            Update,
+            (process_create_requests, process_remove_requests).run_if(in_state(AppStates::InGame)),
+        );
+    }
+}
+
+#[derive(Resource, Debug, Default)]
+struct ChunkEntitiesResource {
     chunk_entities: HashMap<ChunkPos, BevyChunkEntity>,
 }
 
-impl ChunkEntitiesManager {
-    pub fn new(rx: crossbeam_channel::Receiver<ChunkObjectEvent>) -> Self {
-        Self {
-            rx,
-            chunk_entities: HashMap::new(),
-        }
-    }
-    pub fn process_pending(
-        &mut self,
-        commands: &mut Commands,
-        meshes: &mut ResMut<Assets<Mesh>>,
-        material_storage: Arc<MaterialStorage>,
-    ) {
-        while let Ok(chunk_obj_ev) = self.rx.try_recv() {
-            match chunk_obj_ev {
-                ChunkObjectEvent::Created(chunk_pos, chunk_mesh) => {
-                    self.remove_chunk_entity(&chunk_pos, commands);
-                    self.create_chunk_entity(
-                        chunk_pos,
-                        chunk_mesh,
-                        commands,
-                        meshes,
-                        material_storage.clone(),
-                    );
-                }
-                ChunkObjectEvent::Removed(chunk_pos) => {
-                    self.remove_chunk_entity(&chunk_pos, commands);
-                }
-            }
-        }
-    }
+fn process_create_requests(
+    mut entity_create_requests: MessageReader<CreateEntity>,
+    mut data: ResMut<ChunkEntitiesResource>,
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    game_resources: Res<GameResources>,
+) {
+    for request in entity_create_requests.read() {
+        let pos = request.0;
+        let mesh: ChunkMesh = request.1.clone();
 
-    fn create_chunk_entity(
-        &mut self,
-        pos: ChunkPos,
-        mesh: ChunkMesh,
-        commands: &mut Commands,
-        meshes: &mut ResMut<Assets<Mesh>>,
-        material_storage: Arc<MaterialStorage>,
-    ) {
-        assert!(
-            !self.chunk_entities.contains_key(&pos),
-            "Potential memory leak!"
-        );
+        if let Some(entity) = data.chunk_entities.get(&pos) {
+            entity.cleanup(&mut commands);
+            data.chunk_entities.remove(&pos);
+        }
 
         let transform = Transform::from_xyz(pos.x as f32, pos.y as f32, pos.z as f32);
+        let chunk_entity = BevyChunkEntity::new(
+            mesh,
+            &mut commands,
+            &mut meshes,
+            &game_resources.material_storage,
+            transform,
+        );
 
-        let chunk_entity =
-            BevyChunkEntity::new(mesh, commands, meshes, material_storage, transform);
-
-        self.chunk_entities.insert(pos, chunk_entity);
+        data.chunk_entities.insert(pos, chunk_entity);
     }
+}
 
-    fn remove_chunk_entity(&mut self, pos: &ChunkPos, commands: &mut Commands) {
-        if let Some(entity) = self.chunk_entities.get(pos) {
-            entity.cleanup(commands);
-            self.chunk_entities.remove(pos);
+fn process_remove_requests(
+    mut entity_remove_requests: MessageReader<RemoveEntity>,
+    mut data: ResMut<ChunkEntitiesResource>,
+    mut commands: Commands,
+) {
+    for request in entity_remove_requests.read() {
+        let pos = request.0;
+
+        if let Some(entity) = data.chunk_entities.get(&pos) {
+            entity.cleanup(&mut commands);
+            data.chunk_entities.remove(&pos);
         }
     }
 }
