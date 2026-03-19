@@ -46,6 +46,12 @@ impl PhysicalWorld {
             .map(|(chunk_pos, _)| *chunk_pos)
             .collect()
     }
+
+    pub fn remove_chunk(&mut self, pos: ChunkPos) {
+        self.chunk_states.remove(&pos);
+        self.built_chunks.remove(&pos);
+        self.chunks_need_rebuild.remove(&pos);
+    }
 }
 
 impl fmt::Debug for PhysicalWorld {

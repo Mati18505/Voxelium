@@ -197,6 +197,7 @@ impl ChunkManager {
             self.world.get_chunks_with_state(ChunkState::Empty);
 
         for pos in empty_chunks_in_world {
+            self.world.remove_chunk(pos);
             chunks.remove_chunk(pos);
         }
     }
@@ -298,6 +299,7 @@ impl ChunkManager {
             }
             LoadedToEmpty => {
                 chunks.remove_chunk(pos);
+                self.world.remove_chunk(pos);
             }
             LoadedToToDraw => {
                 self.pass_chunk_to_builder(pos);
