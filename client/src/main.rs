@@ -143,7 +143,7 @@ fn on_action_event(
     let raycast_result = raycast_from_controller(
         action.controller_pos,
         action.controller_forward,
-        &chunks,
+        &chunks.0,
         &game_resources.server_block_type_storage,
     );
 

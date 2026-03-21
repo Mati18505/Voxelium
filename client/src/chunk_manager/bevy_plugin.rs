@@ -70,40 +70,12 @@ impl Plugin for ChunkManagerPlugin {
 #[derive(Resource, Default)]
 pub struct ChunkStorage(pub shared::entities::World);
 
-impl Deref for ChunkStorage {
-    type Target = shared::entities::World;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for ChunkStorage {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
 #[derive(Resource)]
 pub struct ControllerPos(pub ChunkPos);
 
 impl Default for ControllerPos {
     fn default() -> Self {
         Self(ChunkPos::new(0, 0, 0))
-    }
-}
-
-impl Deref for ControllerPos {
-    type Target = ChunkPos;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for ControllerPos {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
     }
 }
 
@@ -176,7 +148,7 @@ fn process_voxel_edits(
         let (chunk_pos, block_in_chunk_pos) =
             (ChunkPos::from(block_pos), BlockInChunkPos::from(block_pos));
 
-        let Some(chunk) = data.get_chunk(chunk_pos) else {
+        let Some(chunk) = data.0.get_chunk(chunk_pos) else {
             warn!("chunk not found for voxel edit {:?}", edit);
             continue;
         };
@@ -186,7 +158,7 @@ fn process_voxel_edits(
         new_block_storage.set_block(block_in_chunk_pos, new_voxel);
         let new_chunk = Chunk::new(new_block_storage);
 
-        data.set_chunk(chunk_pos, new_chunk.clone());
+        data.0.set_chunk(chunk_pos, new_chunk.clone());
 
         chunk_updated.write(ChunkUpdated(chunk_pos, new_chunk));
     }

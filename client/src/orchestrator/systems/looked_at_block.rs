@@ -68,7 +68,7 @@ fn process_raycast_and_send_event(
     let raycast_result = raycast_from_controller(
         looked_at_block_data.last_player_pos,
         looked_at_block_data.last_looking_dir,
-        &chunks,
+        &chunks.0,
         &game_resources.server_block_type_storage,
     );
     let block_pos = raycast_result.hitpoint.pos;

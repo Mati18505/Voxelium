@@ -149,7 +149,7 @@ fn build_chunks(
         .pending_chunk_queue
         .take_nearest_chunks(config.max_builds_per_frame, player_pos.0)
     {
-        let Some(chunk) = chunks.get_chunk(chunk_pos) else {
+        let Some(chunk) = chunks.0.get_chunk(chunk_pos) else {
             continue;
         };
 
