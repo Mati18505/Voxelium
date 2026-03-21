@@ -12,7 +12,9 @@ use shared::{
 use crate::chunk_manager::bevy_chunk_entities_manager::{
     ChunkEntitiesPlugin, CreateEntity, RemoveEntity,
 };
-use crate::chunk_manager::{ChunkBuilt, ChunkLoaded, ChunkLoaderConfig, ChunkLoaderPlugin, ChunkRemoved, ChunkUnloaded};
+use crate::chunk_manager::{
+    ChunkBuilt, ChunkLoaded, ChunkLoaderConfig, ChunkLoaderPlugin, ChunkRemoved, ChunkUnloaded,
+};
 use crate::chunk_mesh_builder::meshers::ChunkMesher;
 use crate::{
     bevy_types::{AppStates, GameResources},
@@ -22,7 +24,6 @@ use crate::{
 };
 
 use super::ChunkBuilderConfig;
-use super::{ChunkManager, Config};
 
 #[derive(Message, Debug, PartialEq)]
 pub struct VoxelEdit(pub BlockPos, pub BlockID);
@@ -64,11 +65,6 @@ impl Plugin for ChunkManagerPlugin {
         )
         .add_observer(on_position_change);
     }
-}
-
-#[derive(Resource)]
-pub struct ChunkManagerResources {
-    pub chunk_manager: ChunkManager,
 }
 
 #[derive(Resource, Default)]
@@ -117,14 +113,6 @@ pub struct ChunkMesherResource(pub Arc<dyn ChunkMesher>);
 pub struct ChunkProviderResource(pub Box<dyn ChunkProvider>);
 
 fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>) {
-    let mut config = Config::new(20, 19);
-    config.dynamic_vertical_loading = false;
-
-    let chunk_manager = ChunkManager::new(config);
-    let chunk_manager_resources = ChunkManagerResources { chunk_manager };
-
-    commands.insert_resource(chunk_manager_resources);
-
     let chunk_generator = Box::new(GeneratedChunkProvider::new());
     commands.insert_resource(ChunkProviderResource(chunk_generator));
 
@@ -133,10 +121,7 @@ fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>
     commands.insert_resource(ChunkMesherResource(voxel_mesher));
 }
 
-fn insert_chunks(
-    mut loaded_chunks: MessageReader<ChunkLoaded>,
-    mut chunks: ResMut<ChunkStorage>,
-) {
+fn insert_chunks(mut loaded_chunks: MessageReader<ChunkLoaded>, mut chunks: ResMut<ChunkStorage>) {
     for loaded in loaded_chunks.read() {
         let pos = loaded.0;
         let chunk = loaded.1.clone();
@@ -209,10 +194,8 @@ fn process_voxel_edits(
 
 fn on_position_change(
     e: On<controller::PositionChangeEvent>,
-    mut chunk_manager_resources: Option<ResMut<ChunkManagerResources>>,
     state: Res<State<AppStates>>,
-    mut chunks: ResMut<ChunkStorage>,
-    controller_pos: ResMut<ControllerPos>,
+    mut controller_pos: ResMut<ControllerPos>,
 ) {
     if !matches!(state.get(), AppStates::InGame) {
         return;
@@ -222,13 +205,5 @@ fn on_position_change(
     let new_block_pos = BlockPos::new(new_pos.x as isize, new_pos.y as isize, new_pos.z as isize);
     let new_chunk_pos = ChunkPos::from(new_block_pos);
 
-    if let Some(chunk_manager_resources) = &mut chunk_manager_resources {
-        chunk_manager_resources.chunk_manager.update_controller_pos(
-            controller_pos,
-            new_chunk_pos,
-            &mut chunks,
-        );
-    } else {
-        warn!("chunk_manager_resources is null in on_position_change");
-    }
+    controller_pos.0 = new_chunk_pos;
 }
