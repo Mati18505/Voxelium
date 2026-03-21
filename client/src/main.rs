@@ -19,14 +19,14 @@ use shared::{
     physics::RaycastResult,
 };
 
-use chunk_manager::{ChunkManagerPlugin, ChunkManagerResources};
+use chunk_manager::ChunkManagerPlugin;
 
 use crate::{
     bevy_resources::{
         BevyBlockTypeStorageAsset, RenderDescDictAsset, RenderDescDictAssetLoader, ResourcesPlugin,
         TextureDictAsset, TextureDictAssetLoader,
     },
-    chunk_manager::ChunkStorage,
+    chunk_manager::{ChunkStorage, VoxelEdit},
     controller::ActionType,
     gui::GUIPlugin,
     orchestrator::{utils::raycast_from_controller, OrchestratorPlugin},
@@ -40,7 +40,6 @@ mod chunk_mesh_builder;
 mod controller;
 mod gui;
 mod orchestrator;
-mod voxel_edits;
 
 fn main() {
     App::new()
@@ -129,14 +128,15 @@ fn init_level(
 
 fn on_action_event(
     action: On<controller::ActionEvent>,
+    mut voxel_edits: MessageWriter<VoxelEdit>,
     state: Res<State<AppStates>>,
-    chunks: Option<ResMut<ChunkStorage>>,
+    chunks: Option<Res<ChunkStorage>>,
     game_resources: Option<Res<GameResources>>,
 ) {
     if !matches!(state.get(), AppStates::InGame) {
         return;
     }
-    let (Some(game_resources), Some(mut chunks)) = (game_resources, chunks) else {
+    let (Some(game_resources), Some(chunks)) = (game_resources, chunks) else {
         return;
     };
 
@@ -154,11 +154,7 @@ fn on_action_event(
         };
 
         if block_action.feasible {
-            voxel_edits::set_block_and_update_chunk(
-                &mut chunks.0,
-                block_action.pos,
-                block_action.new_block,
-            );
+            voxel_edits.write(VoxelEdit(block_action.pos, block_action.new_block));
         }
     } else {
         println!("Raycast don't collide.");

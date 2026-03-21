@@ -2,6 +2,7 @@ use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
 use bevy::prelude::*;
+use shared::entities::{BlockID, BlockInChunkPos, Chunk, ChunkRepository};
 use shared::{
     chunk_io::{providers::generated_chunk_provider::GeneratedChunkProvider, ChunkLoader},
     entities::{BlockPos, ChunkPos},
@@ -22,6 +23,9 @@ use crate::{
 use super::ChunkBuilderConfig;
 use super::{bevy_event_manager::WorldChunkUpdateEvent, ChunkManager, Config, EventManager};
 
+#[derive(Message, Debug, PartialEq)]
+pub struct VoxelEdit(pub BlockPos, pub BlockID);
+
 pub struct ChunkManagerPlugin;
 impl Plugin for ChunkManagerPlugin {
     fn build(&self, app: &mut App) {
@@ -35,9 +39,15 @@ impl Plugin for ChunkManagerPlugin {
         .init_resource::<ControllerPos>()
         .add_systems(OnEnter(AppStates::InGame), init_chunk_manager)
         .add_message::<WorldChunkUpdateEvent>()
+        .add_message::<VoxelEdit>()
         .add_systems(
             Update,
-            (update, create_chunk_entities, remove_chunk_entities)
+            (
+                update,
+                create_chunk_entities,
+                remove_chunk_entities,
+                process_voxel_edits,
+            )
                 .run_if(in_state(AppStates::InGame)),
         )
         .add_observer(on_position_change);
@@ -165,6 +175,42 @@ fn remove_chunk_entities(
         let pos = removed.0;
 
         request.write(RemoveEntity(pos));
+    }
+}
+
+fn process_voxel_edits(
+    mut voxel_edits: MessageReader<VoxelEdit>,
+    mut rebuild_request: MessageWriter<BuildChunk>,
+    mut chunk_update: MessageWriter<WorldChunkUpdateEvent>,
+    mut data: ResMut<ChunkStorage>,
+) {
+    for edit in voxel_edits.read() {
+        let block_pos = edit.0;
+        let new_voxel = edit.1;
+
+        let (chunk_pos, block_in_chunk_pos) =
+            (ChunkPos::from(block_pos), BlockInChunkPos::from(block_pos));
+
+        let Some(chunk) = data.get_chunk(chunk_pos) else {
+            warn!("chunk not found for voxel edit {:?}", edit);
+            continue;
+        };
+
+        let mut new_block_storage = chunk.get_block_storage().clone();
+
+        new_block_storage.set_block(block_in_chunk_pos, new_voxel);
+        let new_chunk = Chunk::new(new_block_storage);
+
+        data.set_chunk(chunk_pos, new_chunk);
+
+        rebuild_request.write(BuildChunk(chunk_pos));
+        // TODO: refactor
+        chunk_update.write(WorldChunkUpdateEvent {
+            chunk_update: WorldChunkUpdate {
+                chunk_pos,
+                chunk: data.get_chunk(chunk_pos).unwrap().clone(),
+            },
+        });
     }
 }
 
