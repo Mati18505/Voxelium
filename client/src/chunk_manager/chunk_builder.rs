@@ -56,8 +56,9 @@ impl Plugin for ChunkBuilderPlugin {
                 Update,
                 (
                     (process_chunks_to_build, process_chunks_to_remove).chain(),
-                    (build_chunks, log_warnings).chain(),
+                    build_chunks,
                     debug_state,
+                    log_warnings,
                 )
                     .run_if(in_state(AppStates::InGame)),
             );
@@ -149,7 +150,11 @@ fn accum_mesher_warnings(accum: &mut MesherWarningsAccum, warnings: MesherWarnin
     }
 }
 
-fn log_warnings(mut warnings: ResMut<MesherWarningsAccum>) {
+fn log_warnings(timer: Res<DebugTimer>, mut warnings: ResMut<MesherWarningsAccum>) {
+    if !timer.0.is_finished() {
+        return;
+    }
+
     let warnings = std::mem::take(&mut warnings.0);
 
     if warnings.is_empty() {
