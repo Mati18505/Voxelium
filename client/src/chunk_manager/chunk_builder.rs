@@ -12,7 +12,7 @@ use crate::{
     chunk_manager::{ChunkMesherResource, ChunkStorage, ControllerPos},
     chunk_mesh_builder::{
         meshers::{MesherWarning, MesherWarnings},
-        ChunkMesh,
+        ChunkMesh, ChunkMeshData,
     },
 };
 
@@ -124,17 +124,23 @@ fn build_chunks(
 
         let mesher_result = mesher.0.create_mesh(chunk);
         let (layers, mesher_warnings) = (mesher_result.layers, mesher_result.warnings);
-        let mut chunk_mesh: ChunkMesh = Default::default();
-
-        for (material_id, mesh) in layers.iter() {
-            let built = mesh.mesh().build();
-            chunk_mesh.layers.insert(*material_id, built);
-        }
+        let chunk_mesh = build_chunk_mesh(&layers);
 
         accum_mesher_warnings(&mut warnings, mesher_warnings);
 
         built_chunks.write(ChunkBuilt(chunk_pos, chunk_mesh));
     }
+}
+
+fn build_chunk_mesh(layers: &HashMap<u8, ChunkMeshData>) -> ChunkMesh {
+    let mut chunk_mesh = ChunkMesh::default();
+
+    for (material_id, mesh) in layers.iter() {
+        let built = mesh.mesh().build();
+        chunk_mesh.layers.insert(*material_id, built);
+    }
+
+    chunk_mesh
 }
 
 #[derive(Resource, Default)]
