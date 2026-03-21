@@ -15,7 +15,7 @@ use crate::chunk_manager::{ChunkBuilt, ChunkRemoved};
 use crate::chunk_mesh_builder::meshers::ChunkMesher;
 use crate::{
     bevy_types::{AppStates, GameResources},
-    chunk_manager::{BuildChunk, ChunkBuilderPlugin, RemoveChunk},
+    chunk_manager::ChunkBuilderPlugin,
     chunk_mesh_builder::meshers::naive_mesher::NaiveMesher,
     controller,
 };
@@ -35,6 +35,8 @@ impl Plugin for ChunkManagerPlugin {
         app.add_plugins((
             ChunkBuilderPlugin::new(ChunkBuilderConfig {
                 max_builds_per_frame: 1000,
+                render_distance: 19,
+                dynamic_vertical_loading: false,
             }),
             ChunkEntitiesPlugin,
         ))
@@ -123,26 +125,12 @@ fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>
 
 fn update(
     mut chunk_manager_resources: ResMut<ChunkManagerResources>,
-    mut chunks_to_build: MessageWriter<BuildChunk>,
-    mut chunks_to_remove: MessageWriter<RemoveChunk>,
     mut chunks: ResMut<ChunkStorage>,
     controller_pos: Res<ControllerPos>,
-    built_chunks: MessageReader<ChunkBuilt>,
-    removed_chunks: MessageReader<ChunkRemoved>,
 ) {
     chunk_manager_resources
         .chunk_manager
         .check_loaded_chunks(&mut chunks, &controller_pos);
-    chunk_manager_resources.chunk_manager.update_built_chunks(
-        built_chunks,
-        removed_chunks,
-        &mut chunks,
-        &controller_pos,
-    );
-
-    chunk_manager_resources
-        .chunk_manager
-        .send_messages_to_builder(&mut chunks_to_build, &mut chunks_to_remove);
 }
 
 fn create_chunk_entities(
@@ -170,7 +158,6 @@ fn remove_chunk_entities(
 
 fn process_voxel_edits(
     mut voxel_edits: MessageReader<VoxelEdit>,
-    mut rebuild_request: MessageWriter<BuildChunk>,
     mut chunk_updated: MessageWriter<ChunkUpdated>,
     mut data: ResMut<ChunkStorage>,
 ) {
@@ -193,7 +180,6 @@ fn process_voxel_edits(
 
         data.set_chunk(chunk_pos, new_chunk.clone());
 
-        rebuild_request.write(BuildChunk(chunk_pos));
         chunk_updated.write(ChunkUpdated(chunk_pos, new_chunk));
     }
 }

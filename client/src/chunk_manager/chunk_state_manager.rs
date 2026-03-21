@@ -1,8 +1,5 @@
 use bevy::{
-    ecs::{
-        message::{MessageReader, MessageWriter},
-        system::ResMut,
-    },
+    ecs::system::ResMut,
     log::{self, warn},
 };
 use shared::{
@@ -11,9 +8,7 @@ use shared::{
 };
 use std::fmt;
 
-use crate::chunk_manager::{
-    chunk_builder::BuildChunk, ChunkBuilt, ChunkRemoved, ChunkStorage, ControllerPos, RemoveChunk,
-};
+use crate::chunk_manager::{ChunkStorage, ControllerPos};
 
 use super::{chunk_state, ChunkState, ChunkStatus, ChunkTransition};
 
@@ -46,8 +41,6 @@ pub struct ChunkManager {
     world: PhysicalWorld,
     chunk_loader: chunk_loader::ChunkLoader,
     config: Config,
-    chunks_to_build: Vec<ChunkPos>,
-    chunks_to_remove: Vec<ChunkPos>,
 }
 
 impl ChunkManager {
@@ -56,8 +49,6 @@ impl ChunkManager {
             world: PhysicalWorld::default(),
             chunk_loader,
             config,
-            chunks_to_build: Vec::default(),
-            chunks_to_remove: Vec::default(),
         }
     }
 
@@ -90,24 +81,6 @@ impl ChunkManager {
         }
     }
 
-    pub fn update_built_chunks(
-        &mut self,
-        mut built_chunks: MessageReader<ChunkBuilt>,
-        mut removed_chunks: MessageReader<ChunkRemoved>,
-        chunks: &mut ChunkStorage,
-        controller_pos: &ControllerPos,
-    ) {
-        for message in built_chunks.read() {
-            self.world.built_chunks.insert(message.0);
-            self.update_chunk_state(message.0, chunks, controller_pos);
-        }
-
-        for message in removed_chunks.read() {
-            self.world.built_chunks.remove(&message.0);
-            self.update_chunk_state(message.0, chunks, controller_pos);
-        }
-    }
-
     pub fn get_world(&self) -> &PhysicalWorld {
         &self.world
     }
@@ -123,19 +96,6 @@ impl ChunkManager {
         self.load_chunk_if_is_empty(pos, chunks);
 
         chunks.get_chunk(pos).cloned()
-    }
-
-    pub fn send_messages_to_builder(
-        &mut self,
-        chunks_to_build: &mut MessageWriter<BuildChunk>,
-        chunks_to_remove: &mut MessageWriter<RemoveChunk>,
-    ) {
-        for chunk_pos in std::mem::take(&mut self.chunks_to_build) {
-            chunks_to_build.write(BuildChunk(chunk_pos));
-        }
-        for chunk_pos in std::mem::take(&mut self.chunks_to_remove) {
-            chunks_to_remove.write(RemoveChunk(chunk_pos));
-        }
     }
 
     fn update_chunk_states_in_world(
@@ -276,26 +236,12 @@ impl ChunkManager {
                 chunks.remove_chunk(pos);
                 self.world.remove_chunk(pos);
             }
-            LoadedToToDraw => {
-                self.pass_chunk_to_builder(pos);
-            }
-            ToDrawToLoaded => {
-                self.chunks_to_remove.push(pos);
-            }
+            LoadedToToDraw => {}
+            ToDrawToLoaded => {}
             ToDrawToDrawn => {}
-            DrawnToToDraw => {
-                self.pass_chunk_to_builder(pos);
-            }
-            DrawnToLoaded => {
-                self.chunks_to_remove.push(pos);
-            }
+            DrawnToToDraw => {}
+            DrawnToLoaded => {}
         }
-    }
-
-    fn pass_chunk_to_builder(&mut self, pos: ChunkPos) {
-        self.chunks_to_build.push(pos);
-
-        self.world.remove_chunk_need_rebuild(pos);
     }
 
     fn load_chunk_if_is_empty(&mut self, pos: ChunkPos, chunks: &mut ChunkStorage) {
@@ -317,7 +263,7 @@ impl ChunkManager {
         let is_within_load =
             self.is_within_distance(pos, self.config.load_distance, controller_pos);
         let loaded = chunks.get_chunk(pos).is_some();
-        let mesh_built = self.world.built_chunks.contains(&pos);
+        let mesh_built = false;
         let needs_rebuild = self.world.get_chunk_need_rebuild(pos);
 
         ChunkStatus {

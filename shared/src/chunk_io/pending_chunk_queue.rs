@@ -57,6 +57,10 @@ impl PendingChunkQueue {
         nearest_chunks
     }
 
+    pub fn contains_chunk(&self, pos: ChunkPos) -> bool {
+        self.index_map.contains_key(&pos)
+    }
+
     /// This doesn't rebuild the index map.
     fn move_k_nearest_chunks_to_back(&mut self, k: usize, player_pos: ChunkPos) {
         if self.pending_chunks.is_empty() || k == 0 {

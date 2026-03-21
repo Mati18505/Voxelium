@@ -1,26 +1,27 @@
-use std::{collections::HashMap, fmt, time::Duration};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt,
+    time::Duration,
+};
 
 use bevy::prelude::*;
 use shared::{
     chunk_io::pending_chunk_queue::PendingChunkQueue,
-    entities::{iterate_over_block_registry, BlockID, ChunkPos, ChunkRepository},
+    entities::{
+        iterate_over_block_registry, BlockID, ChunkPos, ChunkPosGenerator2D, ChunkPosGenerator3D,
+        ChunkRepository,
+    },
 };
 
 use crate::{
     bevy_resources::BlockTypeName,
     bevy_types::AppStates,
-    chunk_manager::{ChunkMesherResource, ChunkStorage, ControllerPos},
+    chunk_manager::{ChunkMesherResource, ChunkStorage, ChunkUpdated, ControllerPos},
     chunk_mesh_builder::{
         meshers::{MesherWarning, MesherWarnings},
         ChunkMesh, ChunkMeshData,
     },
 };
-
-#[derive(Message, Debug, Clone, PartialEq)]
-pub struct BuildChunk(pub ChunkPos);
-
-#[derive(Message, Debug, Clone, PartialEq)]
-pub struct RemoveChunk(pub ChunkPos);
 
 #[derive(Message, Debug, Clone, PartialEq)]
 pub struct ChunkBuilt(pub ChunkPos, pub ChunkMesh);
@@ -31,6 +32,8 @@ pub struct ChunkRemoved(pub ChunkPos);
 #[derive(Resource, Debug, Clone)]
 pub struct ChunkBuilderConfig {
     pub max_builds_per_frame: usize,
+    pub render_distance: usize,
+    pub dynamic_vertical_loading: bool,
 }
 
 pub struct ChunkBuilderPlugin(ChunkBuilderConfig);
@@ -48,17 +51,16 @@ impl Plugin for ChunkBuilderPlugin {
                 Duration::from_secs(2),
                 TimerMode::Repeating,
             )))
-            .add_message::<BuildChunk>()
-            .add_message::<RemoveChunk>()
             .add_message::<ChunkBuilt>()
             .add_message::<ChunkRemoved>()
             .add_systems(
                 Update,
                 (
-                    (process_chunks_to_build, process_chunks_to_remove).chain(),
+                    update_desired_chunks,
+                    rebuild_chunks,
                     build_chunks,
-                    debug_state,
                     log_warnings,
+                    debug_state,
                 )
                     .run_if(in_state(AppStates::InGame)),
             );
@@ -68,6 +70,7 @@ impl Plugin for ChunkBuilderPlugin {
 #[derive(Resource, Default)]
 struct BuilderResources {
     pending_chunk_queue: PendingChunkQueue,
+    built_chunks: HashSet<ChunkPos>,
 }
 
 impl fmt::Debug for BuilderResources {
@@ -81,27 +84,55 @@ impl fmt::Debug for BuilderResources {
 #[derive(Resource)]
 struct DebugTimer(Timer);
 
-fn process_chunks_to_build(
-    mut reader: MessageReader<BuildChunk>,
+fn update_desired_chunks(
     mut data: ResMut<BuilderResources>,
+    mut removed_chunks: MessageWriter<ChunkRemoved>,
+    config: Res<ChunkBuilderConfig>,
+    player_pos: Res<ControllerPos>,
 ) {
-    for message in reader.read() {
-        let chunk_pos = message.0;
+    let generator: Box<dyn Iterator<Item = ChunkPos>> = match config.dynamic_vertical_loading {
+        true => Box::new(ChunkPosGenerator3D::new(
+            player_pos.0,
+            config.render_distance,
+        )),
+        false => Box::new(ChunkPosGenerator2D::new(
+            player_pos.0,
+            config.render_distance,
+        )),
+    };
+    let desired: HashSet<ChunkPos> = generator.collect();
 
-        data.pending_chunk_queue.add_chunk(chunk_pos);
+    let to_add: Vec<ChunkPos> = desired
+        .iter()
+        .filter(|pos| {
+            !data.built_chunks.contains(pos) && !data.pending_chunk_queue.contains_chunk(**pos)
+        })
+        .cloned()
+        .collect();
+    let to_remove: Vec<ChunkPos> = data
+        .built_chunks
+        .iter()
+        .filter(|pos| !desired.contains(pos))
+        .cloned()
+        .collect();
+
+    for pos in to_remove {
+        data.pending_chunk_queue.remove_chunk(pos);
+        data.built_chunks.remove(&pos);
+        removed_chunks.write(ChunkRemoved(pos));
+    }
+
+    for pos in to_add {
+        data.pending_chunk_queue.add_chunk(pos);
     }
 }
 
-fn process_chunks_to_remove(
-    mut reader: MessageReader<RemoveChunk>,
-    mut removed: MessageWriter<ChunkRemoved>,
+fn rebuild_chunks(
     mut data: ResMut<BuilderResources>,
+    mut chunks_updated: MessageReader<ChunkUpdated>,
 ) {
-    for message in reader.read() {
-        let chunk_pos = message.0;
-
-        data.pending_chunk_queue.remove_chunk(chunk_pos);
-        removed.write(ChunkRemoved(chunk_pos));
+    for ChunkUpdated(pos, _chunk) in chunks_updated.read() {
+        data.pending_chunk_queue.add_chunk(*pos);
     }
 }
 
@@ -128,6 +159,7 @@ fn build_chunks(
 
         accum_mesher_warnings(&mut warnings, mesher_warnings);
 
+        data.built_chunks.insert(chunk_pos);
         built_chunks.write(ChunkBuilt(chunk_pos, chunk_mesh));
     }
 }
