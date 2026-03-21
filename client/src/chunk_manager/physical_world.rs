@@ -1,19 +1,12 @@
-use std::{
-    collections::{HashMap, HashSet},
-    fmt,
-};
+use std::{collections::HashMap, fmt};
 
-use shared::entities::{world::World, Chunk, ChunkPos, ChunkRepository};
-
-use crate::chunk_mesh_builder::ChunkMesh;
+use shared::entities::ChunkPos;
 
 use super::ChunkState;
 
 #[derive(Default, Clone, PartialEq)]
 pub struct PhysicalWorld {
     pub chunk_states: HashMap<ChunkPos, ChunkState>,
-    pub built_chunks: HashSet<ChunkPos>,
-    chunks_need_rebuild: HashSet<ChunkPos>,
 }
 
 impl PhysicalWorld {
@@ -27,18 +20,6 @@ impl PhysicalWorld {
             .unwrap_or(ChunkState::Empty)
     }
 
-    pub fn set_chunk_need_rebuild(&mut self, pos: ChunkPos) {
-        self.chunks_need_rebuild.insert(pos);
-    }
-
-    pub fn get_chunk_need_rebuild(&self, pos: ChunkPos) -> bool {
-        self.chunks_need_rebuild.contains(&pos)
-    }
-
-    pub fn remove_chunk_need_rebuild(&mut self, pos: ChunkPos) {
-        self.chunks_need_rebuild.remove(&pos);
-    }
-
     pub fn get_chunks_with_state<T: FromIterator<ChunkPos>>(&self, state: super::ChunkState) -> T {
         self.chunk_states
             .iter()
@@ -49,8 +30,6 @@ impl PhysicalWorld {
 
     pub fn remove_chunk(&mut self, pos: ChunkPos) {
         self.chunk_states.remove(&pos);
-        self.built_chunks.remove(&pos);
-        self.chunks_need_rebuild.remove(&pos);
     }
 }
 
@@ -65,23 +44,12 @@ impl fmt::Debug for PhysicalWorld {
         let loaded = self
             .get_chunks_with_state::<Vec<ChunkPos>>(ChunkState::Loaded)
             .len();
-        let to_draw = self
-            .get_chunks_with_state::<Vec<ChunkPos>>(ChunkState::ToDraw)
-            .len();
-        let drawn = self
-            .get_chunks_with_state::<Vec<ChunkPos>>(ChunkState::Drawn)
-            .len();
-        let chunks_need_rebuild = self.chunks_need_rebuild.len();
 
         f.debug_struct("PhysicalWorld")
             .field("chunk_states", &self.chunk_states.len())
             .field("empty", &empty)
             .field("loading", &loading)
             .field("loaded", &loaded)
-            .field("to_draw", &to_draw)
-            .field("drawn", &drawn)
-            .field("chunks_need_rebuild", &chunks_need_rebuild)
-            .field("built_chunks", &self.built_chunks.len())
             .finish()
     }
 }

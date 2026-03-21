@@ -236,11 +236,6 @@ impl ChunkManager {
                 chunks.remove_chunk(pos);
                 self.world.remove_chunk(pos);
             }
-            LoadedToToDraw => {}
-            ToDrawToLoaded => {}
-            ToDrawToDrawn => {}
-            DrawnToToDraw => {}
-            DrawnToLoaded => {}
         }
     }
 
@@ -258,20 +253,13 @@ impl ChunkManager {
         chunks: &ChunkStorage,
         controller_pos: &ControllerPos,
     ) -> ChunkStatus {
-        let is_within_render =
-            self.is_within_distance(pos, self.config.render_distance, controller_pos);
         let is_within_load =
             self.is_within_distance(pos, self.config.load_distance, controller_pos);
         let loaded = chunks.get_chunk(pos).is_some();
-        let mesh_built = false;
-        let needs_rebuild = self.world.get_chunk_need_rebuild(pos);
 
         ChunkStatus {
-            is_within_render,
             is_within_load,
             loaded,
-            mesh_built,
-            needs_rebuild,
         }
     }
 }

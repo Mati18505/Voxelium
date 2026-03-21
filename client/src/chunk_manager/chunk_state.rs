@@ -3,17 +3,12 @@ pub enum ChunkState {
     Empty,
     Loading,
     Loaded,
-    ToDraw,
-    Drawn,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ChunkStatus {
-    pub is_within_render: bool,
     pub is_within_load: bool,
     pub loaded: bool,
-    pub mesh_built: bool,
-    pub needs_rebuild: bool,
 }
 
 pub fn get_next_chunk_state(curr_state: ChunkState, status: ChunkStatus) -> ChunkState {
@@ -39,36 +34,10 @@ pub fn get_next_chunk_state(curr_state: ChunkState, status: ChunkStatus) -> Chun
             }
         }
         Loaded => {
-            if status.is_within_render {
-                ToDraw
-            } else if status.is_within_load {
+            if status.is_within_load {
                 curr_state
             } else {
                 Empty
-            }
-        }
-        ToDraw => {
-            if status.is_within_render {
-                if status.needs_rebuild {
-                    Loaded
-                } else if status.mesh_built {
-                    Drawn
-                } else {
-                    curr_state
-                }
-            } else {
-                Loaded
-            }
-        }
-        Drawn => {
-            if status.is_within_render {
-                if status.needs_rebuild {
-                    ToDraw
-                } else {
-                    curr_state
-                }
-            } else {
-                Loaded
             }
         }
     }
@@ -80,11 +49,6 @@ pub enum ChunkTransition {
     LoadingToEmpty,
     LoadingToLoaded,
     LoadedToEmpty,
-    LoadedToToDraw,
-    ToDrawToLoaded,
-    ToDrawToDrawn,
-    DrawnToToDraw,
-    DrawnToLoaded,
 }
 
 pub fn get_chunk_transition(from: ChunkState, to: ChunkState) -> Option<ChunkTransition> {
@@ -96,11 +60,6 @@ pub fn get_chunk_transition(from: ChunkState, to: ChunkState) -> Option<ChunkTra
         (Loading, Empty) => Some(LoadingToEmpty),
         (Loading, Loaded) => Some(LoadingToLoaded),
         (Loaded, Empty) => Some(LoadedToEmpty),
-        (Loaded, ToDraw) => Some(LoadedToToDraw),
-        (ToDraw, Loaded) => Some(ToDrawToLoaded),
-        (ToDraw, Drawn) => Some(ToDrawToDrawn),
-        (Drawn, ToDraw) => Some(DrawnToToDraw),
-        (Drawn, Loaded) => Some(DrawnToLoaded),
         _ => None,
     }
 }
