@@ -31,7 +31,7 @@ impl Plugin for ChunkManagerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             ChunkBuilderPlugin::new(ChunkBuilderConfig {
-                max_build_tasks: 16,
+                max_builds_per_frame: 1000,
             }),
             ChunkEntitiesPlugin,
         ))

@@ -1,12 +1,9 @@
 use std::{collections::HashMap, fmt, time::Duration};
 
-use bevy::{
-    prelude::*,
-    tasks::{futures_lite::future, AsyncComputeTaskPool, Task},
-};
+use bevy::prelude::*;
 use shared::{
     chunk_io::pending_chunk_queue::PendingChunkQueue,
-    entities::{iterate_over_block_registry, BlockID, Chunk, ChunkPos, ChunkRepository},
+    entities::{iterate_over_block_registry, BlockID, ChunkPos, ChunkRepository},
 };
 
 use crate::{
@@ -33,7 +30,7 @@ pub struct ChunkRemoved(pub ChunkPos);
 
 #[derive(Resource, Debug, Clone)]
 pub struct ChunkBuilderConfig {
-    pub max_build_tasks: usize,
+    pub max_builds_per_frame: usize,
 }
 
 pub struct ChunkBuilderPlugin(ChunkBuilderConfig);
@@ -46,6 +43,7 @@ impl Plugin for ChunkBuilderPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(self.0.clone())
             .init_resource::<BuilderResources>()
+            .init_resource::<MesherWarningsAccum>()
             .insert_resource(DebugTimer(Timer::new(
                 Duration::from_secs(2),
                 TimerMode::Repeating,
@@ -58,8 +56,7 @@ impl Plugin for ChunkBuilderPlugin {
                 Update,
                 (
                     (process_chunks_to_build, process_chunks_to_remove).chain(),
-                    add_tasks,
-                    collect_finished,
+                    (build_chunks, log_warnings).chain(),
                     debug_state,
                 )
                     .run_if(in_state(AppStates::InGame)),
@@ -67,13 +64,8 @@ impl Plugin for ChunkBuilderPlugin {
     }
 }
 
-#[derive(Resource)]
-struct ChunkBuildTask(Task<(ChunkMesh, MesherWarnings)>);
-
 #[derive(Resource, Default)]
-pub struct BuilderResources {
-    chunk_meshes: HashMap<ChunkPos, ChunkMesh>,
-    tasks: HashMap<ChunkPos, ChunkBuildTask>,
+struct BuilderResources {
     pending_chunk_queue: PendingChunkQueue,
 }
 
@@ -81,29 +73,25 @@ impl fmt::Debug for BuilderResources {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("AsyncChunkBuilder")
             .field("pending_chunk_queue", &self.pending_chunk_queue)
-            .field("tasks", &self.tasks.len())
-            .field("meshes", &self.chunk_meshes.len())
             .finish()
     }
 }
 
 #[derive(Resource)]
-pub struct DebugTimer(Timer);
+struct DebugTimer(Timer);
 
-pub fn process_chunks_to_build(
+fn process_chunks_to_build(
     mut reader: MessageReader<BuildChunk>,
     mut data: ResMut<BuilderResources>,
 ) {
     for message in reader.read() {
         let chunk_pos = message.0;
 
-        data.tasks.remove(&chunk_pos);
-        data.chunk_meshes.remove(&chunk_pos);
         data.pending_chunk_queue.add_chunk(chunk_pos);
     }
 }
 
-pub fn process_chunks_to_remove(
+fn process_chunks_to_remove(
     mut reader: MessageReader<RemoveChunk>,
     mut removed: MessageWriter<ChunkRemoved>,
     mut data: ResMut<BuilderResources>,
@@ -111,91 +99,59 @@ pub fn process_chunks_to_remove(
     for message in reader.read() {
         let chunk_pos = message.0;
 
-        info!("Removing chunk {:?}", &chunk_pos);
-
-        data.tasks.remove(&chunk_pos);
-        data.chunk_meshes.remove(&chunk_pos);
         data.pending_chunk_queue.remove_chunk(chunk_pos);
-
         removed.write(ChunkRemoved(chunk_pos));
     }
 }
 
-pub fn add_tasks(
-    mut data: ResMut<BuilderResources>,
-    controller_pos: Res<ControllerPos>,
-    config: Res<ChunkBuilderConfig>,
-    chunks: Res<ChunkStorage>,
-    mesher: Res<ChunkMesherResource>,
-) {
-    // TODO
-    // Chunk Grouping (for each thread task give multiple chunks).
-
-    let nearest_chunks = data
-        .pending_chunk_queue
-        .take_nearest_chunks(config.max_build_tasks, controller_pos.0);
-
-    for chunk_pos in nearest_chunks {
-        if let Some(chunk) = chunks.get_chunk(chunk_pos) {
-            let task = create_build_task(chunk, &mesher);
-
-            data.tasks.insert(chunk_pos, task);
-        } else {
-            warn!("Chunk is passed to builder, but it doesn't exist in ChunkStorage.");
-        }
-    }
-}
-
-fn create_build_task(chunk: &Chunk, mesher: &ChunkMesherResource) -> ChunkBuildTask {
-    let chunk = chunk.clone();
-    let mesher = mesher.0.clone();
-    let pool = AsyncComputeTaskPool::get();
-
-    let future = async move {
-        let mesh_data = mesher.create_mesh(&chunk);
-        let mut chunk_mesh: ChunkMesh = Default::default();
-
-        for (material_id, mesh) in mesh_data.layers.iter() {
-            chunk_mesh.layers.insert(*material_id, mesh.mesh().build());
-        }
-
-        (chunk_mesh, mesh_data.warnings)
-    };
-
-    ChunkBuildTask(pool.spawn(future))
-}
-
-fn collect_finished(
+fn build_chunks(
     mut data: ResMut<BuilderResources>,
     mut built_chunks: MessageWriter<ChunkBuilt>,
+    mut warnings: ResMut<MesherWarningsAccum>,
+    chunks: Res<ChunkStorage>,
+    mesher: Res<ChunkMesherResource>,
+    player_pos: Res<ControllerPos>,
+    config: Res<ChunkBuilderConfig>,
 ) {
-    let mut completed: HashMap<ChunkPos, ChunkMesh> = HashMap::default();
-    let mut warnings: HashMap<MesherWarning, u32> = HashMap::default();
+    for chunk_pos in data
+        .pending_chunk_queue
+        .take_nearest_chunks(config.max_builds_per_frame, player_pos.0)
+    {
+        let Some(chunk) = chunks.get_chunk(chunk_pos) else {
+            continue;
+        };
 
-    for (chunk_pos, build_task) in data.tasks.iter_mut() {
-        if let Some(out) = future::block_on(future::poll_once(&mut build_task.0)) {
-            completed.insert(*chunk_pos, out.0);
+        let mesher_result = mesher.0.create_mesh(chunk);
+        let (layers, mesher_warnings) = (mesher_result.layers, mesher_result.warnings);
+        let mut chunk_mesh: ChunkMesh = Default::default();
 
-            for (warning, count) in out.1 {
-                warnings
-                    .entry(warning)
-                    .and_modify(|e| *e += count)
-                    .or_insert(count);
-            }
+        for (material_id, mesh) in layers.iter() {
+            let built = mesh.mesh().build();
+            chunk_mesh.layers.insert(*material_id, built);
         }
+
+        accum_mesher_warnings(&mut warnings, mesher_warnings);
+
+        built_chunks.write(ChunkBuilt(chunk_pos, chunk_mesh));
     }
-
-    for (pos, mesh) in completed.iter() {
-        data.tasks.remove(pos);
-        built_chunks.write(ChunkBuilt(*pos, mesh.clone()));
-    }
-
-    data.chunk_meshes.extend(completed);
-
-    log_warnings(warnings);
 }
 
-fn log_warnings(warnings: HashMap<MesherWarning, u32>) {
+#[derive(Resource, Default)]
+struct MesherWarningsAccum(HashMap<MesherWarning, u32>);
+
+fn accum_mesher_warnings(accum: &mut MesherWarningsAccum, warnings: MesherWarnings) {
+    for (warning, count) in warnings {
+        accum
+            .0
+            .entry(warning)
+            .and_modify(|e| *e += count)
+            .or_insert(count);
+    }
+}
+
+fn log_warnings(mut warnings: ResMut<MesherWarningsAccum>) {
+    let warnings = std::mem::take(&mut warnings.0);
+
     if warnings.is_empty() {
         return;
     }

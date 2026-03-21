@@ -130,7 +130,6 @@ impl ChunkManager {
             self.world.built_chunks.remove(&message.0);
             self.update_chunk_state(message.0, chunks, controller_pos);
         }
-        dbg!(&self.world);
     }
 
     pub fn get_world(&self) -> &PhysicalWorld {
