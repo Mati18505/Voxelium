@@ -15,16 +15,19 @@ use crate::chunk_manager::{ChunkBuilt, ChunkRemoved};
 use crate::chunk_mesh_builder::meshers::ChunkMesher;
 use crate::{
     bevy_types::{AppStates, GameResources},
-    chunk_manager::{BuildChunk, ChunkBuilderPlugin, RemoveChunk, WorldChunkUpdate},
+    chunk_manager::{BuildChunk, ChunkBuilderPlugin, RemoveChunk},
     chunk_mesh_builder::meshers::naive_mesher::NaiveMesher,
     controller,
 };
 
 use super::ChunkBuilderConfig;
-use super::{bevy_event_manager::WorldChunkUpdateEvent, ChunkManager, Config, EventManager};
+use super::{ChunkManager, Config};
 
 #[derive(Message, Debug, PartialEq)]
 pub struct VoxelEdit(pub BlockPos, pub BlockID);
+
+#[derive(Message, Debug)]
+pub struct ChunkUpdated(pub ChunkPos, pub Chunk);
 
 pub struct ChunkManagerPlugin;
 impl Plugin for ChunkManagerPlugin {
@@ -38,7 +41,7 @@ impl Plugin for ChunkManagerPlugin {
         .init_resource::<ChunkStorage>()
         .init_resource::<ControllerPos>()
         .add_systems(OnEnter(AppStates::InGame), init_chunk_manager)
-        .add_message::<WorldChunkUpdateEvent>()
+        .add_message::<ChunkUpdated>()
         .add_message::<VoxelEdit>()
         .add_systems(
             Update,
@@ -57,7 +60,6 @@ impl Plugin for ChunkManagerPlugin {
 #[derive(Resource)]
 pub struct ChunkManagerResources {
     pub chunk_manager: ChunkManager,
-    event_manager: EventManager,
 }
 
 #[derive(Resource, Default)]
@@ -107,18 +109,10 @@ fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>
     let mut config = Config::new(20, 19);
     config.dynamic_vertical_loading = false;
 
-    let (event_tx, event_rx) = crossbeam_channel::unbounded::<WorldChunkUpdate>();
     let chunk_loader_provider = Box::new(GeneratedChunkProvider::new());
     let chunk_loader = ChunkLoader::new(chunk_loader_provider);
-
-    let mut chunk_manager = ChunkManager::new(chunk_loader, config);
-
-    chunk_manager.set_event_tx(Some(event_tx));
-
-    let chunk_manager_resources = ChunkManagerResources {
-        chunk_manager,
-        event_manager: EventManager::new(event_rx),
-    };
+    let chunk_manager = ChunkManager::new(chunk_loader, config);
+    let chunk_manager_resources = ChunkManagerResources { chunk_manager };
 
     commands.insert_resource(chunk_manager_resources);
 
@@ -129,7 +123,6 @@ fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>
 
 fn update(
     mut chunk_manager_resources: ResMut<ChunkManagerResources>,
-    chunk_manager_events: MessageWriter<WorldChunkUpdateEvent>,
     mut chunks_to_build: MessageWriter<BuildChunk>,
     mut chunks_to_remove: MessageWriter<RemoveChunk>,
     mut chunks: ResMut<ChunkStorage>,
@@ -146,9 +139,6 @@ fn update(
         &mut chunks,
         &controller_pos,
     );
-    chunk_manager_resources
-        .event_manager
-        .process_pending(chunk_manager_events);
 
     chunk_manager_resources
         .chunk_manager
@@ -181,7 +171,7 @@ fn remove_chunk_entities(
 fn process_voxel_edits(
     mut voxel_edits: MessageReader<VoxelEdit>,
     mut rebuild_request: MessageWriter<BuildChunk>,
-    mut chunk_update: MessageWriter<WorldChunkUpdateEvent>,
+    mut chunk_updated: MessageWriter<ChunkUpdated>,
     mut data: ResMut<ChunkStorage>,
 ) {
     for edit in voxel_edits.read() {
@@ -201,16 +191,10 @@ fn process_voxel_edits(
         new_block_storage.set_block(block_in_chunk_pos, new_voxel);
         let new_chunk = Chunk::new(new_block_storage);
 
-        data.set_chunk(chunk_pos, new_chunk);
+        data.set_chunk(chunk_pos, new_chunk.clone());
 
         rebuild_request.write(BuildChunk(chunk_pos));
-        // TODO: refactor
-        chunk_update.write(WorldChunkUpdateEvent {
-            chunk_update: WorldChunkUpdate {
-                chunk_pos,
-                chunk: data.get_chunk(chunk_pos).unwrap().clone(),
-            },
-        });
+        chunk_updated.write(ChunkUpdated(chunk_pos, new_chunk));
     }
 }
 

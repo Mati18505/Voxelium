@@ -4,7 +4,7 @@ use shared::entities::name_to_block_id;
 use super::{super::utils::raycast_from_controller, super::LookedAtBlockChangedEvent};
 use crate::{
     bevy_types::GameResources,
-    chunk_manager::{ChunkStorage, WorldChunkUpdateEvent},
+    chunk_manager::{ChunkStorage, ChunkUpdated},
     controller::Controller,
 };
 
@@ -22,7 +22,7 @@ pub fn update_looked_at_block(
     commands: Commands,
     mut q_looked_at_block_data: Query<&mut LookedAtBlockData>,
     q_controller: Query<&Transform, With<Controller>>,
-    world_chunk_update_ev: MessageReader<WorldChunkUpdateEvent>,
+    chunk_updated_ev: MessageReader<ChunkUpdated>,
     chunks: Res<ChunkStorage>,
     game_resources: Res<GameResources>,
 ) {
@@ -47,7 +47,7 @@ pub fn update_looked_at_block(
 
     let moved = looked_at_block_data.last_player_pos != pos;
     let looking_dir_changed = looked_at_block_data.last_looking_dir != dir;
-    let world_updated = !world_chunk_update_ev.is_empty();
+    let world_updated = !chunk_updated_ev.is_empty();
 
     looked_at_block_data.last_looking_dir = dir;
     looked_at_block_data.last_player_pos = pos;

@@ -11,22 +11,13 @@ use shared::{
 };
 use std::fmt;
 
-use crate::{
-    chunk_manager::{
-        chunk_builder::BuildChunk, ChunkBuilt, ChunkRemoved, ChunkStorage, ControllerPos,
-        RemoveChunk,
-    }
+use crate::chunk_manager::{
+    chunk_builder::BuildChunk, ChunkBuilt, ChunkRemoved, ChunkStorage, ControllerPos, RemoveChunk,
 };
 
 use super::{chunk_state, ChunkState, ChunkStatus, ChunkTransition};
 
 use super::physical_world::PhysicalWorld;
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct WorldChunkUpdate {
-    pub chunk_pos: ChunkPos,
-    pub chunk: Chunk,
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Config {
@@ -54,7 +45,6 @@ impl Config {
 pub struct ChunkManager {
     world: PhysicalWorld,
     chunk_loader: chunk_loader::ChunkLoader,
-    event_tx: Option<crossbeam_channel::Sender<WorldChunkUpdate>>,
     config: Config,
     chunks_to_build: Vec<ChunkPos>,
     chunks_to_remove: Vec<ChunkPos>,
@@ -65,16 +55,10 @@ impl ChunkManager {
         ChunkManager {
             world: PhysicalWorld::default(),
             chunk_loader,
-            event_tx: None,
             config,
             chunks_to_build: Vec::default(),
             chunks_to_remove: Vec::default(),
         }
-    }
-
-    /// Sets the callback used after chunk has been modified.
-    pub fn set_event_tx(&mut self, callback: Option<crossbeam_channel::Sender<WorldChunkUpdate>>) {
-        self.event_tx = callback;
     }
 
     /// Updates the controller position and triggers chunk state updates if position has changed.
