@@ -15,8 +15,7 @@ use crate::{
     chunk_manager::{
         chunk_builder::BuildChunk, ChunkBuilt, ChunkRemoved, ChunkStorage, ControllerPos,
         RemoveChunk,
-    },
-    chunk_mesh_builder::builders::{ChunkBuilder, Versioned},
+    }
 };
 
 use super::{chunk_state, ChunkState, ChunkStatus, ChunkTransition};
@@ -49,13 +48,6 @@ impl Config {
             dynamic_vertical_loading: false,
         }
     }
-}
-
-pub trait VersionedChunkBuilder<T: Send + Sync + Default>: ChunkBuilder<T> + Versioned<T> {}
-
-impl<T: Send + Sync + Default, U> VersionedChunkBuilder<T> for U where
-    U: ChunkBuilder<T> + Versioned<T>
-{
 }
 
 /// Manage chunks dependent on controller position.
