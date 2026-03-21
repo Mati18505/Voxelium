@@ -2,16 +2,17 @@ use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
 use bevy::prelude::*;
+use shared::chunk_io::providers::provider::ChunkProvider;
 use shared::entities::{BlockID, BlockInChunkPos, Chunk, ChunkRepository};
 use shared::{
-    chunk_io::{providers::generated_chunk_provider::GeneratedChunkProvider, ChunkLoader},
+    chunk_io::providers::generated_chunk_provider::GeneratedChunkProvider,
     entities::{BlockPos, ChunkPos},
 };
 
 use crate::chunk_manager::bevy_chunk_entities_manager::{
     ChunkEntitiesPlugin, CreateEntity, RemoveEntity,
 };
-use crate::chunk_manager::{ChunkBuilt, ChunkRemoved};
+use crate::chunk_manager::{ChunkBuilt, ChunkLoaded, ChunkLoaderConfig, ChunkLoaderPlugin, ChunkRemoved, ChunkUnloaded};
 use crate::chunk_mesh_builder::meshers::ChunkMesher;
 use crate::{
     bevy_types::{AppStates, GameResources},
@@ -33,6 +34,11 @@ pub struct ChunkManagerPlugin;
 impl Plugin for ChunkManagerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
+            ChunkLoaderPlugin::new(ChunkLoaderConfig {
+                max_loads_per_frame: 64,
+                load_distance: 20,
+                dynamic_vertical_loading: false,
+            }),
             ChunkBuilderPlugin::new(ChunkBuilderConfig {
                 max_builds_per_frame: 1000,
                 render_distance: 19,
@@ -48,7 +54,8 @@ impl Plugin for ChunkManagerPlugin {
         .add_systems(
             Update,
             (
-                update,
+                insert_chunks,
+                remove_chunks,
                 create_chunk_entities,
                 remove_chunk_entities,
                 process_voxel_edits,
@@ -106,31 +113,47 @@ impl DerefMut for ControllerPos {
 
 #[derive(Resource)]
 pub struct ChunkMesherResource(pub Arc<dyn ChunkMesher>);
+#[derive(Resource)]
+pub struct ChunkProviderResource(pub Box<dyn ChunkProvider>);
 
 fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>) {
     let mut config = Config::new(20, 19);
     config.dynamic_vertical_loading = false;
 
-    let chunk_loader_provider = Box::new(GeneratedChunkProvider::new());
-    let chunk_loader = ChunkLoader::new(chunk_loader_provider);
-    let chunk_manager = ChunkManager::new(chunk_loader, config);
+    let chunk_manager = ChunkManager::new(config);
     let chunk_manager_resources = ChunkManagerResources { chunk_manager };
 
     commands.insert_resource(chunk_manager_resources);
+
+    let chunk_generator = Box::new(GeneratedChunkProvider::new());
+    commands.insert_resource(ChunkProviderResource(chunk_generator));
 
     let voxel_mesher = NaiveMesher::new((*game_resources.render_shape_storage).clone());
     let voxel_mesher = Arc::new(voxel_mesher);
     commands.insert_resource(ChunkMesherResource(voxel_mesher));
 }
 
-fn update(
-    mut chunk_manager_resources: ResMut<ChunkManagerResources>,
+fn insert_chunks(
+    mut loaded_chunks: MessageReader<ChunkLoaded>,
     mut chunks: ResMut<ChunkStorage>,
-    controller_pos: Res<ControllerPos>,
 ) {
-    chunk_manager_resources
-        .chunk_manager
-        .check_loaded_chunks(&mut chunks, &controller_pos);
+    for loaded in loaded_chunks.read() {
+        let pos = loaded.0;
+        let chunk = loaded.1.clone();
+
+        chunks.0.set_chunk(pos, chunk);
+    }
+}
+
+fn remove_chunks(
+    mut unloaded_chunks: MessageReader<ChunkUnloaded>,
+    mut chunks: ResMut<ChunkStorage>,
+) {
+    for unloaded in unloaded_chunks.read() {
+        let pos = unloaded.0;
+
+        chunks.0.remove_chunk(pos);
+    }
 }
 
 fn create_chunk_entities(

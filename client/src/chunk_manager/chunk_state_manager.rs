@@ -2,9 +2,8 @@ use bevy::{
     ecs::system::ResMut,
     log::{self, warn},
 };
-use shared::{
-    chunk_io::chunk_loader,
-    entities::{Chunk, ChunkPos, ChunkPosGenerator2D, ChunkPosGenerator3D, ChunkRepository},
+use shared::entities::{
+    Chunk, ChunkPos, ChunkPosGenerator2D, ChunkPosGenerator3D, ChunkRepository,
 };
 use std::fmt;
 
@@ -39,15 +38,13 @@ impl Config {
 /// Manage chunks dependent on controller position.
 pub struct ChunkManager {
     world: PhysicalWorld,
-    chunk_loader: chunk_loader::ChunkLoader,
     config: Config,
 }
 
 impl ChunkManager {
-    pub fn new(chunk_loader: chunk_loader::ChunkLoader, config: Config) -> Self {
+    pub fn new(config: Config) -> Self {
         ChunkManager {
             world: PhysicalWorld::default(),
-            chunk_loader,
             config,
         }
     }
@@ -65,37 +62,8 @@ impl ChunkManager {
         }
     }
 
-    /// Processes chunks ready to be loaded.
-    /// Should be called once per frame.
-    pub fn check_loaded_chunks(
-        &mut self,
-        chunks: &mut ChunkStorage,
-        controller_pos: &ControllerPos,
-    ) {
-        self.chunk_loader.update(controller_pos.0);
-        let completed = self.chunk_loader.poll_loaded_chunks();
-
-        for (pos, chunk) in completed {
-            chunks.set_chunk(pos, chunk);
-            self.update_chunk_state(pos, chunks, controller_pos);
-        }
-    }
-
     pub fn get_world(&self) -> &PhysicalWorld {
         &self.world
-    }
-
-    /// Gets chunk from the world or loads it if it is not loaded yet.
-    /// Returns None only if the position is outside the world scope.
-    #[allow(dead_code)]
-    pub fn get_or_load_chunk(&mut self, pos: ChunkPos, chunks: &mut ChunkStorage) -> Option<Chunk> {
-        if !self.is_in_world_scope(pos) {
-            return None;
-        }
-
-        self.load_chunk_if_is_empty(pos, chunks);
-
-        chunks.get_chunk(pos).cloned()
     }
 
     fn update_chunk_states_in_world(
@@ -103,23 +71,6 @@ impl ChunkManager {
         chunks: &mut ChunkStorage,
         controller_pos: &ControllerPos,
     ) {
-        // Load missing chunks within the load distance.
-        let generator: Box<dyn Iterator<Item = ChunkPos>> =
-            match self.config.dynamic_vertical_loading {
-                true => Box::new(ChunkPosGenerator3D::new(
-                    controller_pos.0,
-                    self.config.load_distance,
-                )),
-                false => Box::new(ChunkPosGenerator2D::new(
-                    controller_pos.0,
-                    self.config.load_distance,
-                )),
-            };
-
-        for pos in generator {
-            self.load_chunk_if_is_empty(pos, chunks);
-        }
-
         // Update all existing chunks in the world.
         let chunks_in_world: Vec<ChunkPos> = self.world.chunk_states.keys().copied().collect();
 
@@ -223,12 +174,8 @@ impl ChunkManager {
         use ChunkTransition::*;
 
         match transition {
-            EmptyToLoading => {
-                self.chunk_loader.load_chunk(pos);
-            }
-            LoadingToEmpty => {
-                self.chunk_loader.cancel_loading_chunk(pos);
-            }
+            EmptyToLoading => {}
+            LoadingToEmpty => {}
             LoadingToLoaded => {
                 log::debug!("Loaded chunk {:?}", pos);
             }
@@ -236,14 +183,6 @@ impl ChunkManager {
                 chunks.remove_chunk(pos);
                 self.world.remove_chunk(pos);
             }
-        }
-    }
-
-    fn load_chunk_if_is_empty(&mut self, pos: ChunkPos, chunks: &mut ChunkStorage) {
-        let curr_chunk_state = self.world.get_chunk_state(pos);
-
-        if curr_chunk_state == ChunkState::Empty {
-            self.change_chunk_state(pos, ChunkState::Loading, chunks);
         }
     }
 
@@ -269,7 +208,6 @@ impl fmt::Debug for ChunkManager {
         f.debug_struct("ChunkManager")
             .field("world", &self.world)
             // .field("chunk_builder", &self.chunk_builder)
-            .field("chunk_loader", &self.chunk_loader)
             .finish()
     }
 }
