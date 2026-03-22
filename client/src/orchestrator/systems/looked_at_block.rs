@@ -4,7 +4,7 @@ use shared::entities::name_to_block_id;
 use super::{super::utils::raycast_from_controller, super::LookedAtBlockChangedEvent};
 use crate::{
     bevy_types::GameResources,
-    chunk_manager::{ChunkManagerResources, WorldChunkUpdateEvent},
+    chunk_manager::{ChunkStorage, ChunkUpdated},
     controller::Controller,
 };
 
@@ -22,8 +22,8 @@ pub fn update_looked_at_block(
     commands: Commands,
     mut q_looked_at_block_data: Query<&mut LookedAtBlockData>,
     q_controller: Query<&Transform, With<Controller>>,
-    world_chunk_update_ev: MessageReader<WorldChunkUpdateEvent>,
-    chunk_manager_resources: Res<ChunkManagerResources>,
+    chunk_updated_ev: MessageReader<ChunkUpdated>,
+    chunks: Res<ChunkStorage>,
     game_resources: Res<GameResources>,
 ) {
     let transform = match q_controller.single() {
@@ -47,7 +47,7 @@ pub fn update_looked_at_block(
 
     let moved = looked_at_block_data.last_player_pos != pos;
     let looking_dir_changed = looked_at_block_data.last_looking_dir != dir;
-    let world_updated = !world_chunk_update_ev.is_empty();
+    let world_updated = !chunk_updated_ev.is_empty();
 
     looked_at_block_data.last_looking_dir = dir;
     looked_at_block_data.last_player_pos = pos;
@@ -55,26 +55,20 @@ pub fn update_looked_at_block(
     let dirty = moved || looking_dir_changed || world_updated;
 
     if dirty {
-        process_raycast_and_send_event(
-            commands,
-            chunk_manager_resources,
-            game_resources,
-            looked_at_block_data,
-        );
+        process_raycast_and_send_event(commands, chunks, game_resources, looked_at_block_data);
     }
 }
 
 fn process_raycast_and_send_event(
     mut commands: Commands,
-    chunk_manager_resources: Res<'_, ChunkManagerResources>,
+    chunks: Res<'_, ChunkStorage>,
     game_resources: Res<'_, GameResources>,
     looked_at_block_data: Mut<'_, LookedAtBlockData>,
 ) {
-    let world = &chunk_manager_resources.chunk_manager.get_world().world;
     let raycast_result = raycast_from_controller(
         looked_at_block_data.last_player_pos,
         looked_at_block_data.last_looking_dir,
-        world,
+        &chunks.0,
         &game_resources.server_block_type_storage,
     );
     let block_pos = raycast_result.hitpoint.pos;
