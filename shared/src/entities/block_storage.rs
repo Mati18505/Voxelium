@@ -30,4 +30,3 @@ impl BlockStorage {
         self.block_types.iter()
     }
 }
-

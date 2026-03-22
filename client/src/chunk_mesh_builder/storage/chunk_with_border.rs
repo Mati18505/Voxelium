@@ -1,4 +1,7 @@
-use shared::entities::{block_in_chunk_pos_generator::BlockInChunkPosGenerator, BlockInChunkPos, BlockStorage, Chunk, CHUNK_SIZE};
+use shared::entities::{
+    block_in_chunk_pos_generator::BlockInChunkPosGenerator, BlockInChunkPos, BlockStorage, Chunk,
+    CHUNK_SIZE,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ChunkWithBorder {
@@ -34,9 +37,7 @@ impl Into<ChunkWithBorder> for ChunkWithNeighbors {
         let size = CHUNK_SIZE + 2;
         let mut data = vec![0; size.pow(3)];
 
-        let idx = |x: usize, y: usize, z: usize| -> usize {
-            x + size * (y + size * z)
-        };
+        let idx = |x: usize, y: usize, z: usize| -> usize { x + size * (y + size * z) };
 
         // original chunk
         for source_pos in BlockInChunkPosGenerator::new() {
@@ -51,8 +52,7 @@ impl Into<ChunkWithBorder> for ChunkWithNeighbors {
         for y in 0..CHUNK_SIZE {
             for z in 0..CHUNK_SIZE {
                 let source_pos = BlockInChunkPos::new(CHUNK_SIZE - 1, y, z);
-                data[idx(0, y + 1, z + 1)] =
-                    nx_neg.get_block_storage().get_block(source_pos);
+                data[idx(0, y + 1, z + 1)] = nx_neg.get_block_storage().get_block(source_pos);
             }
         }
 
@@ -69,8 +69,7 @@ impl Into<ChunkWithBorder> for ChunkWithNeighbors {
         for x in 0..CHUNK_SIZE {
             for z in 0..CHUNK_SIZE {
                 let source_pos = BlockInChunkPos::new(x, CHUNK_SIZE - 1, z);
-                data[idx(x + 1, 0, z + 1)] =
-                    ny_neg.get_block_storage().get_block(source_pos);
+                data[idx(x + 1, 0, z + 1)] = ny_neg.get_block_storage().get_block(source_pos);
             }
         }
 
@@ -87,8 +86,7 @@ impl Into<ChunkWithBorder> for ChunkWithNeighbors {
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 let source_pos = BlockInChunkPos::new(x, y, CHUNK_SIZE - 1);
-                data[idx(x + 1, y + 1, 0)] =
-                    nz_neg.get_block_storage().get_block(source_pos);
+                data[idx(x + 1, y + 1, 0)] = nz_neg.get_block_storage().get_block(source_pos);
             }
         }
 

@@ -8,8 +8,8 @@ use bevy::prelude::*;
 use shared::{
     chunk_io::pending_chunk_queue::PendingChunkQueue,
     entities::{
-        iterate_over_block_registry, BlockID, ChunkPos, ChunkPosGenerator2D, ChunkPosGenerator3D,
-        ChunkRepository,
+        iterate_over_block_registry, BlockID, BlockSide, Chunk, ChunkPos, ChunkPosGenerator2D,
+        ChunkPosGenerator3D, ChunkRepository, Direction, CHUNK_SIZE,
     },
 };
 
@@ -19,7 +19,7 @@ use crate::{
     chunk_manager::{ChunkMesherResource, ChunkStorage, ChunkUpdated, ControllerPos},
     chunk_mesh_builder::{
         meshers::{MesherWarning, MesherWarnings},
-        ChunkMesh, ChunkMeshData,
+        ChunkMesh, ChunkMeshData, ChunkWithBorder, ChunkWithNeighbors,
     },
 };
 
@@ -159,11 +159,13 @@ fn build_chunks(
             continue;
         }
 
-        let Some(chunk) = chunks.0.get_chunk(chunk_pos) else {
+        let Some(chunk_with_neighbors) = create_chunk_with_neighbors(chunk_pos, &chunks) else {
             continue;
         };
 
-        let mesher_result = mesher.0.create_mesh(chunk);
+        let chunk_with_border: ChunkWithBorder = chunk_with_neighbors.into();
+
+        let mesher_result = mesher.0.create_mesh(&chunk_with_border);
         let (layers, mesher_warnings) = (mesher_result.layers, mesher_result.warnings);
         let chunk_mesh = build_chunk_mesh(&layers);
 
@@ -172,6 +174,37 @@ fn build_chunks(
         data.built_chunks.insert(chunk_pos);
         built_chunks.write(ChunkBuilt(chunk_pos, chunk_mesh));
     }
+}
+
+fn create_chunk_with_neighbors(
+    origin_pos: ChunkPos,
+    chunks: &ChunkStorage,
+) -> Option<ChunkWithNeighbors> {
+    let origin_chunk = chunks.0.get_chunk(origin_pos).cloned()?;
+
+    let neighbors: [Chunk; 6] = BlockSide::iterator()
+        .map(|side| {
+            let dir: Direction = (*side).into();
+            let dif = dir * CHUNK_SIZE as isize;
+
+            let neighbor_pos = ChunkPos::new(
+                origin_pos.x + dif.x,
+                origin_pos.y + dif.y,
+                origin_pos.z + dif.z,
+            );
+
+            chunks.0
+                .get_chunk(neighbor_pos)
+                .cloned().unwrap_or_default()
+        })
+        .collect::<Vec<_>>()
+        .try_into()
+        .ok()?;
+
+    Some(ChunkWithNeighbors {
+        chunk: origin_chunk,
+        neighbors,
+    })
 }
 
 fn build_chunk_mesh(layers: &HashMap<u8, ChunkMeshData>) -> ChunkMesh {
