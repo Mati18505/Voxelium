@@ -78,6 +78,7 @@ impl fmt::Debug for BuilderResources {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("BuilderResources")
             .field("pending_chunk_queue", &self.pending_chunk_queue)
+            .field("built_chunks", &self.built_chunks.len())
             .field("desired_chunks", &self.desired_chunks.len())
             .finish()
     }
