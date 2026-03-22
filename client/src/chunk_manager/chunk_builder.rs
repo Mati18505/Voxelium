@@ -34,6 +34,7 @@ pub struct ChunkBuilderConfig {
     pub max_builds_per_frame: usize,
     pub render_distance: usize,
     pub dynamic_vertical_loading: bool,
+    pub debug: bool,
 }
 
 pub struct ChunkBuilderPlugin(ChunkBuilderConfig);
@@ -227,7 +228,16 @@ fn log_warnings(timer: Res<DebugTimer>, mut warnings: ResMut<MesherWarningsAccum
     }
 }
 
-fn debug_state(mut timer: ResMut<DebugTimer>, time: Res<Time>, data: Res<BuilderResources>) {
+fn debug_state(
+    mut timer: ResMut<DebugTimer>,
+    time: Res<Time>,
+    data: Res<BuilderResources>,
+    config: Res<ChunkBuilderConfig>,
+) {
+    if !config.debug {
+        return;
+    }
+
     timer.0.tick(time.delta());
 
     if timer.0.is_finished() {

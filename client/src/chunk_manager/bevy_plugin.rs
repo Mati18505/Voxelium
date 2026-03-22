@@ -39,11 +39,13 @@ impl Plugin for ChunkManagerPlugin {
                 max_loads_per_frame: 64,
                 load_distance: 20,
                 dynamic_vertical_loading: false,
+                debug: false,
             }),
             ChunkBuilderPlugin::new(ChunkBuilderConfig {
                 max_builds_per_frame: 64,
                 render_distance: 19,
                 dynamic_vertical_loading: false,
+                debug: false,
             }),
             ChunkEntitiesPlugin,
         ))

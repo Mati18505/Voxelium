@@ -21,6 +21,7 @@ pub struct ChunkLoaderConfig {
     pub max_loads_per_frame: usize,
     pub load_distance: usize,
     pub dynamic_vertical_loading: bool,
+    pub debug: bool,
 }
 
 pub struct ChunkLoaderPlugin(ChunkLoaderConfig);
@@ -135,7 +136,16 @@ fn load_chunks(
     }
 }
 
-fn debug_state(mut timer: ResMut<DebugTimer>, time: Res<Time>, data: Res<LoaderResources>) {
+fn debug_state(
+    mut timer: ResMut<DebugTimer>,
+    time: Res<Time>,
+    data: Res<LoaderResources>,
+    config: Res<ChunkLoaderConfig>,
+) {
+    if !config.debug {
+        return;
+    }
+
     timer.0.tick(time.delta());
 
     if timer.0.is_finished() {
