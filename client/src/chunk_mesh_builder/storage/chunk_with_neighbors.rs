@@ -10,7 +10,7 @@ pub struct ChunkWithNeighbors<'a> {
 
 impl ChunkWithNeighbors<'_> {
     pub fn get_origin_block_storage(&self) -> &BlockStorage {
-        &self.chunk.get_block_storage()
+        self.chunk.get_block_storage()
     }
 
     /// If pos is in range of origin, get block from this chunk.
@@ -33,9 +33,9 @@ impl ChunkWithNeighbors<'_> {
             x, y, z
         );
 
-        if (0..size as isize).contains(&x)
-        && (0..size as isize).contains(&y)
-        && (0..size as isize).contains(&z)
+        if (0..size).contains(&x)
+        && (0..size).contains(&y)
+        && (0..size).contains(&z)
         {
             return self.chunk.get_block_storage().get_block(
                 BlockInChunkPos::new(x as usize, y as usize, z as usize),
