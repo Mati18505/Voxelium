@@ -9,6 +9,8 @@ pub struct BlockStorage {
 
 impl BlockStorage {
     pub fn new(blocks: Vec<BlockID>) -> Self {
+        assert!(blocks.len() == CHUNK_SIZE.pow(3));
+
         BlockStorage {
             block_types: blocks,
         }
@@ -28,5 +30,11 @@ impl BlockStorage {
 
     pub fn iter(&self) -> std::slice::Iter<'_, BlockID> {
         self.block_types.iter()
+    }
+}
+
+impl Default for BlockStorage {
+    fn default() -> Self {
+        Self::new(vec![0; CHUNK_SIZE.pow(3)])
     }
 }

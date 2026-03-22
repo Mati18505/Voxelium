@@ -19,7 +19,7 @@ impl TerrainGenerator {
 
     #[allow(unused)]
     pub fn generate_terrain(&mut self, chunk_pos: ChunkPos) -> BlockStorage {
-        let mut blocks = Chunk::default().get_block_storage().get_blocks().to_owned();
+        let mut blocks = BlockStorage::default().get_blocks().to_owned();
         let height_map = self.generate_height_map();
 
         for pos in BlockInChunkPosGenerator::new() {
