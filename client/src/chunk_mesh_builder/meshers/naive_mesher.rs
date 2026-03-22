@@ -6,7 +6,7 @@ use super::{ChunkMesher, MesherOutput, MesherWarning};
 use crate::{
     bevy_resources::RenderShapeStorage,
     chunk_mesh_builder::{
-        meshers::MesherWarnings, ChunkMeshData, ChunkWithBorder, FaceData, MaterialId, RenderShape,
+        meshers::MesherWarnings, ChunkMeshData, ChunkWithNeighbors, FaceData, MaterialId, RenderShape
     },
 };
 use shared::entities::*;
@@ -17,7 +17,7 @@ pub struct NaiveMesher {
 }
 
 impl ChunkMesher for NaiveMesher {
-    fn create_mesh(&self, chunk: &ChunkWithBorder) -> MesherOutput {
+    fn create_mesh(&self, chunk: &ChunkWithNeighbors) -> MesherOutput {
         let _ = info_span!(
             "naive_mesher_create_mesh",
             name = "naive_mesher_create_mesh"
@@ -26,7 +26,7 @@ impl ChunkMesher for NaiveMesher {
 
         let mut out: HashMap<MaterialId, ChunkMeshData> = Default::default();
         let mut warnings: MesherWarnings = Default::default();
-        let block_storage = chunk.get_block_storage();
+        let block_storage = chunk.get_origin_block_storage();
 
         for (index, block_id) in block_storage.iter().enumerate() {
             let pos = BlockInChunkPos::from_index(index);

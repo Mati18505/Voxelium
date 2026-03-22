@@ -19,7 +19,7 @@ use crate::{
     chunk_manager::{ChunkMesherResource, ChunkStorage, ChunkUpdated, ControllerPos},
     chunk_mesh_builder::{
         meshers::{MesherWarning, MesherWarnings},
-        ChunkMesh, ChunkMeshData, ChunkWithBorder, ChunkWithNeighbors,
+        ChunkMesh, ChunkMeshData, ChunkWithNeighbors,
     },
 };
 
@@ -163,9 +163,7 @@ fn build_chunks(
             continue;
         };
 
-        let chunk_with_border: ChunkWithBorder = chunk_with_neighbors.into();
-
-        let mesher_result = mesher.0.create_mesh(&chunk_with_border);
+        let mesher_result = mesher.0.create_mesh(&chunk_with_neighbors);
         let (layers, mesher_warnings) = (mesher_result.layers, mesher_result.warnings);
         let chunk_mesh = build_chunk_mesh(&layers);
 
@@ -176,30 +174,26 @@ fn build_chunks(
     }
 }
 
-fn create_chunk_with_neighbors(
+fn create_chunk_with_neighbors<'a>(
     origin_pos: ChunkPos,
-    chunks: &ChunkStorage,
-) -> Option<ChunkWithNeighbors> {
-    let origin_chunk = chunks.0.get_chunk(origin_pos).cloned()?;
+    chunks: &'a ChunkStorage,
+) -> Option<ChunkWithNeighbors<'a>> {
+    let origin_chunk = chunks.0.get_chunk(origin_pos)?;
 
-    let neighbors: [Chunk; 6] = BlockSide::iterator()
-        .map(|side| {
-            let dir: Direction = (*side).into();
-            let dif = dir * CHUNK_SIZE as isize;
+    let mut neighbors: [Option<&Chunk>; 6] = std::array::from_fn(|_| None);
 
-            let neighbor_pos = ChunkPos::new(
-                origin_pos.x + dif.x,
-                origin_pos.y + dif.y,
-                origin_pos.z + dif.z,
-            );
+    for (i, side) in BlockSide::iterator().enumerate() {
+        let dir: Direction = (*side).into();
+        let dif = dir * CHUNK_SIZE as isize;
 
-            chunks.0
-                .get_chunk(neighbor_pos)
-                .cloned().unwrap_or_default()
-        })
-        .collect::<Vec<_>>()
-        .try_into()
-        .ok()?;
+        let neighbor_pos = ChunkPos::new(
+            origin_pos.x + dif.x,
+            origin_pos.y + dif.y,
+            origin_pos.z + dif.z,
+        );
+
+        neighbors[i] = chunks.0.get_chunk(neighbor_pos);
+    }
 
     Some(ChunkWithNeighbors {
         chunk: origin_chunk,

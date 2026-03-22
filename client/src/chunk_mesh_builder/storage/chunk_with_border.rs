@@ -1,105 +1,131 @@
 use shared::entities::{
-    block_in_chunk_pos_generator::BlockInChunkPosGenerator, BlockInChunkPos, BlockStorage, Chunk,
-    CHUNK_SIZE,
+    BlockID, BlockInChunkPos, BlockStorage, Chunk, CHUNK_SIZE
 };
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct ChunkWithBorder {
-    block_storage: BlockStorage,
+pub struct ChunkWithNeighbors<'a> {
+    pub chunk: &'a Chunk,
+    pub neighbors: [Option<&'a Chunk>; 6],
 }
 
-impl ChunkWithBorder {
-    pub fn new(block_storage: BlockStorage) -> Self {
-        assert!(block_storage.iter().len() == (CHUNK_SIZE + 2).pow(3));
-
-        ChunkWithBorder { block_storage }
+impl ChunkWithNeighbors<'_> {
+    pub fn get_origin_block_storage(&self) -> &BlockStorage {
+        &self.chunk.get_block_storage()
     }
 
-    pub fn get_block_storage(&self) -> &BlockStorage {
-        &self.block_storage
-    }
-}
+    /// If pos is in range of origin, get block from this chunk.
+    /// Else, if neighbor exist, get block from neighbor.
+    /// Else return air.
+    /// Does not handle diagonal neighbors.
+    fn get(&self, x: isize, y: isize, z: isize) -> BlockID {
+        let size = CHUNK_SIZE as isize;
 
-impl Default for ChunkWithBorder {
-    fn default() -> Self {
-        let block_storage = BlockStorage::new(vec![0; (CHUNK_SIZE + 2).pow(3)]);
-        Self::new(block_storage)
-    }
-}
+        let out_x = x < 0 || x >= size;
+        let out_y = y < 0 || y >= size;
+        let out_z = z < 0 || z >= size;
 
-pub struct ChunkWithNeighbors {
-    pub chunk: Chunk,
-    pub neighbors: [Chunk; 6],
-}
+        let out_count = out_x as u8 + out_y as u8 + out_z as u8;
 
-impl Into<ChunkWithBorder> for ChunkWithNeighbors {
-    fn into(self) -> ChunkWithBorder {
-        let size = CHUNK_SIZE + 2;
-        let mut data = vec![0; size.pow(3)];
+        debug_assert!(
+            out_count <= 1,
+            "Diagonal access not supported: ({}, {}, {})",
+            x, y, z
+        );
 
-        let idx = |x: usize, y: usize, z: usize| -> usize { x + size * (y + size * z) };
-
-        // original chunk
-        for source_pos in BlockInChunkPosGenerator::new() {
-            data[idx(source_pos.x + 1, source_pos.y + 1, source_pos.z + 1)] =
-                self.chunk.get_block_storage().get_block(source_pos);
+        if (0..size as isize).contains(&x)
+        && (0..size as isize).contains(&y)
+        && (0..size as isize).contains(&z)
+        {
+            return self.chunk.get_block_storage().get_block(
+                BlockInChunkPos::new(x as usize, y as usize, z as usize),
+            );
         }
 
-        // neighbors
         let [nz_pos, nz_neg, nx_pos, nx_neg, ny_pos, ny_neg] = self.neighbors;
 
-        // -X
-        for y in 0..CHUNK_SIZE {
-            for z in 0..CHUNK_SIZE {
-                let source_pos = BlockInChunkPos::new(CHUNK_SIZE - 1, y, z);
-                data[idx(0, y + 1, z + 1)] = nx_neg.get_block_storage().get_block(source_pos);
+        if x < 0 {
+            if let Some(nx_neg) = nx_neg {
+                return nx_neg.get_block_storage().get_block(
+                    BlockInChunkPos::new(
+                        (size - 1) as usize,
+                        y.clamp(0, size - 1) as usize,
+                        z.clamp(0, size - 1) as usize,
+                    ),
+                );
+            } else {
+                return BlockID::default();
             }
         }
 
-        // +X
-        for y in 0..CHUNK_SIZE {
-            for z in 0..CHUNK_SIZE {
-                let source_pos = BlockInChunkPos::new(0, y, z);
-                data[idx(CHUNK_SIZE + 1, y + 1, z + 1)] =
-                    nx_pos.get_block_storage().get_block(source_pos);
+        if x >= size {
+            if let Some(nx_pos) = nx_pos {
+                return nx_pos.get_block_storage().get_block(
+                    BlockInChunkPos::new(
+                        0,
+                        y.clamp(0, size - 1) as usize,
+                        z.clamp(0, size - 1) as usize,
+                    ),
+                );
+            } else {
+                return BlockID::default();
             }
         }
 
-        // -Y
-        for x in 0..CHUNK_SIZE {
-            for z in 0..CHUNK_SIZE {
-                let source_pos = BlockInChunkPos::new(x, CHUNK_SIZE - 1, z);
-                data[idx(x + 1, 0, z + 1)] = ny_neg.get_block_storage().get_block(source_pos);
+        if y < 0 {
+            if let Some(ny_neg) = ny_neg {
+                return ny_neg.get_block_storage().get_block(
+                    BlockInChunkPos::new(
+                        x.clamp(0, size - 1) as usize,
+                        (size - 1) as usize,
+                        z.clamp(0, size - 1) as usize,
+                    ),
+                );
+            } else {
+                return BlockID::default();
             }
         }
 
-        // +Y
-        for x in 0..CHUNK_SIZE {
-            for z in 0..CHUNK_SIZE {
-                let source_pos = BlockInChunkPos::new(x, 0, z);
-                data[idx(x + 1, CHUNK_SIZE + 1, z + 1)] =
-                    ny_pos.get_block_storage().get_block(source_pos);
+        if y >= size {
+            if let Some(ny_pos) = ny_pos {
+                return ny_pos.get_block_storage().get_block(
+                    BlockInChunkPos::new(
+                        x.clamp(0, size - 1) as usize,
+                        0,
+                        z.clamp(0, size - 1) as usize,
+                    ),
+                );
+            } else {
+                return BlockID::default();
             }
         }
 
-        // -Z
-        for x in 0..CHUNK_SIZE {
-            for y in 0..CHUNK_SIZE {
-                let source_pos = BlockInChunkPos::new(x, y, CHUNK_SIZE - 1);
-                data[idx(x + 1, y + 1, 0)] = nz_neg.get_block_storage().get_block(source_pos);
+        if z < 0 {
+            if let Some(nz_neg) = nz_neg {
+                return nz_neg.get_block_storage().get_block(
+                    BlockInChunkPos::new(
+                        x.clamp(0, size - 1) as usize,
+                        y.clamp(0, size - 1) as usize,
+                        (size - 1) as usize,
+                    ),
+                );
+            } else {
+                return BlockID::default();
             }
         }
 
-        // +Z
-        for x in 0..CHUNK_SIZE {
-            for y in 0..CHUNK_SIZE {
-                let source_pos = BlockInChunkPos::new(x, y, 0);
-                data[idx(x + 1, y + 1, CHUNK_SIZE + 1)] =
-                    nz_pos.get_block_storage().get_block(source_pos);
+        if z >= size {
+            if let Some(nz_pos) = nz_pos {
+                return nz_pos.get_block_storage().get_block(
+                    BlockInChunkPos::new(
+                        x.clamp(0, size - 1) as usize,
+                        y.clamp(0, size - 1) as usize,
+                        0,
+                    ),
+                );
+            } else {
+                return BlockID::default();
             }
         }
 
-        let block_storage = BlockStorage::new(data);
-        ChunkWithBorder::new(block_storage)
+        unreachable!()
     }
 }
