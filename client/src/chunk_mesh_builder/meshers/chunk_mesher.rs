@@ -1,9 +1,9 @@
 use std::{collections::HashMap, fmt::Debug};
 use thiserror::Error;
 
-use shared::entities::{BlockID, Chunk};
+use shared::entities::BlockID;
 
-use crate::chunk_mesh_builder::{ChunkMeshData, MaterialId};
+use crate::chunk_mesh_builder::{ChunkMeshData, ChunkWithBorder, MaterialId};
 
 #[derive(Debug, Error, Clone, PartialEq, Eq, Hash)]
 pub enum MesherWarning {
@@ -24,5 +24,5 @@ pub struct MesherOutput {
 pub trait ChunkMesher: Send + Sync + Debug {
     /// Creates chunk mesh data based on its data.
     /// Mesh is always created to the end, warnings don't interrupt mesh creation.
-    fn create_mesh(&self, chunk: &Chunk) -> MesherOutput;
+    fn create_mesh(&self, chunk: &ChunkWithBorder) -> MesherOutput;
 }

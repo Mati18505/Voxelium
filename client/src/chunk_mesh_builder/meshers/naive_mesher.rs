@@ -6,7 +6,7 @@ use super::{ChunkMesher, MesherOutput, MesherWarning};
 use crate::{
     bevy_resources::RenderShapeStorage,
     chunk_mesh_builder::{
-        meshers::MesherWarnings, ChunkMeshData, FaceData, MaterialId, RenderShape,
+        meshers::MesherWarnings, ChunkMeshData, ChunkWithBorder, FaceData, MaterialId, RenderShape
     },
 };
 use shared::entities::*;
@@ -17,7 +17,7 @@ pub struct NaiveMesher {
 }
 
 impl ChunkMesher for NaiveMesher {
-    fn create_mesh(&self, chunk: &Chunk) -> MesherOutput {
+    fn create_mesh(&self, chunk: &ChunkWithBorder) -> MesherOutput {
         let _ = info_span!(
             "naive_mesher_create_mesh",
             name = "naive_mesher_create_mesh"
