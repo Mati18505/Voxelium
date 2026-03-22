@@ -41,7 +41,11 @@ impl Plugin for ChunkLoaderPlugin {
             .add_message::<ChunkUnloaded>()
             .add_systems(
                 Update,
-                (update_desired_chunks, load_chunks, debug_state)
+                (
+                    update_desired_chunks.run_if(resource_changed::<ControllerPos>),
+                    load_chunks,
+                    debug_state,
+                )
                     .run_if(in_state(AppStates::InGame)),
             );
     }

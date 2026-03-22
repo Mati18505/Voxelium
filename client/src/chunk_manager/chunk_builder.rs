@@ -56,7 +56,7 @@ impl Plugin for ChunkBuilderPlugin {
             .add_systems(
                 Update,
                 (
-                    update_desired_chunks,
+                    update_desired_chunks.run_if(resource_changed::<ControllerPos>),
                     rebuild_chunks,
                     build_chunks,
                     log_warnings,

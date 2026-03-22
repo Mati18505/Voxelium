@@ -177,5 +177,7 @@ fn on_position_change(
     let new_block_pos = BlockPos::new(new_pos.x as isize, new_pos.y as isize, new_pos.z as isize);
     let new_chunk_pos = ChunkPos::from(new_block_pos);
 
-    controller_pos.0 = new_chunk_pos;
+    if controller_pos.0 != new_chunk_pos {
+        controller_pos.0 = new_chunk_pos;
+    }
 }
