@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use bevy::log::info_span;
+use cgmath::Vector3;
 
 use super::{ChunkMesher, MesherOutput, MesherWarning};
 use crate::{
@@ -41,7 +42,7 @@ impl ChunkMesher for NaiveMesher {
                         render_shape,
                         BlockInChunkPos::new(pos.x, pos.y, pos.z),
                         layer_mesh,
-                        block_storage,
+                        chunk,
                         &mut warnings,
                     );
                 }
@@ -73,7 +74,7 @@ impl NaiveMesher {
         render_shape: &RenderShape,
         pos: BlockInChunkPos,
         out: &mut ChunkMeshData,
-        block_storage: &BlockStorage,
+        chunk: &ChunkWithNeighbors,
         warnings: &mut MesherWarnings,
     ) {
         if !render_shape.render_data().visible {
@@ -81,7 +82,7 @@ impl NaiveMesher {
         }
 
         for side in BlockSide::iterator().copied() {
-            let result = self.has_translucent_neighbor(side, pos, block_storage);
+            let result = self.has_translucent_neighbor(side, pos, chunk);
 
             let has_transparent_neighbor = match result {
                 Err(err) => {
@@ -101,25 +102,26 @@ impl NaiveMesher {
         &self,
         side: BlockSide,
         pos: BlockInChunkPos,
-        block_storage: &BlockStorage,
+        chunk: &ChunkWithNeighbors,
     ) -> Result<bool, MesherWarning> {
-        if let Some(neighbor_pos) = self.get_neighbor_pos(pos, side) {
-            let neighbor_id: BlockID = block_storage.get_block(neighbor_pos);
-            let neighbor_render_shape: &RenderShape = self
-                .render_shape_storage
-                .get_by_id(neighbor_id as usize)
-                .ok_or(MesherWarning::UnknownRenderShape(neighbor_id))?;
+        let neighbor_pos = self.get_neighbor_pos(pos, side);
+        let neighbor_id: BlockID = chunk.get(neighbor_pos);
+        let neighbor_render_shape: &RenderShape = self
+            .render_shape_storage
+            .get_by_id(neighbor_id as usize)
+            .ok_or(MesherWarning::UnknownRenderShape(neighbor_id))?;
 
-            return Ok(neighbor_render_shape.render_data().translucent);
-        }
-
-        Ok(true)
+        Ok(neighbor_render_shape.render_data().translucent)
     }
 
-    fn get_neighbor_pos(&self, pos: BlockInChunkPos, side: BlockSide) -> Option<BlockInChunkPos> {
-        let neighbor_dir = Direction::from(side);
+    fn get_neighbor_pos(&self, pos: BlockInChunkPos, side: BlockSide) -> Vector3<isize> {
+        let dir = Direction::from(side);
 
-        pos.checked_add(neighbor_dir)
+        let x = pos.x as isize + dir.x;
+        let y = pos.y as isize + dir.y;
+        let z = pos.z as isize + dir.z;
+
+        Vector3::<isize>::new(x, y, z)
     }
 
     fn create_face(

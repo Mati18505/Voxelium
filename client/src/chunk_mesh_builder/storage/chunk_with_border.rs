@@ -1,3 +1,4 @@
+use cgmath::Vector3;
 use shared::entities::{
     BlockID, BlockInChunkPos, BlockStorage, Chunk, CHUNK_SIZE
 };
@@ -16,7 +17,8 @@ impl ChunkWithNeighbors<'_> {
     /// Else, if neighbor exist, get block from neighbor.
     /// Else return air.
     /// Does not handle diagonal neighbors.
-    fn get(&self, x: isize, y: isize, z: isize) -> BlockID {
+    pub fn get(&self, pos: Vector3<isize>) -> BlockID {
+        let (x, y, z) = (pos.x, pos.y, pos.z);
         let size = CHUNK_SIZE as isize;
 
         let out_x = x < 0 || x >= size;
