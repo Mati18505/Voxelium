@@ -51,6 +51,7 @@ impl Plugin for ChunkLoaderPlugin {
 struct LoaderResources {
     pending_chunk_queue: PendingChunkQueue,
     loaded_chunks: HashSet<ChunkPos>,
+    desired_chunks: HashSet<ChunkPos>,
 }
 
 impl fmt::Debug for LoaderResources {
@@ -58,6 +59,7 @@ impl fmt::Debug for LoaderResources {
         f.debug_struct("LoaderResources")
             .field("pending_chunk_queue", &self.pending_chunk_queue)
             .field("loaded_chunks", &self.loaded_chunks.len())
+            .field("desired_chunks", &self.desired_chunks.len())
             .finish()
     }
 }
@@ -103,6 +105,8 @@ fn update_desired_chunks(
     for pos in to_add {
         data.pending_chunk_queue.add_chunk(pos);
     }
+
+    data.desired_chunks = desired;
 }
 
 fn load_chunks(
@@ -116,6 +120,10 @@ fn load_chunks(
         .pending_chunk_queue
         .take_nearest_chunks(config.max_loads_per_frame, player_pos.0)
     {
+        if !data.desired_chunks.contains(&chunk_pos) {
+            continue;
+        }
+
         let chunk = chunk_provider.0.load_chunk(chunk_pos);
 
         data.loaded_chunks.insert(chunk_pos);

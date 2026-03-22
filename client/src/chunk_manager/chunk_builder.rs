@@ -71,12 +71,14 @@ impl Plugin for ChunkBuilderPlugin {
 struct BuilderResources {
     pending_chunk_queue: PendingChunkQueue,
     built_chunks: HashSet<ChunkPos>,
+    desired_chunks: HashSet<ChunkPos>,
 }
 
 impl fmt::Debug for BuilderResources {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("AsyncChunkBuilder")
+        f.debug_struct("BuilderResources")
             .field("pending_chunk_queue", &self.pending_chunk_queue)
+            .field("desired_chunks", &self.desired_chunks.len())
             .finish()
     }
 }
@@ -125,6 +127,8 @@ fn update_desired_chunks(
     for pos in to_add {
         data.pending_chunk_queue.add_chunk(pos);
     }
+
+    data.desired_chunks = desired;
 }
 
 fn rebuild_chunks(
@@ -149,6 +153,10 @@ fn build_chunks(
         .pending_chunk_queue
         .take_nearest_chunks(config.max_builds_per_frame, player_pos.0)
     {
+        if !data.desired_chunks.contains(&chunk_pos) {
+            continue;
+        }
+
         let Some(chunk) = chunks.0.get_chunk(chunk_pos) else {
             continue;
         };

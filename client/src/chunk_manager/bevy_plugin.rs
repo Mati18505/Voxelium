@@ -36,7 +36,7 @@ impl Plugin for ChunkManagerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             ChunkLoaderPlugin::new(ChunkLoaderConfig {
-                max_loads_per_frame: 64,
+                max_loads_per_frame: 16,
                 load_distance: 20,
                 dynamic_vertical_loading: false,
             }),
