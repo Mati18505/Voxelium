@@ -1,8 +1,7 @@
 use rand::{rngs::ThreadRng, Rng};
 
 use crate::entities::{
-    block_in_chunk_pos_generator::BlockInChunkPosGenerator, name_to_block_id, BlockID,
-    BlockStorage, ChunkPos, CHUNK_SIZE,
+    block_in_chunk_pos_generator::BlockInChunkPosGenerator, name_to_block_id, BlockID, BlockStorage, Chunk, ChunkPos, CHUNK_SIZE
 };
 
 #[derive(Debug, Clone)]
@@ -19,7 +18,7 @@ impl TerrainGenerator {
 
     #[allow(unused)]
     pub fn generate_terrain(&mut self, chunk_pos: ChunkPos) -> BlockStorage {
-        let mut blocks = BlockStorage::default().get_blocks().to_owned();
+        let mut blocks = Chunk::default().get_block_storage().get_blocks().to_owned();
         let height_map = self.generate_height_map();
 
         for pos in BlockInChunkPosGenerator::new() {
