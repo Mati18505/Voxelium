@@ -117,6 +117,7 @@ fn update_desired_chunks(
     let to_remove: Vec<ChunkPos> = data
         .built_chunks
         .iter()
+        .chain(data.pending_chunk_queue.iter())
         .filter(|pos| !desired.contains(pos))
         .cloned()
         .collect();
@@ -267,7 +268,6 @@ fn debug_state(
     time: Res<Time>,
     data: Res<BuilderResources>,
     config: Res<ChunkBuilderConfig>,
-    player_pos: Res<ControllerPos>,
 ) {
     if !config.debug {
         return;
@@ -277,6 +277,5 @@ fn debug_state(
 
     if timer.0.is_finished() {
         info!("{:?}", data);
-        info!("{:?}", player_pos.0);
     }
 }
