@@ -1,6 +1,7 @@
 use std::{
     collections::{HashMap, HashSet},
     fmt,
+    slice::Iter,
     time::Duration,
 };
 
@@ -139,7 +140,21 @@ fn rebuild_chunks(
 ) {
     for ChunkUpdated(pos, _chunk) in chunks_updated.read() {
         data.pending_chunk_queue.add_chunk(*pos);
+
+        for pos in iter_neighbors(*pos) {
+            data.pending_chunk_queue.add_chunk(pos);
+            warn!("enqueue_neighbor {pos:?}");
+        }
     }
+}
+
+fn iter_neighbors(pos: ChunkPos) -> impl Iterator<Item = ChunkPos> {
+    BlockSide::iterator().map(move |side| {
+        let dir = Direction::from(*side);
+        let dif = dir * CHUNK_SIZE as isize;
+
+        ChunkPos::new(pos.x + dif.x, pos.y + dif.y, pos.z + dif.z)
+    })
 }
 
 fn build_chunks(
@@ -260,6 +275,7 @@ fn debug_state(
     time: Res<Time>,
     data: Res<BuilderResources>,
     config: Res<ChunkBuilderConfig>,
+    player_pos: Res<ControllerPos>,
 ) {
     if !config.debug {
         return;
@@ -269,5 +285,6 @@ fn debug_state(
 
     if timer.0.is_finished() {
         info!("{:?}", data);
+        info!("{:?}", player_pos.0);
     }
 }

@@ -1,7 +1,5 @@
 use cgmath::Vector3;
-use shared::entities::{
-    BlockID, BlockInChunkPos, BlockStorage, Chunk, CHUNK_SIZE
-};
+use shared::entities::{BlockID, BlockInChunkPos, BlockStorage, Chunk, CHUNK_SIZE};
 
 pub struct ChunkWithNeighbors<'a> {
     pub chunk: &'a Chunk,
@@ -30,29 +28,27 @@ impl ChunkWithNeighbors<'_> {
         debug_assert!(
             out_count <= 1,
             "Diagonal access not supported: ({}, {}, {})",
-            x, y, z
+            x,
+            y,
+            z
         );
 
-        if (0..size).contains(&x)
-        && (0..size).contains(&y)
-        && (0..size).contains(&z)
-        {
-            return self.chunk.get_block_storage().get_block(
-                BlockInChunkPos::new(x as usize, y as usize, z as usize),
-            );
+        if (0..size).contains(&x) && (0..size).contains(&y) && (0..size).contains(&z) {
+            return self
+                .chunk
+                .get_block_storage()
+                .get_block(BlockInChunkPos::new(x as usize, y as usize, z as usize));
         }
 
         let [nz_pos, nz_neg, nx_pos, nx_neg, ny_pos, ny_neg] = self.neighbors;
 
         if x < 0 {
             if let Some(nx_neg) = nx_neg {
-                return nx_neg.get_block_storage().get_block(
-                    BlockInChunkPos::new(
-                        (size - 1) as usize,
-                        y.clamp(0, size - 1) as usize,
-                        z.clamp(0, size - 1) as usize,
-                    ),
-                );
+                return nx_neg.get_block_storage().get_block(BlockInChunkPos::new(
+                    (size - 1) as usize,
+                    y.clamp(0, size - 1) as usize,
+                    z.clamp(0, size - 1) as usize,
+                ));
             } else {
                 return BlockID::default();
             }
@@ -60,13 +56,11 @@ impl ChunkWithNeighbors<'_> {
 
         if x >= size {
             if let Some(nx_pos) = nx_pos {
-                return nx_pos.get_block_storage().get_block(
-                    BlockInChunkPos::new(
-                        0,
-                        y.clamp(0, size - 1) as usize,
-                        z.clamp(0, size - 1) as usize,
-                    ),
-                );
+                return nx_pos.get_block_storage().get_block(BlockInChunkPos::new(
+                    0,
+                    y.clamp(0, size - 1) as usize,
+                    z.clamp(0, size - 1) as usize,
+                ));
             } else {
                 return BlockID::default();
             }
@@ -74,13 +68,11 @@ impl ChunkWithNeighbors<'_> {
 
         if y < 0 {
             if let Some(ny_neg) = ny_neg {
-                return ny_neg.get_block_storage().get_block(
-                    BlockInChunkPos::new(
-                        x.clamp(0, size - 1) as usize,
-                        (size - 1) as usize,
-                        z.clamp(0, size - 1) as usize,
-                    ),
-                );
+                return ny_neg.get_block_storage().get_block(BlockInChunkPos::new(
+                    x.clamp(0, size - 1) as usize,
+                    (size - 1) as usize,
+                    z.clamp(0, size - 1) as usize,
+                ));
             } else {
                 return BlockID::default();
             }
@@ -88,13 +80,11 @@ impl ChunkWithNeighbors<'_> {
 
         if y >= size {
             if let Some(ny_pos) = ny_pos {
-                return ny_pos.get_block_storage().get_block(
-                    BlockInChunkPos::new(
-                        x.clamp(0, size - 1) as usize,
-                        0,
-                        z.clamp(0, size - 1) as usize,
-                    ),
-                );
+                return ny_pos.get_block_storage().get_block(BlockInChunkPos::new(
+                    x.clamp(0, size - 1) as usize,
+                    0,
+                    z.clamp(0, size - 1) as usize,
+                ));
             } else {
                 return BlockID::default();
             }
@@ -102,13 +92,11 @@ impl ChunkWithNeighbors<'_> {
 
         if z < 0 {
             if let Some(nz_neg) = nz_neg {
-                return nz_neg.get_block_storage().get_block(
-                    BlockInChunkPos::new(
-                        x.clamp(0, size - 1) as usize,
-                        y.clamp(0, size - 1) as usize,
-                        (size - 1) as usize,
-                    ),
-                );
+                return nz_neg.get_block_storage().get_block(BlockInChunkPos::new(
+                    x.clamp(0, size - 1) as usize,
+                    y.clamp(0, size - 1) as usize,
+                    (size - 1) as usize,
+                ));
             } else {
                 return BlockID::default();
             }
@@ -116,13 +104,11 @@ impl ChunkWithNeighbors<'_> {
 
         if z >= size {
             if let Some(nz_pos) = nz_pos {
-                return nz_pos.get_block_storage().get_block(
-                    BlockInChunkPos::new(
-                        x.clamp(0, size - 1) as usize,
-                        y.clamp(0, size - 1) as usize,
-                        0,
-                    ),
-                );
+                return nz_pos.get_block_storage().get_block(BlockInChunkPos::new(
+                    x.clamp(0, size - 1) as usize,
+                    y.clamp(0, size - 1) as usize,
+                    0,
+                ));
             } else {
                 return BlockID::default();
             }
