@@ -144,7 +144,6 @@ fn rebuild_chunks(
 
         for pos in iter_neighbors(*pos) {
             data.pending_chunk_queue.add_chunk(pos);
-            warn!("enqueue_neighbor {pos:?}");
         }
     }
 }
@@ -176,6 +175,7 @@ fn build_chunks(
         }
 
         let Some(chunk_with_neighbors) = create_chunk_with_neighbors(chunk_pos, &chunks) else {
+            data.pending_chunk_queue.add_chunk(chunk_pos);
             continue;
         };
 
@@ -190,6 +190,7 @@ fn build_chunks(
     }
 }
 
+/// Creates `ChunkWithNeighbors` if chunk and all neighbors are loaded, else returns None.
 fn create_chunk_with_neighbors<'a>(
     origin_pos: ChunkPos,
     chunks: &'a ChunkStorage,
@@ -202,6 +203,12 @@ fn create_chunk_with_neighbors<'a>(
         let pos = iter.next().unwrap();
         chunks.0.get_chunk(pos)
     });
+
+    for side in BlockSide::iterator() {
+        if *side != BlockSide::Top && *side != BlockSide::Bottom && neighbors[*side as usize].is_none() {
+            return None;
+        }
+    }
 
     Some(ChunkWithNeighbors {
         chunk: origin_chunk,
