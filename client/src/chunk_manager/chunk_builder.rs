@@ -195,20 +195,12 @@ fn create_chunk_with_neighbors<'a>(
 ) -> Option<ChunkWithNeighbors<'a>> {
     let origin_chunk = chunks.0.get_chunk(origin_pos)?;
 
-    let mut neighbors: [Option<&Chunk>; 6] = std::array::from_fn(|_| None);
+    let mut iter = iter_neighbors(origin_pos);
 
-    for (i, side) in BlockSide::iterator().enumerate() {
-        let dir: Direction = (*side).into();
-        let dif = dir * CHUNK_SIZE as isize;
-
-        let neighbor_pos = ChunkPos::new(
-            origin_pos.x + dif.x,
-            origin_pos.y + dif.y,
-            origin_pos.z + dif.z,
-        );
-
-        neighbors[i] = chunks.0.get_chunk(neighbor_pos);
-    }
+    let neighbors: [Option<&Chunk>; 6] = std::array::from_fn(|_| {
+        let pos = iter.next().unwrap();
+        chunks.0.get_chunk(pos)
+    });
 
     Some(ChunkWithNeighbors {
         chunk: origin_chunk,
