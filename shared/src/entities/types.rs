@@ -164,8 +164,8 @@ impl From<BlockPos> for BlockInChunkPos {
 pub enum BlockSide {
     Front,
     Back,
-    Left,
     Right,
+    Left,
     Top,
     Bottom,
 }
@@ -174,7 +174,7 @@ impl BlockSide {
     pub fn iterator() -> Iter<'static, BlockSide> {
         use BlockSide::*;
 
-        static SIDES: [BlockSide; 6] = [Front, Back, Left, Right, Top, Bottom];
+        static SIDES: [BlockSide; 6] = [Front, Back, Right, Left, Top, Bottom];
         SIDES.iter()
     }
 }
