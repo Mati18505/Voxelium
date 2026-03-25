@@ -61,6 +61,10 @@ impl PendingChunkQueue {
         self.index_map.contains_key(&pos)
     }
 
+    pub fn iter(&self) -> impl Iterator<Item = &ChunkPos> {
+        self.pending_chunks.iter()
+    }
+
     /// This doesn't rebuild the index map.
     fn move_k_nearest_chunks_to_back(&mut self, k: usize, player_pos: ChunkPos) {
         if self.pending_chunks.is_empty() || k == 0 {

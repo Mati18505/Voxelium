@@ -97,6 +97,7 @@ fn update_desired_chunks(
     let to_remove: Vec<ChunkPos> = data
         .loaded_chunks
         .iter()
+        .chain(data.pending_chunk_queue.iter())
         .filter(|pos| !desired.contains(pos))
         .cloned()
         .collect();

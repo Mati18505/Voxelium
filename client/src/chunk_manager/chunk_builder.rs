@@ -8,8 +8,8 @@ use bevy::prelude::*;
 use shared::{
     chunk_io::pending_chunk_queue::PendingChunkQueue,
     entities::{
-        iterate_over_block_registry, BlockID, ChunkPos, ChunkPosGenerator2D, ChunkPosGenerator3D,
-        ChunkRepository,
+        iterate_over_block_registry, BlockID, BlockSide, Chunk, ChunkPos, ChunkPosGenerator2D,
+        ChunkPosGenerator3D, ChunkRepository, Direction, CHUNK_SIZE,
     },
 };
 
@@ -19,7 +19,7 @@ use crate::{
     chunk_manager::{ChunkMesherResource, ChunkStorage, ChunkUpdated, ControllerPos},
     chunk_mesh_builder::{
         meshers::{MesherWarning, MesherWarnings},
-        ChunkMesh, ChunkMeshData,
+        ChunkMesh, ChunkMeshData, ChunkWithNeighbors,
     },
 };
 
@@ -116,6 +116,7 @@ fn update_desired_chunks(
     let to_remove: Vec<ChunkPos> = data
         .built_chunks
         .iter()
+        .chain(data.pending_chunk_queue.iter())
         .filter(|pos| !desired.contains(pos))
         .cloned()
         .collect();
@@ -139,7 +140,20 @@ fn rebuild_chunks(
 ) {
     for ChunkUpdated(pos, _chunk) in chunks_updated.read() {
         data.pending_chunk_queue.add_chunk(*pos);
+
+        for pos in iter_neighbors(*pos) {
+            data.pending_chunk_queue.add_chunk(pos);
+        }
     }
+}
+
+fn iter_neighbors(pos: ChunkPos) -> impl Iterator<Item = ChunkPos> {
+    BlockSide::iterator().map(move |side| {
+        let dir = Direction::from(*side);
+        let dif = dir * CHUNK_SIZE as isize;
+
+        ChunkPos::new(pos.x + dif.x, pos.y + dif.y, pos.z + dif.z)
+    })
 }
 
 fn build_chunks(
@@ -159,11 +173,12 @@ fn build_chunks(
             continue;
         }
 
-        let Some(chunk) = chunks.0.get_chunk(chunk_pos) else {
+        let Some(chunk_with_neighbors) = create_chunk_with_neighbors(chunk_pos, &chunks) else {
+            data.pending_chunk_queue.add_chunk(chunk_pos);
             continue;
         };
 
-        let mesher_result = mesher.0.create_mesh(chunk);
+        let mesher_result = mesher.0.create_mesh(&chunk_with_neighbors);
         let (layers, mesher_warnings) = (mesher_result.layers, mesher_result.warnings);
         let chunk_mesh = build_chunk_mesh(&layers);
 
@@ -172,6 +187,35 @@ fn build_chunks(
         data.built_chunks.insert(chunk_pos);
         built_chunks.write(ChunkBuilt(chunk_pos, chunk_mesh));
     }
+}
+
+/// Creates `ChunkWithNeighbors` if chunk and all neighbors are loaded, else returns None.
+fn create_chunk_with_neighbors<'a>(
+    origin_pos: ChunkPos,
+    chunks: &'a ChunkStorage,
+) -> Option<ChunkWithNeighbors<'a>> {
+    let origin_chunk = chunks.0.get_chunk(origin_pos)?;
+
+    let mut iter = iter_neighbors(origin_pos);
+
+    let neighbors: [Option<&Chunk>; 6] = std::array::from_fn(|_| {
+        let pos = iter.next().unwrap();
+        chunks.0.get_chunk(pos)
+    });
+
+    for side in BlockSide::iterator() {
+        if *side != BlockSide::Top
+            && *side != BlockSide::Bottom
+            && neighbors[*side as usize].is_none()
+        {
+            return None;
+        }
+    }
+
+    Some(ChunkWithNeighbors {
+        chunk: origin_chunk,
+        neighbors,
+    })
 }
 
 fn build_chunk_mesh(layers: &HashMap<u8, ChunkMeshData>) -> ChunkMesh {
