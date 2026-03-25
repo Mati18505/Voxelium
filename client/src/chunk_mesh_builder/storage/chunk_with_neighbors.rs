@@ -18,37 +18,28 @@ impl ChunkWithNeighbors<'_> {
     /// Else return air.
     /// Does not handle diagonal neighbors.
     pub fn get(&self, pos: Vector3<isize>) -> BlockID {
-        let (x, y, z) = (pos.x, pos.y, pos.z);
         let size = CHUNK_SIZE as isize;
 
-        let out_x = x < 0 || x >= size;
-        let out_y = y < 0 || y >= size;
-        let out_z = z < 0 || z >= size;
-
-        let out_count = out_x as u8 + out_y as u8 + out_z as u8;
-
         debug_assert!(
-            out_count <= 1,
+            Self::is_diagonal(pos.x, pos.y, pos.z),
             "Diagonal access not supported: ({}, {}, {})",
-            x,
-            y,
-            z
+            pos.x,
+            pos.y,
+            pos.z
         );
 
-        if (0..size).contains(&x) && (0..size).contains(&y) && (0..size).contains(&z) {
+        if (0..size).contains(&pos.x) && (0..size).contains(&pos.y) && (0..size).contains(&pos.z) {
             return self
                 .chunk
                 .get_block_storage()
-                .get_block(BlockInChunkPos::new(x as usize, y as usize, z as usize));
+                .get_block(BlockInChunkPos::new(pos.x as usize, pos.y as usize, pos.z as usize));
         }
 
         for side in BlockSide::iterator() {
-            let dir = Direction::from(*side);
-            let dif = dir * CHUNK_SIZE as isize;
-            let block_pos: Vector3<isize> = pos - dif;
+            let local_pos = pos - Direction::from(*side) * size;
 
             if let Some(neighbor) = self.neighbors[*side as usize] {
-                if let Some(block) = Self::get_block_checked(neighbor, block_pos) {
+                if let Some(block) = Self::get_block_checked(neighbor, local_pos) {
                     return block;
                 }
             }
@@ -69,5 +60,17 @@ impl ChunkWithNeighbors<'_> {
         } else {
             None
         }
+    }
+
+    fn is_diagonal(x: isize, y: isize, z: isize) -> bool {
+        let size = CHUNK_SIZE as isize;
+
+        let out_x = x < 0 || x >= size;
+        let out_y = y < 0 || y >= size;
+        let out_z = z < 0 || z >= size;
+
+        let out_count = out_x as u8 + out_y as u8 + out_z as u8;
+
+        out_count > 1
     }
 }
