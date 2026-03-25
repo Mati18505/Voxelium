@@ -1,7 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
     fmt,
-    slice::Iter,
     time::Duration,
 };
 
@@ -205,7 +204,10 @@ fn create_chunk_with_neighbors<'a>(
     });
 
     for side in BlockSide::iterator() {
-        if *side != BlockSide::Top && *side != BlockSide::Bottom && neighbors[*side as usize].is_none() {
+        if *side != BlockSide::Top
+            && *side != BlockSide::Bottom
+            && neighbors[*side as usize].is_none()
+        {
             return None;
         }
     }
