@@ -5,11 +5,18 @@ use bevy::{
     asset::RenderAssetUsages,
     log::info_span,
     math::Vec3,
-    mesh::{Indices, Mesh, MeshBuilder, PrimitiveTopology},
+    mesh::{Indices, Mesh, MeshBuilder, MeshVertexAttribute, PrimitiveTopology, VertexFormat},
 };
 use shared::entities::{BlockSide, Direction};
 
 use crate::chunk_mesh_builder::ChunkMeshData;
+
+pub const ATTRIBUTE_BLOCK_SIDE: MeshVertexAttribute =
+    MeshVertexAttribute::new("block_side", Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE, VertexFormat::Uint32);
+pub const ATTRIBUTE_UV: MeshVertexAttribute =
+    MeshVertexAttribute::new("uv", Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE + 1, VertexFormat::Uint32);
+pub const ATTRIBUTE_STORAGE_INDEX: MeshVertexAttribute =
+    MeshVertexAttribute::new("storage_index", Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE + 2, VertexFormat::Uint32);
 
 #[derive(Clone, Debug, Default)]
 pub struct ChunkMeshBuilder {
@@ -19,9 +26,72 @@ pub struct ChunkMeshBuilder {
 #[derive(Debug, Default)]
 struct MeshData {
     positions: Vec<Vec3>,
-    normals: Vec<[f32; 3]>,
-    uvs: Vec<[f32; 2]>,
+    normals: Vec<Normal>,
+    uvs: Vec<UV>,
     indices: Vec<u32>,
+}
+
+#[repr(u32)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Normal {
+    Up = 0,
+    Down = 1,
+    Left = 2,
+    Right = 3,
+    Front = 4,
+    Back = 5,
+}
+
+impl TryFrom<u32> for Normal {
+    type Error = ();
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Normal::Up),
+            1 => Ok(Normal::Down),
+            2 => Ok(Normal::Left),
+            3 => Ok(Normal::Right),
+            4 => Ok(Normal::Front),
+            5 => Ok(Normal::Back),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<BlockSide> for Normal {
+    fn from(side: BlockSide) -> Self {
+        match side {
+            BlockSide::Front => Self::Front,
+            BlockSide::Back => Self::Back,
+            BlockSide::Right => Self::Right,
+            BlockSide::Left => Self::Left,
+            BlockSide::Top => Self::Up,
+            BlockSide::Bottom => Self::Down,
+        }
+    }
+}
+
+#[repr(u32)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum UV {
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+}
+
+impl TryFrom<u32> for UV {
+    type Error = ();
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(UV::TopLeft),
+            1 => Ok(UV::TopRight),
+            2 => Ok(UV::BottomLeft),
+            3 => Ok(UV::BottomRight),
+            _ => Err(()),
+        }
+    }
 }
 
 impl ChunkMeshBuilder {
@@ -33,8 +103,8 @@ impl ChunkMeshBuilder {
         let num_indices = ((z_vertex_count - 1) * (x_vertex_count - 1) * 6) as usize;
 
         let mut positions: Vec<Vec3> = Vec::with_capacity(num_vertices);
-        let mut normals: Vec<[f32; 3]> = Vec::with_capacity(num_vertices);
-        let mut uvs: Vec<[f32; 2]> = Vec::with_capacity(num_vertices);
+        let mut normals: Vec<Normal> = Vec::with_capacity(num_vertices);
+        let mut uvs: Vec<UV> = Vec::with_capacity(num_vertices);
         let mut indices: Vec<u32> = Vec::with_capacity(num_indices);
 
         for z in 0..z_vertex_count {
@@ -44,16 +114,12 @@ impl ChunkMeshBuilder {
                 let u = -0.5 + tx;
                 let v = -0.5 + tz;
 
-                let normal: Direction = facing_side.into();
-                let normal = Vec3 {
-                    x: normal.x as f32,
-                    y: normal.y as f32,
-                    z: normal.z as f32,
-                };
+                let uv_index = z * x_vertex_count + x;
+
                 let pos = Self::map_face(facing_side, u, v);
                 positions.push(pos);
-                normals.push(normal.to_array());
-                uvs.push([tx, tz]);
+                normals.push(Normal::from(facing_side));
+                uvs.push(UV::try_from(uv_index).unwrap());
             }
         }
 
@@ -112,10 +178,10 @@ impl MeshBuilder for ChunkMeshBuilder {
         let num_indices = num_planes * 6;
 
         let mut positions: Vec<Vec3> = Vec::with_capacity(num_vertices);
-        let mut normals: Vec<[f32; 3]> = Vec::with_capacity(num_vertices);
-        let mut uvs: Vec<[f32; 2]> = Vec::with_capacity(num_vertices);
+        let mut normals: Vec<u32> = Vec::with_capacity(num_vertices);
+        let mut uvs: Vec<u32> = Vec::with_capacity(num_vertices);
         let mut indices: Vec<u32> = Vec::with_capacity(num_indices);
-        let mut uvs_2: Vec<[f32; 2]> = Vec::with_capacity(num_vertices);
+        let mut storage_indices: Vec<u32> = Vec::with_capacity(num_vertices);
 
         for (i, quad) in self.chunk_mesh_data.faces.iter().enumerate() {
             let translation = Vec3 {
@@ -136,11 +202,11 @@ impl MeshBuilder for ChunkMeshBuilder {
             let base_index = 4 * i as u32;
 
             positions.extend(face.positions.iter().map(|pos| pos + pos_offset));
-            normals.extend(&face.normals);
-            uvs.extend(&face.uvs);
+            normals.extend(face.normals.iter().map(|e| *e as u32));
+            uvs.extend(face.uvs.iter().map(|e| *e as u32));
 
             indices.extend(face.indices.iter().map(|e| *e + base_index));
-            uvs_2.extend(iter::repeat_n([quad.uv_2 as f32, 0.0], 4));
+            storage_indices.extend(iter::repeat_n(quad.uv_2, 4));
         }
 
         Mesh::new(
@@ -149,8 +215,8 @@ impl MeshBuilder for ChunkMeshBuilder {
         )
         .with_inserted_indices(Indices::U32(indices))
         .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions)
-        .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, normals)
-        .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs)
-        .with_inserted_attribute(Mesh::ATTRIBUTE_UV_1, uvs_2)
+        .with_inserted_attribute(ATTRIBUTE_BLOCK_SIDE, normals)
+        .with_inserted_attribute(ATTRIBUTE_UV, uvs)
+        .with_inserted_attribute(ATTRIBUTE_STORAGE_INDEX, storage_indices)
     }
 }

@@ -4,19 +4,21 @@
     mesh_functions::{get_world_from_local, mesh_position_local_to_clip},
 }
 
+#import "shaders/common.wgsl"::normal_to_vec
+
 struct Vertex {
     @builtin(instance_index) instance_index: u32,
     @location(0) position: vec3<f32>,
-    @location(1) normal: vec3<f32>,
-    @location(2) uv: vec2<f32>,
-    @location(3) uv_b: vec2<f32>,
+    @location(1) normal: u32,
+    @location(2) uv: u32,
+    @location(3) @interpolate(flat) storage_index: u32,
 };
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
 
-    @location(1) normal: vec3<f32>,
-    @location(3) uv_b: vec2<f32>,
+    @location(0) normal: vec3<f32>,
+    @location(1) storage_index: u32,
 };
 
 @vertex
@@ -27,8 +29,8 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         get_world_from_local(vertex.instance_index),
         vec4<f32>(vertex.position, 1.0),
     );
-    out.uv_b = vertex.uv_b;
-    out.normal = vertex.normal;
+    out.storage_index = vertex.storage_index;
+    out.normal = normal_to_vec(vertex.normal);
     return out;
 }
 
@@ -45,8 +47,7 @@ fn fragment(
     let diffuse = max(dot(mesh.normal, light_dir), 0.0);
     let ambient = 0.2;
 
-    let color_index = f32(round(mesh.uv_b.r));
-    let color_sample = color_index / 256.0;
+    let color_sample = f32(mesh.storage_index) / 256.0;
     let base_color = textureSample(color_palette, color_palette_sampler, vec2(color_sample, 0.5));
 
 #ifdef DEBUG_COLOR_SAMPLE

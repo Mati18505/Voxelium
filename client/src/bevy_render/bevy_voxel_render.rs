@@ -1,5 +1,7 @@
 use bevy::{mesh::MeshVertexBufferLayoutRef, pbr::{MaterialPipeline, MaterialPipelineKey}, prelude::*, render::render_resource::{AsBindGroup, RenderPipelineDescriptor, SpecializedMeshPipelineError}, shader::ShaderRef};
 
+use crate::chunk_mesh_builder::meshers::{ATTRIBUTE_BLOCK_SIDE, ATTRIBUTE_STORAGE_INDEX, ATTRIBUTE_UV};
+
 pub struct VoxelRenderPlugin;
 impl Plugin for VoxelRenderPlugin {
     fn build(&self, app: &mut App) {
@@ -38,6 +40,10 @@ impl ColoredCubeMaterial {
 }
 
 impl Material for ColoredCubeMaterial {
+    fn vertex_shader() -> ShaderRef {
+        Self::SHADER_ASSET_PATH.into()
+    }
+
     fn fragment_shader() -> ShaderRef {
         Self::SHADER_ASSET_PATH.into()
     }
@@ -50,9 +56,9 @@ impl Material for ColoredCubeMaterial {
     ) -> Result<(), SpecializedMeshPipelineError> {
         let vertex_layout = layout.0.get_layout(&[
             Mesh::ATTRIBUTE_POSITION.at_shader_location(0),
-            Mesh::ATTRIBUTE_NORMAL.at_shader_location(1),
-            Mesh::ATTRIBUTE_UV_0.at_shader_location(2),
-            Mesh::ATTRIBUTE_UV_1.at_shader_location(3),
+            ATTRIBUTE_BLOCK_SIDE.at_shader_location(1),
+            ATTRIBUTE_UV.at_shader_location(2),
+            ATTRIBUTE_STORAGE_INDEX.at_shader_location(3),
         ])?;
         descriptor.vertex.buffers = vec![vertex_layout];
         Ok(())
