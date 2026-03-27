@@ -2,20 +2,35 @@ use lazy_static::lazy_static;
 use std::iter;
 
 use bevy::{
-    asset::RenderAssetUsages, log::info_span, math::{UVec3, Vec3}, mesh::{Indices, Mesh, MeshBuilder, MeshVertexAttribute, PrimitiveTopology, VertexFormat}
+    asset::RenderAssetUsages,
+    log::info_span,
+    math::{UVec3, Vec3},
+    mesh::{Indices, Mesh, MeshBuilder, MeshVertexAttribute, PrimitiveTopology, VertexFormat},
 };
 use shared::entities::{BlockInChunkPos, BlockSide, Direction};
 
 use crate::chunk_mesh_builder::{ChunkMeshData, FaceData};
 
-pub const ATTRIBUTE_BLOCK_IN_CHUNK_POS: MeshVertexAttribute =
-    MeshVertexAttribute::new("block_in_chunk_pos", Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE, VertexFormat::Uint32x3);
-pub const ATTRIBUTE_BLOCK_SIDE: MeshVertexAttribute =
-    MeshVertexAttribute::new("block_side", Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE + 1, VertexFormat::Uint32);
-pub const ATTRIBUTE_UV: MeshVertexAttribute =
-    MeshVertexAttribute::new("uv", Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE + 2, VertexFormat::Uint32);
-pub const ATTRIBUTE_STORAGE_INDEX: MeshVertexAttribute =
-    MeshVertexAttribute::new("storage_index", Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE + 3, VertexFormat::Uint32);
+pub const ATTRIBUTE_BLOCK_IN_CHUNK_POS: MeshVertexAttribute = MeshVertexAttribute::new(
+    "block_in_chunk_pos",
+    Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE,
+    VertexFormat::Uint32x3,
+);
+pub const ATTRIBUTE_BLOCK_SIDE: MeshVertexAttribute = MeshVertexAttribute::new(
+    "block_side",
+    Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE + 1,
+    VertexFormat::Uint32,
+);
+pub const ATTRIBUTE_UV: MeshVertexAttribute = MeshVertexAttribute::new(
+    "uv",
+    Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE + 2,
+    VertexFormat::Uint32,
+);
+pub const ATTRIBUTE_STORAGE_INDEX: MeshVertexAttribute = MeshVertexAttribute::new(
+    "storage_index",
+    Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE + 3,
+    VertexFormat::Uint32,
+);
 
 #[derive(Clone, Debug, Default)]
 pub struct ChunkMeshBuilder {
@@ -197,7 +212,7 @@ impl MeshBuilder for ChunkMeshBuilder {
         let num_vertices = num_planes * 4;
         let num_indices = num_planes * 6;
 
-        let mut positions: Vec<[u32;3]> = Vec::with_capacity(num_vertices);
+        let mut positions: Vec<[u32; 3]> = Vec::with_capacity(num_vertices);
         let mut normals: Vec<u32> = Vec::with_capacity(num_vertices);
         let mut uvs: Vec<u32> = Vec::with_capacity(num_vertices);
         let mut indices: Vec<u32> = Vec::with_capacity(num_indices);
@@ -206,7 +221,11 @@ impl MeshBuilder for ChunkMeshBuilder {
         for (i, quad) in self.chunk_mesh_data.faces.iter().enumerate() {
             let face = &FACES[quad.facing_side as usize];
 
-            positions.extend(face.positions.iter().map(|plane_pos| Self::plane_pos_to_vertex_pos(plane_pos, quad)));
+            positions.extend(
+                face.positions
+                    .iter()
+                    .map(|plane_pos| Self::plane_pos_to_vertex_pos(plane_pos, quad)),
+            );
             normals.extend(face.normals.iter().map(|e| *e as u32));
             uvs.extend(face.uvs.iter().map(|e| *e as u32));
 
@@ -227,7 +246,6 @@ impl MeshBuilder for ChunkMeshBuilder {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -235,21 +253,35 @@ mod tests {
     struct TransformInput {
         plane_vertex: Vec3,
         facing_side: BlockSide,
-        block_pos: [usize;3],
-        expected: [u32;3],
+        block_pos: [usize; 3],
+        expected: [u32; 3],
     }
 
     const TEST_CASES: [TransformInput; 2] = [
-        TransformInput{ plane_vertex: Vec3::splat(-0.5), facing_side: BlockSide::Left, block_pos: [0,0,0], expected: [0,0,0] },
-        TransformInput{ plane_vertex: Vec3::splat(0.5), facing_side: BlockSide::Right, block_pos: [15,15,15], expected: [15,15,15] }
+        TransformInput {
+            plane_vertex: Vec3::splat(-0.5),
+            facing_side: BlockSide::Left,
+            block_pos: [0, 0, 0],
+            expected: [0, 0, 0],
+        },
+        TransformInput {
+            plane_vertex: Vec3::splat(0.5),
+            facing_side: BlockSide::Right,
+            block_pos: [15, 15, 15],
+            expected: [15, 15, 15],
+        },
     ];
 
     #[test]
     fn test_plane_pos_to_vertex_pos() {
         for case in TEST_CASES {
-            let quad = FaceData{
+            let quad = FaceData {
                 facing_side: case.facing_side,
-                block_pos: BlockInChunkPos::new(case.block_pos[0], case.block_pos[1], case.block_pos[2]),
+                block_pos: BlockInChunkPos::new(
+                    case.block_pos[0],
+                    case.block_pos[1],
+                    case.block_pos[2],
+                ),
                 uv_2: 0,
             };
 

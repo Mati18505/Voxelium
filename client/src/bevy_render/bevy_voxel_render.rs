@@ -1,6 +1,16 @@
-use bevy::{mesh::MeshVertexBufferLayoutRef, pbr::{MaterialPipeline, MaterialPipelineKey}, prelude::*, render::render_resource::{AsBindGroup, RenderPipelineDescriptor, SpecializedMeshPipelineError}, shader::ShaderRef};
+use bevy::{
+    mesh::MeshVertexBufferLayoutRef,
+    pbr::{MaterialPipeline, MaterialPipelineKey},
+    prelude::*,
+    render::render_resource::{
+        AsBindGroup, RenderPipelineDescriptor, SpecializedMeshPipelineError,
+    },
+    shader::ShaderRef,
+};
 
-use crate::chunk_mesh_builder::meshers::{ATTRIBUTE_BLOCK_IN_CHUNK_POS, ATTRIBUTE_BLOCK_SIDE, ATTRIBUTE_STORAGE_INDEX, ATTRIBUTE_UV};
+use crate::chunk_mesh_builder::meshers::{
+    ATTRIBUTE_BLOCK_IN_CHUNK_POS, ATTRIBUTE_BLOCK_SIDE, ATTRIBUTE_STORAGE_INDEX, ATTRIBUTE_UV,
+};
 
 pub struct VoxelRenderPlugin;
 impl Plugin for VoxelRenderPlugin {
