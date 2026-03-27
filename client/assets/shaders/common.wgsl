@@ -1,3 +1,5 @@
+const CHUNK_SIZE : u32 = 16;
+
 alias BlockSide = u32;
 const UP: BlockSide = 0;
 const DOWN: BlockSide = 1;
@@ -32,4 +34,16 @@ fn uv_to_vec(n: UV) -> vec2<f32> {
         case BOTTOM_RIGHT: { return vec2<f32>(1.0, 1.0); }
         default:    { return vec2<f32>(0.0, 0.0); }
     }
+}
+
+fn pos_from_index(index: u32) -> vec3<f32> {
+    // Legal range of vertex pos (chunks are connected).
+    let size = CHUNK_SIZE + 1;
+
+    let z = index / (size * size);
+    let rem = index % (size * size);
+    let y = rem / size;
+    let x = rem % size;
+
+    return vec3<f32>(f32(x), f32(y), f32(z));
 }

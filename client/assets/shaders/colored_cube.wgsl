@@ -4,11 +4,11 @@
     mesh_functions::{get_world_from_local, mesh_position_local_to_clip},
 }
 
-#import "shaders/common.wgsl"::normal_to_vec
+#import "shaders/common.wgsl"::{normal_to_vec, pos_from_index}
 
 struct Vertex {
     @builtin(instance_index) instance_index: u32,
-    @location(0) block_in_chunk_position: vec3<u32>,
+    @location(0) block_in_chunk_position_index: u32,
     @location(1) normal: u32,
     @location(2) uv: u32,
     @location(3) @interpolate(flat) storage_index: u32,
@@ -24,7 +24,7 @@ struct VertexOutput {
 @vertex
 fn vertex(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;
-    var position = vec3<f32>(vertex.block_in_chunk_position) - 0.5;
+    let position = pos_from_index(vertex.block_in_chunk_position_index) - 0.5;
 
     out.clip_position = mesh_position_local_to_clip(
         get_world_from_local(vertex.instance_index),

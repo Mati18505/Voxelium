@@ -7,14 +7,14 @@ use bevy::{
     math::{UVec3, Vec3},
     mesh::{Indices, Mesh, MeshBuilder, MeshVertexAttribute, PrimitiveTopology, VertexFormat},
 };
-use shared::entities::{BlockInChunkPos, BlockSide, Direction};
+use shared::entities::{BlockSide, Direction, CHUNK_SIZE};
 
 use crate::chunk_mesh_builder::{ChunkMeshData, FaceData};
 
-pub const ATTRIBUTE_BLOCK_IN_CHUNK_POS: MeshVertexAttribute = MeshVertexAttribute::new(
-    "block_in_chunk_pos",
+pub const ATTRIBUTE_BLOCK_IN_CHUNK_POS_INDEX: MeshVertexAttribute = MeshVertexAttribute::new(
+    "block_in_chunk_pos_index",
     Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE,
-    VertexFormat::Uint32x3,
+    VertexFormat::Uint32,
 );
 pub const ATTRIBUTE_BLOCK_SIDE: MeshVertexAttribute = MeshVertexAttribute::new(
     "block_side",
@@ -170,7 +170,7 @@ impl ChunkMeshBuilder {
         }
     }
 
-    fn plane_pos_to_vertex_pos(plane_pos: &Vec3, quad: &FaceData) -> [u32; 3] {
+    fn plane_pos_to_vertex_pos(plane_pos: &Vec3, quad: &FaceData) -> UVec3 {
         let block_pos = Vec3 {
             x: quad.block_pos.x as f32,
             y: quad.block_pos.y as f32,
@@ -188,7 +188,14 @@ impl ChunkMeshBuilder {
         let pos_offset = block_pos + block_side_offset + plane_offset;
 
         let pos = plane_pos + pos_offset;
-        pos.floor().as_uvec3().to_array()
+        pos.floor().as_uvec3()
+    }
+
+    fn vertex_pos_to_index(pos: UVec3) -> u32 {
+        // Legal range of vertex pos (chunks are connected).
+        let size = CHUNK_SIZE as u32 + 1;
+
+        pos.z * size * size + pos.y * size + pos.x
     }
 }
 
@@ -212,7 +219,7 @@ impl MeshBuilder for ChunkMeshBuilder {
         let num_vertices = num_planes * 4;
         let num_indices = num_planes * 6;
 
-        let mut positions: Vec<[u32; 3]> = Vec::with_capacity(num_vertices);
+        let mut position_idxs: Vec<u32> = Vec::with_capacity(num_vertices);
         let mut normals: Vec<u32> = Vec::with_capacity(num_vertices);
         let mut uvs: Vec<u32> = Vec::with_capacity(num_vertices);
         let mut indices: Vec<u32> = Vec::with_capacity(num_indices);
@@ -221,10 +228,11 @@ impl MeshBuilder for ChunkMeshBuilder {
         for (i, quad) in self.chunk_mesh_data.faces.iter().enumerate() {
             let face = &FACES[quad.facing_side as usize];
 
-            positions.extend(
+            position_idxs.extend(
                 face.positions
                     .iter()
-                    .map(|plane_pos| Self::plane_pos_to_vertex_pos(plane_pos, quad)),
+                    .map(|plane_pos| Self::plane_pos_to_vertex_pos(plane_pos, quad))
+                    .map(Self::vertex_pos_to_index),
             );
             normals.extend(face.normals.iter().map(|e| *e as u32));
             uvs.extend(face.uvs.iter().map(|e| *e as u32));
@@ -239,7 +247,7 @@ impl MeshBuilder for ChunkMeshBuilder {
             RenderAssetUsages::RENDER_WORLD,
         )
         .with_inserted_indices(Indices::U32(indices))
-        .with_inserted_attribute(ATTRIBUTE_BLOCK_IN_CHUNK_POS, positions)
+        .with_inserted_attribute(ATTRIBUTE_BLOCK_IN_CHUNK_POS_INDEX, position_idxs)
         .with_inserted_attribute(ATTRIBUTE_BLOCK_SIDE, normals)
         .with_inserted_attribute(ATTRIBUTE_UV, uvs)
         .with_inserted_attribute(ATTRIBUTE_STORAGE_INDEX, storage_indices)
@@ -248,27 +256,35 @@ impl MeshBuilder for ChunkMeshBuilder {
 
 #[cfg(test)]
 mod tests {
+    use shared::entities::BlockInChunkPos;
+
     use super::*;
 
     struct TransformInput {
         plane_vertex: Vec3,
         facing_side: BlockSide,
         block_pos: [usize; 3],
-        expected: [u32; 3],
+        expected: UVec3,
     }
 
-    const TEST_CASES: [TransformInput; 2] = [
+    const TEST_CASES: [TransformInput; 3] = [
         TransformInput {
             plane_vertex: Vec3::splat(-0.5),
             facing_side: BlockSide::Left,
             block_pos: [0, 0, 0],
-            expected: [0, 0, 0],
+            expected: UVec3::ZERO,
+        },
+        TransformInput {
+            plane_vertex: Vec3::splat(-0.5),
+            facing_side: BlockSide::Top,
+            block_pos: [15, 15, 15],
+            expected: UVec3::splat(15),
         },
         TransformInput {
             plane_vertex: Vec3::splat(0.5),
             facing_side: BlockSide::Right,
             block_pos: [15, 15, 15],
-            expected: [15, 15, 15],
+            expected: UVec3::splat(16),
         },
     ];
 

@@ -9,7 +9,7 @@ use bevy::{
 };
 
 use crate::chunk_mesh_builder::meshers::{
-    ATTRIBUTE_BLOCK_IN_CHUNK_POS, ATTRIBUTE_BLOCK_SIDE, ATTRIBUTE_STORAGE_INDEX, ATTRIBUTE_UV,
+    ATTRIBUTE_BLOCK_IN_CHUNK_POS_INDEX, ATTRIBUTE_BLOCK_SIDE, ATTRIBUTE_STORAGE_INDEX, ATTRIBUTE_UV,
 };
 
 pub struct VoxelRenderPlugin;
@@ -65,7 +65,7 @@ impl Material for ColoredCubeMaterial {
         _key: MaterialPipelineKey<Self>,
     ) -> Result<(), SpecializedMeshPipelineError> {
         let vertex_layout = layout.0.get_layout(&[
-            ATTRIBUTE_BLOCK_IN_CHUNK_POS.at_shader_location(0),
+            ATTRIBUTE_BLOCK_IN_CHUNK_POS_INDEX.at_shader_location(0),
             ATTRIBUTE_BLOCK_SIDE.at_shader_location(1),
             ATTRIBUTE_UV.at_shader_location(2),
             ATTRIBUTE_STORAGE_INDEX.at_shader_location(3),
