@@ -1,3 +1,4 @@
+use cgmath::num_traits::pow;
 use lazy_static::lazy_static;
 use std::iter;
 
@@ -105,6 +106,80 @@ impl TryFrom<u32> for UV {
             3 => Ok(UV::BottomRight),
             _ => Err(()),
         }
+    }
+}
+
+struct VertexData {
+    pos_index: u32,
+    normal: Normal,
+    uv: UV,
+    storage_index: u32,
+}
+
+impl VertexData {
+    const POS_BITS: u32 = 13;
+    const NORMAL_BITS: u32 = 3;
+    const UV_BITS: u32 = 2;
+    const SI_BITS: u32 = 8;
+
+    const POS_MASK: u32 = (1 << Self::POS_BITS) - 1;
+    const NORMAL_MASK: u32 = (1 << Self::NORMAL_BITS) - 1;
+    const UV_MASK: u32 = (1 << Self::UV_BITS) - 1;
+    const SI_MASK: u32 = (1 << Self::SI_BITS) - 1;
+
+    fn new(pos_index: u32, normal: Normal, uv: UV, storage_index: u32) -> Self {
+        let max_pos_index = pow(CHUNK_SIZE as u32 + 1, 3);
+
+        debug_assert!(pos_index < max_pos_index);
+        debug_assert!((normal as u32) <= Self::NORMAL_MASK);
+        debug_assert!((uv as u32) <= Self::UV_MASK);
+        debug_assert!(storage_index <= Self::SI_MASK);
+
+        Self {
+            pos_index,
+            normal,
+            uv,
+            storage_index,
+        }
+    }
+
+    fn pack(&self) -> u32 {
+        let normal = self.normal as u32;
+        let uv = self.uv as u32;
+
+        let offsets = [
+            Self::POS_BITS,
+            (Self::POS_BITS + Self::NORMAL_BITS),
+            (Self::POS_BITS + Self::NORMAL_BITS + Self::UV_BITS),
+        ];
+
+        (self.pos_index & Self::POS_MASK)
+            | ((normal & Self::NORMAL_MASK) << offsets[0])
+            | ((uv & Self::UV_MASK) << offsets[1])
+            | ((self.storage_index & Self::SI_MASK) << offsets[2])
+    }
+
+    fn unpack(packed: u32) -> Result<Self, ()> {
+        let offsets = [
+            Self::POS_BITS,
+            (Self::POS_BITS + Self::NORMAL_BITS),
+            (Self::POS_BITS + Self::NORMAL_BITS + Self::UV_BITS),
+        ];
+
+        let pos_index = packed & Self::POS_MASK;
+        let normal = (packed >> offsets[0]) & Self::NORMAL_MASK;
+        let uv = (packed >> offsets[1]) & Self::UV_MASK;
+        let storage_index = (packed >> offsets[2]) & Self::SI_MASK;
+
+        let normal = Normal::try_from(normal)?;
+        let uv = UV::try_from(uv)?;
+
+        Ok(Self {
+            pos_index,
+            normal,
+            uv,
+            storage_index,
+        })
     }
 }
 
@@ -304,6 +379,60 @@ mod tests {
             let transformed = ChunkMeshBuilder::plane_pos_to_vertex_pos(&case.plane_vertex, &quad);
 
             assert_eq!(transformed, case.expected);
+        }
+    }
+
+    #[test]
+    fn test_pack_unpack_roundtrip() {
+        let cases = [
+            (0, 0, 0, 0),
+            (1, 1, 1, 1),
+            (3, 5, 2, 200),
+            (
+                pow(CHUNK_SIZE as u32 + 1, 3) - 1,
+                5,
+                3,
+                VertexData::SI_MASK,
+            ),
+        ];
+
+        for (pos_index, normal, uv, storage_index) in cases {
+            let v = VertexData::new(
+                pos_index,
+                Normal::try_from(normal).unwrap(),
+                UV::try_from(uv).unwrap(),
+                storage_index,
+            );
+
+            let packed = v.pack();
+            let unpacked = VertexData::unpack(packed).unwrap();
+
+            assert_eq!(unpacked.pos_index, pos_index);
+            assert_eq!(unpacked.normal as u32, normal);
+            assert_eq!(unpacked.uv as u32, uv);
+            assert_eq!(unpacked.storage_index, storage_index);
+        }
+    }
+
+    #[test]
+    fn test_vertex_data_out_of_range() {
+        let cases = [
+            (VertexData::POS_MASK + 1, 0, 0, 0),
+            (0, 7, 0, 0),
+            (0, 0, 4, 0),
+            (0, 0, 0, VertexData::SI_MASK + 1),
+        ];
+
+        for (pos_index, normal, uv, storage_index) in cases {
+            let result = std::panic::catch_unwind(|| {
+                VertexData::new(
+                    pos_index,
+                    Normal::try_from(normal).unwrap(),
+                    UV::try_from(uv).unwrap(),
+                    storage_index,
+                )
+            });
+            assert!(result.is_err());
         }
     }
 }
