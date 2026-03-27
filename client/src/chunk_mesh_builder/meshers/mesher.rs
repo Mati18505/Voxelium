@@ -12,26 +12,8 @@ use shared::entities::{BlockSide, Direction, CHUNK_SIZE};
 
 use crate::chunk_mesh_builder::{ChunkMeshData, FaceData};
 
-pub const ATTRIBUTE_BLOCK_IN_CHUNK_POS_INDEX: MeshVertexAttribute = MeshVertexAttribute::new(
-    "block_in_chunk_pos_index",
-    Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE,
-    VertexFormat::Uint32,
-);
-pub const ATTRIBUTE_BLOCK_SIDE: MeshVertexAttribute = MeshVertexAttribute::new(
-    "block_side",
-    Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE + 1,
-    VertexFormat::Uint32,
-);
-pub const ATTRIBUTE_UV: MeshVertexAttribute = MeshVertexAttribute::new(
-    "uv",
-    Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE + 2,
-    VertexFormat::Uint32,
-);
-pub const ATTRIBUTE_STORAGE_INDEX: MeshVertexAttribute = MeshVertexAttribute::new(
-    "storage_index",
-    Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE + 3,
-    VertexFormat::Uint32,
-);
+pub const ATTRIBUTE_PACKED_DATA: MeshVertexAttribute =
+    MeshVertexAttribute::new("packed_data", Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE, VertexFormat::Uint32);
 
 #[derive(Clone, Debug, Default)]
 pub struct ChunkMeshBuilder {
@@ -294,27 +276,28 @@ impl MeshBuilder for ChunkMeshBuilder {
         let num_vertices = num_planes * 4;
         let num_indices = num_planes * 6;
 
-        let mut position_idxs: Vec<u32> = Vec::with_capacity(num_vertices);
-        let mut normals: Vec<u32> = Vec::with_capacity(num_vertices);
-        let mut uvs: Vec<u32> = Vec::with_capacity(num_vertices);
+        let mut packed_data: Vec<u32> = Vec::with_capacity(num_vertices);
         let mut indices: Vec<u32> = Vec::with_capacity(num_indices);
-        let mut storage_indices: Vec<u32> = Vec::with_capacity(num_vertices);
 
         for (i, quad) in self.chunk_mesh_data.faces.iter().enumerate() {
             let face = &FACES[quad.facing_side as usize];
 
-            position_idxs.extend(
-                face.positions
-                    .iter()
-                    .map(|plane_pos| Self::plane_pos_to_vertex_pos(plane_pos, quad))
-                    .map(Self::vertex_pos_to_index),
-            );
-            normals.extend(face.normals.iter().map(|e| *e as u32));
-            uvs.extend(face.uvs.iter().map(|e| *e as u32));
+            for (i, plane_pos) in face.positions.iter().enumerate() {
+                let vertex_pos = Self::plane_pos_to_vertex_pos(plane_pos, quad);
+                let pos_index = Self::vertex_pos_to_index(vertex_pos);
+
+                let normal = face.normals.get(i).unwrap();
+                let uv = face.uvs.get(i).unwrap();
+                let storage_index = quad.uv_2;
+
+                let vertex = VertexData::new(pos_index, *normal, *uv, storage_index);
+                let packed = vertex.pack();
+
+                packed_data.push(packed);
+            }
 
             let base_index = 4 * i as u32;
             indices.extend(face.indices.iter().map(|e| *e + base_index));
-            storage_indices.extend(iter::repeat_n(quad.uv_2, 4));
         }
 
         Mesh::new(
@@ -322,10 +305,7 @@ impl MeshBuilder for ChunkMeshBuilder {
             RenderAssetUsages::RENDER_WORLD,
         )
         .with_inserted_indices(Indices::U32(indices))
-        .with_inserted_attribute(ATTRIBUTE_BLOCK_IN_CHUNK_POS_INDEX, position_idxs)
-        .with_inserted_attribute(ATTRIBUTE_BLOCK_SIDE, normals)
-        .with_inserted_attribute(ATTRIBUTE_UV, uvs)
-        .with_inserted_attribute(ATTRIBUTE_STORAGE_INDEX, storage_indices)
+        .with_inserted_attribute(ATTRIBUTE_PACKED_DATA, packed_data)
     }
 }
 

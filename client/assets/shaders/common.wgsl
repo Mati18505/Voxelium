@@ -47,3 +47,25 @@ fn pos_from_index(index: u32) -> vec3<f32> {
 
     return vec3<f32>(f32(x), f32(y), f32(z));
 }
+
+struct VertexData {
+    pos_index: u32,
+    normal: BlockSide,
+    uv: UV,
+    storage_index: u32,
+}
+
+fn unpack_vertex_data(packed: u32) -> VertexData {
+    const POS_MASK: u32 = (1 << 13) - 1;
+    const NORMAL_MASK: u32 = (1 << 3)  - 1;
+    const UV_MASK: u32 = (1 << 2)  - 1;
+    const SI_MASK: u32 = (1 << 8)  - 1;
+
+    var data: VertexData;
+    data.pos_index  =  packed        & POS_MASK;
+    data.normal     = (packed >> 13) & NORMAL_MASK;
+    data.uv         = (packed >> 16) & UV_MASK;
+    data.storage_index = (packed >> 18) & SI_MASK;
+
+    return data;
+}
