@@ -2,21 +2,20 @@ use lazy_static::lazy_static;
 use std::iter;
 
 use bevy::{
-    asset::RenderAssetUsages,
-    log::info_span,
-    math::Vec3,
-    mesh::{Indices, Mesh, MeshBuilder, MeshVertexAttribute, PrimitiveTopology, VertexFormat},
+    asset::RenderAssetUsages, log::info_span, math::{UVec3, Vec3}, mesh::{Indices, Mesh, MeshBuilder, MeshVertexAttribute, PrimitiveTopology, VertexFormat}
 };
 use shared::entities::{BlockSide, Direction};
 
 use crate::chunk_mesh_builder::ChunkMeshData;
 
+pub const ATTRIBUTE_BLOCK_IN_CHUNK_POS: MeshVertexAttribute =
+    MeshVertexAttribute::new("block_in_chunk_pos", Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE, VertexFormat::Uint32x3);
 pub const ATTRIBUTE_BLOCK_SIDE: MeshVertexAttribute =
-    MeshVertexAttribute::new("block_side", Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE, VertexFormat::Uint32);
+    MeshVertexAttribute::new("block_side", Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE + 1, VertexFormat::Uint32);
 pub const ATTRIBUTE_UV: MeshVertexAttribute =
-    MeshVertexAttribute::new("uv", Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE + 1, VertexFormat::Uint32);
+    MeshVertexAttribute::new("uv", Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE + 2, VertexFormat::Uint32);
 pub const ATTRIBUTE_STORAGE_INDEX: MeshVertexAttribute =
-    MeshVertexAttribute::new("storage_index", Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE + 2, VertexFormat::Uint32);
+    MeshVertexAttribute::new("storage_index", Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE + 3, VertexFormat::Uint32);
 
 #[derive(Clone, Debug, Default)]
 pub struct ChunkMeshBuilder {
@@ -177,14 +176,14 @@ impl MeshBuilder for ChunkMeshBuilder {
         let num_vertices = num_planes * 4;
         let num_indices = num_planes * 6;
 
-        let mut positions: Vec<Vec3> = Vec::with_capacity(num_vertices);
+        let mut positions: Vec<[u32;3]> = Vec::with_capacity(num_vertices);
         let mut normals: Vec<u32> = Vec::with_capacity(num_vertices);
         let mut uvs: Vec<u32> = Vec::with_capacity(num_vertices);
         let mut indices: Vec<u32> = Vec::with_capacity(num_indices);
         let mut storage_indices: Vec<u32> = Vec::with_capacity(num_vertices);
 
         for (i, quad) in self.chunk_mesh_data.faces.iter().enumerate() {
-            let translation = Vec3 {
+            let block_pos = Vec3 {
                 x: quad.block_pos.x as f32,
                 y: quad.block_pos.y as f32,
                 z: quad.block_pos.z as f32,
@@ -198,13 +197,18 @@ impl MeshBuilder for ChunkMeshBuilder {
                 z: normal.z as f32,
             };
 
-            let pos_offset = translation + normal * 0.5;
-            let base_index = 4 * i as u32;
+            let plane_offset = 0.5;
+            let block_side_offset = normal * 0.5;
+            let pos_offset = block_pos + block_side_offset + plane_offset;
 
-            positions.extend(face.positions.iter().map(|pos| pos + pos_offset));
+            let pos = face.positions.iter().map(|plane_pos| plane_pos + pos_offset);
+            let block_in_chunk_pos = pos.map(|pos| pos.floor().as_uvec3().to_array());
+
+            positions.extend(block_in_chunk_pos);
             normals.extend(face.normals.iter().map(|e| *e as u32));
             uvs.extend(face.uvs.iter().map(|e| *e as u32));
 
+            let base_index = 4 * i as u32;
             indices.extend(face.indices.iter().map(|e| *e + base_index));
             storage_indices.extend(iter::repeat_n(quad.uv_2, 4));
         }
@@ -214,7 +218,7 @@ impl MeshBuilder for ChunkMeshBuilder {
             RenderAssetUsages::RENDER_WORLD,
         )
         .with_inserted_indices(Indices::U32(indices))
-        .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions)
+        .with_inserted_attribute(ATTRIBUTE_BLOCK_IN_CHUNK_POS, positions)
         .with_inserted_attribute(ATTRIBUTE_BLOCK_SIDE, normals)
         .with_inserted_attribute(ATTRIBUTE_UV, uvs)
         .with_inserted_attribute(ATTRIBUTE_STORAGE_INDEX, storage_indices)

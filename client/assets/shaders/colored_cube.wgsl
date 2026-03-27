@@ -8,7 +8,7 @@
 
 struct Vertex {
     @builtin(instance_index) instance_index: u32,
-    @location(0) position: vec3<f32>,
+    @location(0) block_in_chunk_position: vec3<u32>,
     @location(1) normal: u32,
     @location(2) uv: u32,
     @location(3) @interpolate(flat) storage_index: u32,
@@ -24,10 +24,11 @@ struct VertexOutput {
 @vertex
 fn vertex(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;
+    var position = vec3<f32>(vertex.block_in_chunk_position) - 0.5;
 
     out.clip_position = mesh_position_local_to_clip(
         get_world_from_local(vertex.instance_index),
-        vec4<f32>(vertex.position, 1.0),
+        vec4<f32>(position, 1.0),
     );
     out.storage_index = vertex.storage_index;
     out.normal = normal_to_vec(vertex.normal);

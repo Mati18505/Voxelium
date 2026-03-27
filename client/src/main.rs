@@ -10,6 +10,7 @@ use bevy::{
 use bevy_asset_loader::prelude::*;
 use bevy_common_assets::json::JsonAssetPlugin;
 
+use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
 use bevy_render::VoxelRenderPlugin;
 use bevy_resources::{MaterialsDictAsset, MaterialsDictAssetLoader};
 use bevy_types::{AppStates, GameResources};
@@ -65,6 +66,7 @@ fn main() {
             OrchestratorPlugin,
             GUIPlugin,
             ResourcesPlugin,
+            InfiniteGridPlugin,
         ))
         .insert_resource(WireframeConfig {
             global: false,
@@ -124,6 +126,7 @@ fn init_level(
         Transform::from_xyz(11.0, 20.0, 4.0).looking_at(Vec3::ZERO, Vec3::Y),
         GlobalTransform::default(),
     ));
+    commands.spawn(InfiniteGridBundle::default());
 }
 
 fn on_action_event(
@@ -181,6 +184,6 @@ fn place_block_action(raycast_result: RaycastResult) -> BlockAction {
     BlockAction {
         feasible: previous_block_id == name_to_block_id("air"),
         pos: raycast_result.step_before_hitpoint.pos,
-        new_block: name_to_block_id("wood"),
+        new_block: name_to_block_id("red"),
     }
 }
