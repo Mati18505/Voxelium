@@ -226,3 +226,36 @@ impl MeshBuilder for ChunkMeshBuilder {
         .with_inserted_attribute(ATTRIBUTE_STORAGE_INDEX, storage_indices)
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct TransformInput {
+        plane_vertex: Vec3,
+        facing_side: BlockSide,
+        block_pos: [usize;3],
+        expected: [u32;3],
+    }
+
+    const TEST_CASES: [TransformInput; 2] = [
+        TransformInput{ plane_vertex: Vec3::splat(-0.5), facing_side: BlockSide::Left, block_pos: [0,0,0], expected: [0,0,0] },
+        TransformInput{ plane_vertex: Vec3::splat(0.5), facing_side: BlockSide::Right, block_pos: [15,15,15], expected: [15,15,15] }
+    ];
+
+    #[test]
+    fn test_plane_pos_to_vertex_pos() {
+        for case in TEST_CASES {
+            let quad = FaceData{
+                facing_side: case.facing_side,
+                block_pos: BlockInChunkPos::new(case.block_pos[0], case.block_pos[1], case.block_pos[2]),
+                uv_2: 0,
+            };
+
+            let transformed = ChunkMeshBuilder::plane_pos_to_vertex_pos(&case.plane_vertex, &quad);
+
+            assert_eq!(transformed, case.expected);
+        }
+    }
+}
