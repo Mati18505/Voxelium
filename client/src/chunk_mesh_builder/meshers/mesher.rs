@@ -4,9 +4,9 @@ use std::iter;
 use bevy::{
     asset::RenderAssetUsages, log::info_span, math::{UVec3, Vec3}, mesh::{Indices, Mesh, MeshBuilder, MeshVertexAttribute, PrimitiveTopology, VertexFormat}
 };
-use shared::entities::{BlockSide, Direction};
+use shared::entities::{BlockInChunkPos, BlockSide, Direction};
 
-use crate::chunk_mesh_builder::ChunkMeshData;
+use crate::chunk_mesh_builder::{ChunkMeshData, FaceData};
 
 pub const ATTRIBUTE_BLOCK_IN_CHUNK_POS: MeshVertexAttribute =
     MeshVertexAttribute::new("block_in_chunk_pos", Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE, VertexFormat::Uint32x3);
@@ -154,6 +154,27 @@ impl ChunkMeshBuilder {
             BlockSide::Back => Vec3::new(u, v, 0.0),
         }
     }
+
+    fn plane_pos_to_vertex_pos(plane_pos: &Vec3, quad: &FaceData) -> [u32; 3] {
+        let block_pos = Vec3 {
+            x: quad.block_pos.x as f32,
+            y: quad.block_pos.y as f32,
+            z: quad.block_pos.z as f32,
+        };
+        let normal: Direction = quad.facing_side.into();
+        let normal = Vec3 {
+            x: normal.x as f32,
+            y: normal.y as f32,
+            z: normal.z as f32,
+        };
+
+        let plane_offset = 0.5;
+        let block_side_offset = normal * 0.5;
+        let pos_offset = block_pos + block_side_offset + plane_offset;
+
+        let pos = plane_pos + pos_offset;
+        pos.floor().as_uvec3().to_array()
+    }
 }
 
 lazy_static! {
@@ -183,28 +204,9 @@ impl MeshBuilder for ChunkMeshBuilder {
         let mut storage_indices: Vec<u32> = Vec::with_capacity(num_vertices);
 
         for (i, quad) in self.chunk_mesh_data.faces.iter().enumerate() {
-            let block_pos = Vec3 {
-                x: quad.block_pos.x as f32,
-                y: quad.block_pos.y as f32,
-                z: quad.block_pos.z as f32,
-            };
             let face = &FACES[quad.facing_side as usize];
 
-            let normal: Direction = quad.facing_side.into();
-            let normal = Vec3 {
-                x: normal.x as f32,
-                y: normal.y as f32,
-                z: normal.z as f32,
-            };
-
-            let plane_offset = 0.5;
-            let block_side_offset = normal * 0.5;
-            let pos_offset = block_pos + block_side_offset + plane_offset;
-
-            let pos = face.positions.iter().map(|plane_pos| plane_pos + pos_offset);
-            let block_in_chunk_pos = pos.map(|pos| pos.floor().as_uvec3().to_array());
-
-            positions.extend(block_in_chunk_pos);
+            positions.extend(face.positions.iter().map(|plane_pos| Self::plane_pos_to_vertex_pos(plane_pos, quad)));
             normals.extend(face.normals.iter().map(|e| *e as u32));
             uvs.extend(face.uvs.iter().map(|e| *e as u32));
 
