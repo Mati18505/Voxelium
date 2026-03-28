@@ -259,7 +259,10 @@ impl ChunkMeshBuilder {
     fn vertex_pos_to_index(pos: UVec3) -> u32 {
         // Legal range of vertex pos (chunks are connected).
         let size = CHUNK_SIZE as u32 + 1;
-        assert!(pos.x < size && pos.y < size && pos.z < size, "vertex pos out of range");
+        assert!(
+            pos.x < size && pos.y < size && pos.z < size,
+            "vertex pos out of range"
+        );
 
         pos.z * size * size + pos.y * size + pos.x
     }

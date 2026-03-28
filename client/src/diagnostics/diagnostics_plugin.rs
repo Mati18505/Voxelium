@@ -1,9 +1,6 @@
 use bevy::{
     app::{App, Plugin},
-    diagnostic::{
-        EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin,
-        SystemInformationDiagnosticsPlugin,
-    },
+    diagnostic::{EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     ecs::resource::Resource,
 };
 
@@ -24,7 +21,6 @@ impl Plugin for DiagnosticsPlugin {
             LogDiagnosticsPlugin::default(),
             FrameTimeDiagnosticsPlugin::default(),
             EntityCountDiagnosticsPlugin::default(),
-            SystemInformationDiagnosticsPlugin,
             ChunkMeshDiagnosticsPlugin::default(),
         ));
     }
