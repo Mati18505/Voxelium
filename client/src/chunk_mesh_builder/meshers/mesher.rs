@@ -1,6 +1,5 @@
 use cgmath::num_traits::pow;
 use lazy_static::lazy_static;
-use std::iter;
 
 use bevy::{
     asset::RenderAssetUsages,
@@ -12,8 +11,11 @@ use shared::entities::{BlockSide, Direction, CHUNK_SIZE};
 
 use crate::chunk_mesh_builder::{ChunkMeshData, FaceData};
 
-pub const ATTRIBUTE_PACKED_DATA: MeshVertexAttribute =
-    MeshVertexAttribute::new("packed_data", Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE, VertexFormat::Uint32);
+pub const ATTRIBUTE_PACKED_DATA: MeshVertexAttribute = MeshVertexAttribute::new(
+    "packed_data",
+    Mesh::FIRST_AVAILABLE_CUSTOM_ATTRIBUTE,
+    VertexFormat::Uint32,
+);
 
 #[derive(Clone, Debug, Default)]
 pub struct ChunkMeshBuilder {
@@ -141,6 +143,7 @@ impl VertexData {
             | ((self.storage_index & Self::SI_MASK) << offsets[2])
     }
 
+    #[cfg(test)]
     fn unpack(packed: u32) -> Result<Self, ()> {
         let offsets = [
             Self::POS_BITS,
@@ -373,12 +376,7 @@ mod tests {
             (0, 0, 0, 0),
             (1, 1, 1, 1),
             (3, 5, 2, 200),
-            (
-                pow(CHUNK_SIZE as u32 + 1, 3) - 1,
-                5,
-                3,
-                VertexData::SI_MASK,
-            ),
+            (pow(CHUNK_SIZE as u32 + 1, 3) - 1, 5, 3, VertexData::SI_MASK),
         ];
 
         for (pos_index, normal, uv, storage_index) in cases {

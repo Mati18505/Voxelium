@@ -117,9 +117,9 @@ fn specialize_common(
     descriptor: &mut RenderPipelineDescriptor,
     layout: &MeshVertexBufferLayoutRef,
 ) -> Result<(), SpecializedMeshPipelineError> {
-    let vertex_layout = layout.0.get_layout(&[
-        ATTRIBUTE_PACKED_DATA.at_shader_location(0),
-    ])?;
+    let vertex_layout = layout
+        .0
+        .get_layout(&[ATTRIBUTE_PACKED_DATA.at_shader_location(0)])?;
     descriptor.vertex.buffers = vec![vertex_layout];
     Ok(())
 }

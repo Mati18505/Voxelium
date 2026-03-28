@@ -168,7 +168,6 @@ fn remove_chunk_meshes(
     }
 }
 
-
 fn process_voxel_edits(
     mut voxel_edits: MessageReader<VoxelEdit>,
     mut chunk_updated: MessageWriter<ChunkUpdated>,

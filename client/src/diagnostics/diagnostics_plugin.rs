@@ -1,4 +1,11 @@
-use bevy::{app::{App, Plugin}, diagnostic::{EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin, SystemInformationDiagnosticsPlugin}, ecs::resource::Resource};
+use bevy::{
+    app::{App, Plugin},
+    diagnostic::{
+        EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin,
+        SystemInformationDiagnosticsPlugin,
+    },
+    ecs::resource::Resource,
+};
 
 use crate::diagnostics::ChunkMeshDiagnosticsPlugin;
 
