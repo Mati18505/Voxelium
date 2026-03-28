@@ -27,4 +27,3 @@ fn fragment(
     return base_color * (ambient + diffuse);
 #endif
 }
-

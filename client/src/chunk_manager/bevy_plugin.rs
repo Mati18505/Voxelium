@@ -36,13 +36,13 @@ impl Plugin for ChunkManagerPlugin {
         app.add_plugins((
             ChunkLoaderPlugin::new(ChunkLoaderConfig {
                 max_loads_per_frame: 64,
-                load_distance: 81,
+                load_distance: 41,
                 dynamic_vertical_loading: false,
                 debug: false,
             }),
             ChunkBuilderPlugin::new(ChunkBuilderConfig {
                 max_builds_per_frame: 64,
-                render_distance: 80,
+                render_distance: 40,
                 dynamic_vertical_loading: false,
                 debug: false,
             }),
