@@ -27,12 +27,29 @@ pub struct TexturedCubeMaterial {
 }
 
 impl TexturedCubeMaterial {
-    const SHADER_ASSET_PATH: &str = "shaders/textured_cube.wgsl";
+    const VS_ASSET_PATH: &str = "shaders/voxel-vs.wgsl";
+    const FS_ASSET_PATH: &str = "shaders/textured_cube.wgsl";
 }
 
 impl Material for TexturedCubeMaterial {
+    fn vertex_shader() -> ShaderRef {
+        Self::VS_ASSET_PATH.into()
+    }
     fn fragment_shader() -> ShaderRef {
-        Self::SHADER_ASSET_PATH.into()
+        Self::FS_ASSET_PATH.into()
+    }
+
+    fn specialize(
+        _pipeline: &MaterialPipeline,
+        descriptor: &mut RenderPipelineDescriptor,
+        layout: &MeshVertexBufferLayoutRef,
+        _key: MaterialPipelineKey<Self>,
+    ) -> Result<(), SpecializedMeshPipelineError> {
+        let vertex_layout = layout.0.get_layout(&[
+            ATTRIBUTE_PACKED_DATA.at_shader_location(0),
+        ])?;
+        descriptor.vertex.buffers = vec![vertex_layout];
+        Ok(())
     }
 }
 

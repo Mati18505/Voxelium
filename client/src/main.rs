@@ -184,6 +184,6 @@ fn place_block_action(raycast_result: RaycastResult) -> BlockAction {
     BlockAction {
         feasible: previous_block_id == name_to_block_id("air"),
         pos: raycast_result.step_before_hitpoint.pos,
-        new_block: name_to_block_id("red"),
+        new_block: name_to_block_id("wood"),
     }
 }

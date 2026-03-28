@@ -68,6 +68,8 @@ impl TerrainGenerator {
 
         if world_y.abs() < generated_height - 4 {
             name_to_block_id("red")
+        } else if world_y.abs() < generated_height - 2 {
+            name_to_block_id("wood")
         } else {
             name_to_block_id("air")
         }
