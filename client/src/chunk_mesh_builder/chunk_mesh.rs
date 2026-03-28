@@ -12,7 +12,22 @@ pub type MaterialId = u8;
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct ChunkMesh {
-    pub layers: HashMap<MaterialId, Mesh>,
+    layers: HashMap<MaterialId, Mesh>,
+    /// Diagnosis.
+    vertex_count: usize,
+}
+
+impl ChunkMesh {
+    pub fn layers(&self) -> &HashMap<MaterialId, Mesh> {
+        &self.layers
+    }
+    pub fn vertex_count(&self) -> usize {
+        self.vertex_count
+    }
+    pub fn add_layer(&mut self, material_id: MaterialId, mesh: Mesh) {
+        self.vertex_count += mesh.count_vertices();
+        self.layers.insert(material_id, mesh);
+    }
 }
 
 #[derive(Debug, Clone)]

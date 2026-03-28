@@ -7,6 +7,7 @@ cgmath = "0.18.0"
 bevy = { version = "0.18.1", features = ["dynamic_linking", "trace", "debug", "file_watcher"]}
 bevy_flycam = { version = "0.18.0" }
 bevy_asset_loader = { version = "0.25.0", features=["standard_dynamic_assets", "2d"] }
+bevy_infinite_grid = { git = "https://github.com/ForesightMiningSoftwareCorporation/bevy_infinite_grid", branch = "main" }
 shared = { path = "../shared" }
 thiserror = "2.0.12"
 serde = { version = "1.0.219", features = ["derive"] }

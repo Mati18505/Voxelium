@@ -32,7 +32,11 @@ impl ChunkWithNeighbors<'_> {
             return self
                 .chunk
                 .get_block_storage()
-                .get_block(BlockInChunkPos::new(pos.x as usize, pos.y as usize, pos.z as usize));
+                .get_block(BlockInChunkPos::new(
+                    pos.x as usize,
+                    pos.y as usize,
+                    pos.z as usize,
+                ));
         }
 
         for side in BlockSide::iterator() {

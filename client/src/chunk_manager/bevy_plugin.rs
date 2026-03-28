@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use shared::chunk_io::providers::provider::ChunkProvider;
 use shared::entities::{BlockID, BlockInChunkPos, Chunk, ChunkRepository};
@@ -15,6 +16,7 @@ use crate::chunk_manager::{
     ChunkBuilt, ChunkLoaded, ChunkLoaderConfig, ChunkLoaderPlugin, ChunkRemoved, ChunkUnloaded,
 };
 use crate::chunk_mesh_builder::meshers::ChunkMesher;
+use crate::chunk_mesh_builder::ChunkMesh;
 use crate::{
     bevy_types::{AppStates, GameResources},
     chunk_manager::ChunkBuilderPlugin,
@@ -36,19 +38,20 @@ impl Plugin for ChunkManagerPlugin {
         app.add_plugins((
             ChunkLoaderPlugin::new(ChunkLoaderConfig {
                 max_loads_per_frame: 64,
-                load_distance: 20,
+                load_distance: 41,
                 dynamic_vertical_loading: false,
                 debug: false,
             }),
             ChunkBuilderPlugin::new(ChunkBuilderConfig {
                 max_builds_per_frame: 64,
-                render_distance: 19,
+                render_distance: 40,
                 dynamic_vertical_loading: false,
                 debug: false,
             }),
             ChunkEntitiesPlugin,
         ))
         .init_resource::<ChunkStorage>()
+        .init_resource::<ChunkMeshes>()
         .init_resource::<ControllerPos>()
         .add_systems(OnEnter(AppStates::InGame), init_chunk_manager)
         .add_message::<ChunkUpdated>()
@@ -58,6 +61,8 @@ impl Plugin for ChunkManagerPlugin {
             (
                 insert_chunks,
                 remove_chunks,
+                insert_chunk_meshes,
+                remove_chunk_meshes,
                 create_chunk_entities,
                 remove_chunk_entities,
                 process_voxel_edits,
@@ -70,6 +75,9 @@ impl Plugin for ChunkManagerPlugin {
 
 #[derive(Resource, Default)]
 pub struct ChunkStorage(pub shared::entities::World);
+
+#[derive(Resource, Default)]
+pub struct ChunkMeshes(pub HashMap<ChunkPos, ChunkMesh>);
 
 #[derive(Resource)]
 pub struct ControllerPos(pub ChunkPos);
@@ -134,6 +142,29 @@ fn remove_chunk_entities(
         let pos = removed.0;
 
         request.write(RemoveEntity(pos));
+    }
+}
+
+fn insert_chunk_meshes(
+    mut built_chunks: MessageReader<ChunkBuilt>,
+    mut chunk_meshes: ResMut<ChunkMeshes>,
+) {
+    for built in built_chunks.read() {
+        let pos = built.0;
+        let mesh = built.1.clone();
+
+        chunk_meshes.0.insert(pos, mesh);
+    }
+}
+
+fn remove_chunk_meshes(
+    mut removed_chunks: MessageReader<ChunkRemoved>,
+    mut chunk_meshes: ResMut<ChunkMeshes>,
+) {
+    for removed in removed_chunks.read() {
+        let pos = removed.0;
+
+        chunk_meshes.0.remove(&pos);
     }
 }
 
