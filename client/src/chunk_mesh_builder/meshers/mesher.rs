@@ -114,10 +114,10 @@ impl VertexData {
     fn new(pos_index: u32, normal: Normal, uv: UV, storage_index: u32) -> Self {
         let max_pos_index = pow(CHUNK_SIZE as u32 + 1, 3);
 
-        debug_assert!(pos_index < max_pos_index);
-        debug_assert!((normal as u32) <= Self::NORMAL_MASK);
-        debug_assert!((uv as u32) <= Self::UV_MASK);
-        debug_assert!(storage_index <= Self::SI_MASK);
+        assert!(pos_index < max_pos_index);
+        assert!((normal as u32) <= Self::NORMAL_MASK);
+        assert!((uv as u32) <= Self::UV_MASK);
+        assert!(storage_index <= Self::SI_MASK);
 
         Self {
             pos_index,
@@ -259,6 +259,7 @@ impl ChunkMeshBuilder {
     fn vertex_pos_to_index(pos: UVec3) -> u32 {
         // Legal range of vertex pos (chunks are connected).
         let size = CHUNK_SIZE as u32 + 1;
+        assert!(pos.x < size && pos.y < size && pos.z < size, "vertex pos out of range");
 
         pos.z * size * size + pos.y * size + pos.x
     }
