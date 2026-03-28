@@ -170,13 +170,15 @@ impl ChunkMeshBuilder {
     fn build_face(facing_side: BlockSide) -> MeshData {
         let z_vertex_count = 2;
         let x_vertex_count = 2;
-        let num_vertices = (z_vertex_count * x_vertex_count) as usize;
-        let num_indices = ((z_vertex_count - 1) * (x_vertex_count - 1) * 6) as usize;
+        let num_vertices = z_vertex_count * x_vertex_count;
+        let num_indices = (z_vertex_count - 1) * (x_vertex_count - 1) * 6;
 
         let mut positions: Vec<Vec3> = Vec::with_capacity(num_vertices);
         let mut normals: Vec<Normal> = Vec::with_capacity(num_vertices);
         let mut uvs: Vec<UV> = Vec::with_capacity(num_vertices);
         let mut indices: Vec<u32> = Vec::with_capacity(num_indices);
+
+        let uv_lookup = [UV::BottomRight, UV::BottomLeft, UV::TopRight, UV::TopLeft];
 
         for z in 0..z_vertex_count {
             for x in 0..x_vertex_count {
@@ -190,9 +192,12 @@ impl ChunkMeshBuilder {
                 let pos = Self::map_face(facing_side, u, v);
                 positions.push(pos);
                 normals.push(Normal::from(facing_side));
-                uvs.push(UV::try_from(uv_index).unwrap());
+                uvs.push(uv_lookup[uv_index]);
             }
         }
+
+        let z_vertex_count = z_vertex_count as u32;
+        let x_vertex_count = x_vertex_count as u32;
 
         for z in 0..z_vertex_count - 1 {
             for x in 0..x_vertex_count - 1 {

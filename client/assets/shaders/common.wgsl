@@ -28,10 +28,10 @@ fn normal_to_vec(n: BlockSide) -> vec3<f32> {
 
 fn uv_to_vec(n: UV) -> vec2<f32> {
     switch (n) {
-        case TOP_LEFT:    { return vec2<f32>(0.0, 0.0); }
-        case TOP_RIGHT:  { return vec2<f32>(0.0, 1.0); }
-        case BOTTOM_LEFT:  { return vec2<f32>(1.0, 0.0); }
-        case BOTTOM_RIGHT: { return vec2<f32>(1.0, 1.0); }
+        case TOP_LEFT:    { return vec2<f32>(0.0, 1.0); }
+        case TOP_RIGHT:  { return vec2<f32>(1.0, 1.0); }
+        case BOTTOM_LEFT:  { return vec2<f32>(0.0, 0.0); }
+        case BOTTOM_RIGHT: { return vec2<f32>(1.0, 0.0); }
         default:    { return vec2<f32>(0.0, 0.0); }
     }
 }

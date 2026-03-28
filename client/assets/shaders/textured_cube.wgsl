@@ -1,4 +1,4 @@
-//#define DEBUG_NORMALS
+//#define DEBUG_UV
 #import "shaders/common.wgsl"::{VertexOutput}
 
 @group(#{MATERIAL_BIND_GROUP}) @binding(0) var my_array_texture: texture_2d_array<f32>;
@@ -19,6 +19,8 @@ fn fragment(
     return vec4<f32>(color_sample, 0.0, 0.0, 0.0);
 #else ifdef DEBUG_NORMALS
     return vec4<f32>(mesh.normal, 0.0);
+#else ifdef DEBUG_UV
+    return vec4<f32>(mesh.uv, 0.0, 0.0);
 #else ifdef DEBUG_DIFFUSE
     return vec4<f32>(diffuse, 0.0, 0.0, 0.0);
 #else
