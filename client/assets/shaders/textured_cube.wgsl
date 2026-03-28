@@ -1,5 +1,5 @@
 //#define DEBUG_UV
-#import "shaders/common.wgsl"::{VertexOutput}
+#import "shaders/common.wgsl"::{VertexOutput, calculate_light_influence}
 
 @group(#{MATERIAL_BIND_GROUP}) @binding(0) var my_array_texture: texture_2d_array<f32>;
 @group(#{MATERIAL_BIND_GROUP}) @binding(1) var my_array_texture_sampler: sampler;
@@ -8,11 +8,7 @@
 fn fragment(
     mesh: VertexOutput,
 ) -> @location(0) vec4<f32> {
-    let light_dir = normalize(vec3(0.5, 1.0, 0.3));
-
-    let diffuse = max(dot(mesh.normal, light_dir), 0.0);
-    let ambient = 0.2;
-
+    let light_influence = calculate_light_influence(mesh.normal);
     let base_color = textureSample(my_array_texture, my_array_texture_sampler, mesh.uv, mesh.storage_index);
 
 #ifdef DEBUG_COLOR_SAMPLE
@@ -24,6 +20,6 @@ fn fragment(
 #else ifdef DEBUG_DIFFUSE
     return vec4<f32>(diffuse, 0.0, 0.0, 0.0);
 #else
-    return base_color * (ambient + diffuse);
+    return base_color * light_influence;
 #endif
 }

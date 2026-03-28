@@ -77,3 +77,12 @@ struct VertexOutput {
     @location(1) uv: vec2<f32>,
     @location(2) storage_index: u32,
 };
+
+fn calculate_light_influence(normal: vec3<f32>) -> f32 {
+    let light_dir = normalize(vec3(0.5, 1.0, 0.3));
+
+    let diffuse = max(dot(normal, light_dir), 0.0);
+    let ambient = 0.2;
+
+    return ambient + diffuse;
+}
