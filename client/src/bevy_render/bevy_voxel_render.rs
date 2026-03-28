@@ -44,16 +44,17 @@ pub struct ColoredCubeMaterial {
 }
 
 impl ColoredCubeMaterial {
-    const SHADER_ASSET_PATH: &str = "shaders/colored_cube.wgsl";
+    const VS_ASSET_PATH: &str = "shaders/voxel-vs.wgsl";
+    const FS_ASSET_PATH: &str = "shaders/colored_cube.wgsl";
 }
 
 impl Material for ColoredCubeMaterial {
     fn vertex_shader() -> ShaderRef {
-        Self::SHADER_ASSET_PATH.into()
+        Self::VS_ASSET_PATH.into()
     }
 
     fn fragment_shader() -> ShaderRef {
-        Self::SHADER_ASSET_PATH.into()
+        Self::FS_ASSET_PATH.into()
     }
 
     fn specialize(

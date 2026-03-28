@@ -69,3 +69,10 @@ fn unpack_vertex_data(packed: u32) -> VertexData {
 
     return data;
 }
+
+struct VertexOutput {
+    @builtin(position) clip_position: vec4<f32>,
+
+    @location(0) normal: vec3<f32>,
+    @location(1) storage_index: u32,
+};
