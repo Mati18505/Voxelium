@@ -223,7 +223,7 @@ fn build_chunk_mesh(layers: &HashMap<u8, ChunkMeshData>) -> ChunkMesh {
 
     for (material_id, mesh) in layers.iter() {
         let built = mesh.mesh().build();
-        chunk_mesh.layers.insert(*material_id, built);
+        chunk_mesh.add_layer(*material_id, built);
     }
 
     chunk_mesh

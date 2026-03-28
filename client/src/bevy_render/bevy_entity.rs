@@ -28,10 +28,10 @@ impl BevyChunkEntity {
     ) -> Self {
         let mut render_resource = BevyChunkEntity::default();
 
-        for (material_id, mesh) in chunk_mesh.layers {
-            let mesh_handle = meshes.add(mesh);
+        for (material_id, mesh) in chunk_mesh.layers() {
+            let mesh_handle = meshes.add(mesh.clone());
 
-            if let Some(material) = material_storage.get_by_id(material_id as usize) {
+            if let Some(material) = material_storage.get_by_id(*material_id as usize) {
                 let entity = material.spawn_entity(commands, mesh_handle, transform);
                 render_resource.entities.push(entity);
             } else {

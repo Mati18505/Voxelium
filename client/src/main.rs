@@ -26,11 +26,7 @@ use crate::{
     bevy_resources::{
         BevyBlockTypeStorageAsset, RenderDescDictAsset, RenderDescDictAssetLoader, ResourcesPlugin,
         TextureDictAsset, TextureDictAssetLoader,
-    },
-    chunk_manager::{ChunkStorage, VoxelEdit},
-    controller::ActionType,
-    gui::GUIPlugin,
-    orchestrator::{utils::raycast_from_controller, OrchestratorPlugin},
+    }, chunk_manager::{ChunkStorage, VoxelEdit}, controller::ActionType, diagnostics::{DiagnosticsConfig, DiagnosticsPlugin}, gui::GUIPlugin, orchestrator::{utils::raycast_from_controller, OrchestratorPlugin}
 };
 
 mod bevy_render;
@@ -41,6 +37,7 @@ mod chunk_mesh_builder;
 mod controller;
 mod gui;
 mod orchestrator;
+mod diagnostics;
 
 fn main() {
     App::new()
@@ -67,6 +64,7 @@ fn main() {
             GUIPlugin,
             ResourcesPlugin,
             InfiniteGridPlugin,
+            DiagnosticsPlugin::new(DiagnosticsConfig{}),
         ))
         .insert_resource(WireframeConfig {
             global: false,
