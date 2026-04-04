@@ -104,8 +104,9 @@ fn update_desired_chunks(
 
     for pos in to_remove {
         data.pending_chunk_queue.remove_chunk(pos);
-        data.loaded_chunks.remove(&pos);
-        unloaded_chunks.write(ChunkUnloaded(pos));
+        if data.loaded_chunks.remove(&pos) {
+            unloaded_chunks.write(ChunkUnloaded(pos));
+        }
     }
 
     for pos in to_add {
