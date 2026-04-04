@@ -1,4 +1,4 @@
-use crate::entities::{BlockID, BlockPos, BlockTypeStorage, World};
+use crate::entities::{get_block, BlockID, BlockPos, BlockTypeStorage, ChunkRepository};
 use cgmath::{InnerSpace, MetricSpace, Vector3};
 
 #[derive(Debug)]
@@ -23,14 +23,18 @@ pub struct RaycastResult {
     pub step_before_hitpoint: Hitpoint,
 }
 
-pub struct RaycastConfig<'a> {
-    pub world: &'a World,
+pub struct RaycastConfig<'a, Chunks: ChunkRepository> {
+    pub chunks: &'a Chunks,
     pub block_type_storage: &'a BlockTypeStorage,
     pub range: f32,
     pub increment: f32,
 }
 
-pub fn raycast(start: Vector3<f32>, dir: Vector3<f32>, config: &RaycastConfig) -> RaycastResult {
+pub fn raycast<Chunks: ChunkRepository>(
+    start: Vector3<f32>,
+    dir: Vector3<f32>,
+    config: &RaycastConfig<Chunks>,
+) -> RaycastResult {
     assert!(is_normalized(dir), "Direction must be normalized.");
     assert!(config.range >= 0.0, "Range must be positive.");
     assert!(
@@ -40,16 +44,14 @@ pub fn raycast(start: Vector3<f32>, dir: Vector3<f32>, config: &RaycastConfig) -
 
     let mut curr_pos = start;
     let mut raycast_result = RaycastResult::default();
-    let mut previous_block_id: BlockID = config
-        .world
-        .get_block(f32_pos_to_block_pos(start))
-        .unwrap_or_default();
+    let mut previous_block_id: BlockID =
+        get_block(f32_pos_to_block_pos(start), config.chunks).unwrap_or_default();
     let mut curr_dir_axis = 0;
 
     while curr_pos.distance2(start) <= config.range * config.range && !raycast_result.collide {
         let curr_block_pos = f32_pos_to_block_pos(curr_pos);
 
-        if let Ok(block_id) = config.world.get_block(curr_block_pos) {
+        if let Ok(block_id) = get_block(curr_block_pos, config.chunks) {
             if let Some(block_type) = config.block_type_storage.get_by_id(block_id) {
                 if block_type.affect_raycast {
                     raycast_result.collide = true;
@@ -99,15 +101,32 @@ fn is_normalized(v: Vector3<f32>) -> bool {
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashMap;
+
+    use crate::entities::{Chunk, ChunkPos};
+
     use super::*;
+
+    #[derive(Default)]
+    struct DummyChunkStorage(HashMap<ChunkPos, Chunk>);
+    impl ChunkRepository for DummyChunkStorage {
+        fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
+            self.0.get(&pos)
+        }
+
+        fn get_chunk_mut(&mut self, pos: ChunkPos) -> Option<&mut Chunk> {
+            self.0.get_mut(&pos)
+        }
+    }
 
     #[test]
     fn test_raycast_empty_world() {
+        let chunk_storage = DummyChunkStorage::default();
         let start = Vector3::new(0.0, 0.0, 0.0);
         let dir = Vector3::new(1.0, 0.0, 0.0);
 
         let config = RaycastConfig {
-            world: &World::default(),
+            chunks: &chunk_storage,
             block_type_storage: &BlockTypeStorage::default(),
             range: 20.0,
             increment: 0.01,

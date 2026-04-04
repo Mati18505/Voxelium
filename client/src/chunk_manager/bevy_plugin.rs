@@ -1,6 +1,6 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
-use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use shared::chunk_io::providers::provider::ChunkProvider;
 use shared::entities::{BlockID, BlockInChunkPos, Chunk, ChunkRepository};
@@ -13,7 +13,8 @@ use crate::chunk_manager::bevy_chunk_entities_manager::{
     ChunkEntitiesPlugin, CreateEntity, RemoveEntity,
 };
 use crate::chunk_manager::{
-    ChunkBuilt, ChunkLoaded, ChunkLoaderConfig, ChunkLoaderPlugin, ChunkRemoved, ChunkUnloaded,
+    ChunkBuilt, ChunkLoaded, ChunkLoaderConfig, ChunkLoaderPlugin, ChunkRemoved, ChunkStorage,
+    ChunkStoragePlugin, ChunkUnloaded, DespawnChunk, SpawnChunk,
 };
 use crate::chunk_mesh_builder::meshers::ChunkMesher;
 use crate::chunk_mesh_builder::ChunkMesh;
@@ -49,8 +50,8 @@ impl Plugin for ChunkManagerPlugin {
                 debug: false,
             }),
             ChunkEntitiesPlugin,
+            ChunkStoragePlugin,
         ))
-        .init_resource::<ChunkStorage>()
         .init_resource::<ChunkMeshes>()
         .init_resource::<ControllerPos>()
         .add_systems(OnEnter(AppStates::InGame), init_chunk_manager)
@@ -59,22 +60,19 @@ impl Plugin for ChunkManagerPlugin {
         .add_systems(
             Update,
             (
-                insert_chunks,
-                remove_chunks,
                 insert_chunk_meshes,
                 remove_chunk_meshes,
                 create_chunk_entities,
                 remove_chunk_entities,
                 process_voxel_edits,
+                handle_chunks_loaded,
+                handle_chunks_unloaded,
             )
                 .run_if(in_state(AppStates::InGame)),
         )
         .add_observer(on_position_change);
     }
 }
-
-#[derive(Resource, Default)]
-pub struct ChunkStorage(pub shared::entities::World);
 
 #[derive(Resource, Default)]
 pub struct ChunkMeshes(pub HashMap<ChunkPos, ChunkMesh>);
@@ -102,23 +100,25 @@ fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>
     commands.insert_resource(ChunkMesherResource(voxel_mesher));
 }
 
-fn insert_chunks(mut loaded_chunks: MessageReader<ChunkLoaded>, mut chunks: ResMut<ChunkStorage>) {
+fn handle_chunks_loaded(
+    mut loaded_chunks: MessageReader<ChunkLoaded>,
+    mut chunks_to_spawn: MessageWriter<SpawnChunk>,
+) {
     for loaded in loaded_chunks.read() {
-        let pos = loaded.0;
-        let chunk = loaded.1.clone();
+        let ChunkLoaded(pos, chunk) = loaded.clone();
 
-        chunks.0.set_chunk(pos, chunk);
+        chunks_to_spawn.write(SpawnChunk(pos, chunk));
     }
 }
 
-fn remove_chunks(
+fn handle_chunks_unloaded(
     mut unloaded_chunks: MessageReader<ChunkUnloaded>,
-    mut chunks: ResMut<ChunkStorage>,
+    mut chunks_to_despawn: MessageWriter<DespawnChunk>,
 ) {
     for unloaded in unloaded_chunks.read() {
-        let pos = unloaded.0;
+        let ChunkUnloaded(pos) = unloaded;
 
-        chunks.0.remove_chunk(pos);
+        chunks_to_despawn.write(DespawnChunk(*pos));
     }
 }
 
@@ -171,7 +171,7 @@ fn remove_chunk_meshes(
 fn process_voxel_edits(
     mut voxel_edits: MessageReader<VoxelEdit>,
     mut chunk_updated: MessageWriter<ChunkUpdated>,
-    mut data: ResMut<ChunkStorage>,
+    mut chunks: ChunkStorage,
 ) {
     for edit in voxel_edits.read() {
         let block_pos = edit.0;
@@ -180,7 +180,7 @@ fn process_voxel_edits(
         let (chunk_pos, block_in_chunk_pos) =
             (ChunkPos::from(block_pos), BlockInChunkPos::from(block_pos));
 
-        let Some(chunk) = data.0.get_chunk(chunk_pos) else {
+        let Some(chunk) = chunks.get_chunk_mut(chunk_pos) else {
             warn!("chunk not found for voxel edit {:?}", edit);
             continue;
         };
@@ -188,11 +188,9 @@ fn process_voxel_edits(
         let mut new_block_storage = chunk.get_block_storage().clone();
 
         new_block_storage.set_block(block_in_chunk_pos, new_voxel);
-        let new_chunk = Chunk::new(new_block_storage);
+        *chunk = Chunk::new(new_block_storage);
 
-        data.0.set_chunk(chunk_pos, new_chunk.clone());
-
-        chunk_updated.write(ChunkUpdated(chunk_pos, new_chunk));
+        chunk_updated.write(ChunkUpdated(chunk_pos, chunk.clone()));
     }
 }
 

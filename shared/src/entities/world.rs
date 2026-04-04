@@ -1,4 +1,4 @@
-use std::{collections::HashMap, error::Error, fmt};
+use std::{error::Error, fmt};
 
 use super::{
     chunk::Chunk,
@@ -7,47 +7,21 @@ use super::{
 };
 
 pub trait ChunkRepository {
-    fn set_chunk(&mut self, pos: ChunkPos, new_chunk: Chunk);
-    fn remove_chunk(&mut self, pos: ChunkPos);
     fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk>;
+    fn get_chunk_mut(&mut self, pos: ChunkPos) -> Option<&mut Chunk>;
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
-pub struct World {
-    pub chunks: HashMap<ChunkPos, Chunk>,
-}
+pub fn get_block(
+    world_pos: BlockPos,
+    chunk_repository: &impl ChunkRepository,
+) -> Result<BlockID, GetBlockErr> {
+    let chunk_pos = ChunkPos::from(world_pos);
+    let in_chunk_pos = BlockInChunkPos::from(world_pos);
+    let chunk = chunk_repository
+        .get_chunk(chunk_pos)
+        .ok_or(GetBlockErr::OutsideOfWorld)?;
 
-impl World {
-    pub fn new() -> World {
-        World {
-            chunks: HashMap::new(),
-        }
-    }
-
-    pub fn get_block(&self, world_pos: BlockPos) -> Result<BlockID, GetBlockErr> {
-        let chunk_pos = ChunkPos::from(world_pos);
-        let in_chunk_pos = BlockInChunkPos::from(world_pos);
-
-        Ok(self
-            .get_chunk(chunk_pos)
-            .ok_or(GetBlockErr::OutsideOfWorld)?
-            .get_block_storage()
-            .get_block(in_chunk_pos))
-    }
-}
-
-impl ChunkRepository for World {
-    fn set_chunk(&mut self, pos: ChunkPos, chunk: Chunk) {
-        self.chunks.insert(pos, chunk);
-    }
-
-    fn remove_chunk(&mut self, pos: ChunkPos) {
-        self.chunks.remove(&pos);
-    }
-
-    fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
-        self.chunks.get(&pos)
-    }
+    Ok(chunk.get_block_storage().get_block(in_chunk_pos))
 }
 
 #[derive(Debug, PartialEq)]
@@ -70,22 +44,36 @@ impl fmt::Display for GetBlockErr {
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::collections::hash_map::HashMap;
 
-    #[test]
-    fn test_get_block_outside_of_world() {
-        let world = World::new();
+    #[derive(Default)]
+    struct DummyChunkStorage(HashMap<ChunkPos, Chunk>);
+    impl ChunkRepository for DummyChunkStorage {
+        fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
+            self.0.get(&pos)
+        }
 
-        let pos = BlockPos::new(0, 0, 0);
-        assert_eq!(world.get_block(pos), Err(GetBlockErr::OutsideOfWorld));
+        fn get_chunk_mut(&mut self, pos: ChunkPos) -> Option<&mut Chunk> {
+            self.0.get_mut(&pos)
+        }
     }
 
     #[test]
-    fn test_add_chunk_and_get_block() {
-        let mut world = World::new();
-
-        world.set_chunk(ChunkPos::new(0, 0, 0), Chunk::default());
-
+    fn test_get_block_outside_of_world() {
+        let chunk_storage = DummyChunkStorage::default();
         let pos = BlockPos::new(0, 0, 0);
-        assert_eq!(world.get_block(pos), Ok(0));
+        assert_eq!(
+            get_block(pos, &chunk_storage),
+            Err(GetBlockErr::OutsideOfWorld)
+        );
+    }
+
+    #[test]
+    fn test_get_block_existing_chunk() {
+        let chunk_storage =
+            DummyChunkStorage(HashMap::from([(ChunkPos::new(0, 0, 0), Chunk::default())]));
+        let pos = BlockPos::new(0, 0, 0);
+
+        assert_eq!(get_block(pos, &chunk_storage), Ok(0));
     }
 }

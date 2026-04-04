@@ -160,7 +160,7 @@ fn build_chunks(
     mut data: ResMut<BuilderResources>,
     mut built_chunks: MessageWriter<ChunkBuilt>,
     mut warnings: ResMut<MesherWarningsAccum>,
-    chunks: Res<ChunkStorage>,
+    chunks: ChunkStorage,
     mesher: Res<ChunkMesherResource>,
     player_pos: Res<ControllerPos>,
     config: Res<ChunkBuilderConfig>,
@@ -194,13 +194,13 @@ fn create_chunk_with_neighbors<'a>(
     origin_pos: ChunkPos,
     chunks: &'a ChunkStorage,
 ) -> Option<ChunkWithNeighbors<'a>> {
-    let origin_chunk = chunks.0.get_chunk(origin_pos)?;
+    let origin_chunk = chunks.get_chunk(origin_pos)?;
 
     let mut iter = iter_neighbors(origin_pos);
 
     let neighbors: [Option<&Chunk>; 6] = std::array::from_fn(|_| {
         let pos = iter.next().unwrap();
-        chunks.0.get_chunk(pos)
+        chunks.get_chunk(pos)
     });
 
     for side in BlockSide::iterator() {

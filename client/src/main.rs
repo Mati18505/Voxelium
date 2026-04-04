@@ -136,7 +136,7 @@ fn on_action_event(
     action: On<controller::ActionEvent>,
     mut voxel_edits: MessageWriter<VoxelEdit>,
     state: Res<State<AppStates>>,
-    chunks: Option<Res<ChunkStorage>>,
+    chunks: Option<ChunkStorage>,
     game_resources: Option<Res<GameResources>>,
 ) {
     if !matches!(state.get(), AppStates::InGame) {
@@ -149,7 +149,7 @@ fn on_action_event(
     let raycast_result = raycast_from_controller(
         action.controller_pos,
         action.controller_forward,
-        &chunks.0,
+        &chunks,
         &game_resources.server_block_type_storage,
     );
 

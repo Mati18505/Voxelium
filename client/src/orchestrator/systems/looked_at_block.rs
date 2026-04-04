@@ -23,7 +23,7 @@ pub fn update_looked_at_block(
     mut q_looked_at_block_data: Query<&mut LookedAtBlockData>,
     q_controller: Query<&Transform, With<Controller>>,
     chunk_updated_ev: MessageReader<ChunkUpdated>,
-    chunks: Res<ChunkStorage>,
+    chunks: ChunkStorage,
     game_resources: Res<GameResources>,
 ) {
     let transform = match q_controller.single() {
@@ -61,14 +61,14 @@ pub fn update_looked_at_block(
 
 fn process_raycast_and_send_event(
     mut commands: Commands,
-    chunks: Res<'_, ChunkStorage>,
+    chunks: ChunkStorage,
     game_resources: Res<'_, GameResources>,
     looked_at_block_data: Mut<'_, LookedAtBlockData>,
 ) {
     let raycast_result = raycast_from_controller(
         looked_at_block_data.last_player_pos,
         looked_at_block_data.last_looking_dir,
-        &chunks.0,
+        &chunks,
         &game_resources.server_block_type_storage,
     );
     let block_pos = raycast_result.hitpoint.pos;
