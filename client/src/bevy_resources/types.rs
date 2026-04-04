@@ -1,19 +1,18 @@
 use bevy::prelude::*;
 use bevy::{
     asset::{AssetServer, Assets, Handle},
-    color::palettes::css::GRAY,
     ecs::system::ResMut,
     image::{Image, ImageArrayLayout, ImageLoaderSettings},
 };
 use shared::entities::{iterate_over_block_registry, name_to_block_id, BlockID};
 use thiserror::Error;
 
+use crate::asset_plugin::TextureAsset;
 use crate::bevy_resources::RenderDescCompileCtx;
 use crate::{
     bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
         Dictionary, MaterialAsset, MaterialHandle, RenderDesc, RenderDescCompilationError, Storage,
-        TextureAsset,
     },
     chunk_mesh_builder::{MaterialId, RenderShape, TextureIndex},
 };

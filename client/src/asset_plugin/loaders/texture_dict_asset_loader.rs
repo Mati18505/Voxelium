@@ -6,10 +6,8 @@ use bevy::log::warn;
 use bevy::reflect::TypePath;
 use thiserror::Error;
 
-use crate::bevy_resources::{
-    PaletteData, TextureArrayData, TextureAsset, TextureDictionary, TextureIndexDictionary,
-    TextureName,
-};
+use crate::asset_plugin::{PaletteData, TextureArrayData, TextureAsset};
+use crate::bevy_resources::{TextureDictionary, TextureIndexDictionary, TextureName};
 
 use yaml_rust2::{yaml::Hash, Yaml, YamlLoader};
 
