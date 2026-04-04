@@ -40,11 +40,7 @@ impl From<&BlockTypeAsset> for BlockType {
 
 impl From<&BlockTypeStorageAsset> for BlockTypeStorage {
     fn from(resource: &BlockTypeStorageAsset) -> Self {
-        let block_types = resource
-            .blocks
-            .iter()
-            .map(BlockType::from)
-            .collect();
+        let block_types = resource.blocks.iter().map(BlockType::from).collect();
 
         BlockTypeStorage::new(block_types)
     }

@@ -1,19 +1,14 @@
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 
-use super::blocks_asset::{BlocksAssetPlugin, BlockTypeStorageAsset};
+use super::blocks_asset::{BlockTypeStorageAsset, BlocksAssetPlugin};
 use super::chunk_loader_asset::{ChunkLoaderAssetPlugin, ChunkLoaderConfigAsset};
-use super::materials_dict_asset::MaterialsDictAssetPlugin;
-use super::render_desc_dict_asset::RenderDescAssetPlugin;
-use super::texture_dict_asset::TextureDictAssetPlugin;
 use super::loaders::materials_dict_asset_loader::MaterialsDictAsset;
+use super::materials_dict_asset::MaterialsDictAssetPlugin;
+use super::render_desc_dict_asset::{RenderDescAssetPlugin, RenderDescDictAsset};
+use super::texture_dict_asset::TextureDictAssetPlugin;
 
-use crate::{
-    bevy_resources::{
-        RenderDescDictAsset, TextureDictAsset,
-    },
-    bevy_types::AppStates,
-};
+use crate::{bevy_resources::TextureDictAsset, bevy_types::AppStates};
 
 pub struct AssetsPlugin;
 impl Plugin for AssetsPlugin {
