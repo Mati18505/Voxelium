@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 
-use super::blocks_asset::BlocksAssetPlugin;
+use super::blocks_asset::{BlocksAssetPlugin, BlockTypeStorageAsset};
 use super::chunk_loader_asset::{ChunkLoaderAssetPlugin, ChunkLoaderConfigAsset};
 use super::materials_dict_asset::MaterialsDictAssetPlugin;
 use super::render_desc_dict_asset::RenderDescAssetPlugin;
@@ -9,7 +9,7 @@ use super::texture_dict_asset::TextureDictAssetPlugin;
 
 use crate::{
     bevy_resources::{
-        BevyBlockTypeStorageAsset, MaterialsDictAsset, RenderDescDictAsset, TextureDictAsset,
+        MaterialsDictAsset, RenderDescDictAsset, TextureDictAsset,
     },
     bevy_types::AppStates,
 };
@@ -49,7 +49,7 @@ pub struct VoxelAssets {
     #[asset(path = "global.textures.yaml")]
     pub texture_dict_asset: Handle<TextureDictAsset>,
     #[asset(path = "global.blocks.json")]
-    pub server_blocks: Handle<BevyBlockTypeStorageAsset>,
+    pub server_blocks: Handle<BlockTypeStorageAsset>,
     #[asset(path = "global.materials.json")]
     pub materials_dict_asset: Handle<MaterialsDictAsset>,
 }
