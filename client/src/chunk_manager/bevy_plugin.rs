@@ -36,12 +36,7 @@ pub struct ChunkManagerPlugin;
 impl Plugin for ChunkManagerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
-            ChunkLoaderPlugin::new(ChunkLoaderConfig {
-                max_loads_per_frame: 64,
-                load_distance: 41,
-                dynamic_vertical_loading: false,
-                debug: false,
-            }),
+            ChunkLoaderPlugin,
             ChunkBuilderPlugin::new(ChunkBuilderConfig {
                 max_builds_per_frame: 64,
                 render_distance: 40,

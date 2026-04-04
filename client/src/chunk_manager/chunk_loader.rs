@@ -16,23 +16,28 @@ pub struct ChunkLoaded(pub ChunkPos, pub Chunk);
 #[derive(Message, Debug, Clone, PartialEq)]
 pub struct ChunkUnloaded(pub ChunkPos);
 
-#[derive(Resource, Debug, Clone)]
+#[derive(Resource, Debug)]
 pub struct ChunkLoaderConfig {
     pub max_loads_per_frame: usize,
     pub load_distance: usize,
     pub dynamic_vertical_loading: bool,
     pub debug: bool,
 }
-
-pub struct ChunkLoaderPlugin(ChunkLoaderConfig);
-impl ChunkLoaderPlugin {
-    pub fn new(config: ChunkLoaderConfig) -> Self {
-        Self(config)
+impl Default for ChunkLoaderConfig {
+    fn default() -> Self {
+        Self {
+            max_loads_per_frame: 16,
+            load_distance: 8,
+            dynamic_vertical_loading: false,
+            debug: false,
+        }
     }
 }
+
+pub struct ChunkLoaderPlugin;
 impl Plugin for ChunkLoaderPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(self.0.clone())
+        app.init_resource::<ChunkLoaderConfig>()
             .init_resource::<LoaderResources>()
             .insert_resource(DebugTimer(Timer::new(
                 Duration::from_secs(2),
