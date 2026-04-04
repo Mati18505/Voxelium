@@ -13,11 +13,10 @@ use crate::chunk_manager::bevy_chunk_entities_manager::{
     ChunkEntitiesPlugin, CreateEntity, RemoveEntity,
 };
 use crate::chunk_manager::{
-    ChunkBuilt, ChunkLoaded, ChunkLoaderConfig, ChunkLoaderPlugin, ChunkRemoved, ChunkStorage,
-    ChunkStoragePlugin, ChunkUnloaded, DespawnChunk, SpawnChunk,
+    AddChunkMesh, ChunkBuilt, ChunkLoaded, ChunkLoaderConfig, ChunkLoaderPlugin, ChunkRemoved,
+    ChunkStorage, ChunkStoragePlugin, ChunkUnloaded, DespawnChunk, RemoveChunkMesh, SpawnChunk,
 };
 use crate::chunk_mesh_builder::meshers::ChunkMesher;
-use crate::chunk_mesh_builder::ChunkMesh;
 use crate::{
     bevy_types::{AppStates, GameResources},
     chunk_manager::ChunkBuilderPlugin,
@@ -52,7 +51,6 @@ impl Plugin for ChunkManagerPlugin {
             ChunkEntitiesPlugin,
             ChunkStoragePlugin,
         ))
-        .init_resource::<ChunkMeshes>()
         .init_resource::<ControllerPos>()
         .add_systems(OnEnter(AppStates::InGame), init_chunk_manager)
         .add_message::<ChunkUpdated>()
@@ -60,7 +58,7 @@ impl Plugin for ChunkManagerPlugin {
         .add_systems(
             Update,
             (
-                insert_chunk_meshes,
+                add_chunk_meshes,
                 remove_chunk_meshes,
                 create_chunk_entities,
                 remove_chunk_entities,
@@ -73,9 +71,6 @@ impl Plugin for ChunkManagerPlugin {
         .add_observer(on_position_change);
     }
 }
-
-#[derive(Resource, Default)]
-pub struct ChunkMeshes(pub HashMap<ChunkPos, ChunkMesh>);
 
 #[derive(Resource)]
 pub struct ControllerPos(pub ChunkPos);
@@ -145,26 +140,21 @@ fn remove_chunk_entities(
     }
 }
 
-fn insert_chunk_meshes(
+fn add_chunk_meshes(
     mut built_chunks: MessageReader<ChunkBuilt>,
-    mut chunk_meshes: ResMut<ChunkMeshes>,
+    mut add_chunk_meshes: MessageWriter<AddChunkMesh>,
 ) {
-    for built in built_chunks.read() {
-        let pos = built.0;
-        let mesh = built.1.clone();
-
-        chunk_meshes.0.insert(pos, mesh);
+    for ChunkBuilt(pos, mesh) in built_chunks.read().cloned() {
+        add_chunk_meshes.write(AddChunkMesh(pos, mesh));
     }
 }
 
 fn remove_chunk_meshes(
     mut removed_chunks: MessageReader<ChunkRemoved>,
-    mut chunk_meshes: ResMut<ChunkMeshes>,
+    mut remove_chunk_meshes: MessageWriter<RemoveChunkMesh>,
 ) {
-    for removed in removed_chunks.read() {
-        let pos = removed.0;
-
-        chunk_meshes.0.remove(&pos);
+    for ChunkRemoved(pos) in removed_chunks.read().cloned() {
+        remove_chunk_meshes.write(RemoveChunkMesh(pos));
     }
 }
 

@@ -4,7 +4,7 @@ use bevy::diagnostic::{
     Diagnostic, DiagnosticPath, Diagnostics, RegisterDiagnostic, DEFAULT_MAX_HISTORY_LENGTH,
 };
 
-use crate::chunk_manager::ChunkMeshes;
+use crate::chunk_manager::ChunkMeshComponent;
 
 #[derive(Resource, Debug, Clone)]
 pub struct ChunkMeshDiagnosticsConfig {
@@ -43,13 +43,15 @@ impl ChunkMeshDiagnosticsPlugin {
     pub const CHUNK_MESH_COUNT: DiagnosticPath = DiagnosticPath::const_new("chunk_mesh_count");
     pub const VERTEX_COUNT: DiagnosticPath = DiagnosticPath::const_new("vertex_count");
 
-    pub fn diagnostic_system(mut diagnostics: Diagnostics, chunk_meshes: Res<ChunkMeshes>) {
-        let chunk_mesh_count: usize = chunk_meshes.0.iter().count();
+    pub fn diagnostic_system(
+        mut diagnostics: Diagnostics,
+        chunk_meshes: Query<&ChunkMeshComponent>,
+    ) {
+        let chunk_mesh_count: usize = chunk_meshes.count();
 
         let vertex_count: usize = chunk_meshes
-            .0
             .iter()
-            .map(|chunk_mesh| chunk_mesh.1.vertex_count())
+            .map(|chunk_mesh| chunk_mesh.0.vertex_count())
             .sum();
 
         diagnostics.add_measurement(&Self::CHUNK_MESH_COUNT, || chunk_mesh_count as f64);
