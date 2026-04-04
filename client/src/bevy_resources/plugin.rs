@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use shared::entities::*;
 
 use crate::{
+    asset_plugin::VoxelAssets,
     bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
         BevyBlockTypeStorageAsset, MaterialsDictAsset, MaterialsDictionaryCompilationResult,
@@ -11,7 +12,6 @@ use crate::{
     },
     bevy_types::{AppStates, GameResources},
     chunk_mesh_builder::RenderShape,
-    VoxelAssets,
 };
 
 pub struct ResourcesPlugin;

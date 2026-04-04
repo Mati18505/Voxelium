@@ -7,15 +7,11 @@ use bevy::{
         *,
     },
 };
-use bevy_asset_loader::prelude::*;
-use bevy_common_assets::{json::JsonAssetPlugin, yaml::YamlAssetPlugin};
 
 use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
 use bevy_render::VoxelRenderPlugin;
-use bevy_resources::{MaterialsDictAsset, MaterialsDictAssetLoader};
 use bevy_types::{AppStates, GameResources};
 use controller::ControllerPlugin;
-use serde::Deserialize;
 use shared::{
     entities::{name_to_block_id, BlockID, BlockPos},
     physics::RaycastResult,
@@ -24,17 +20,16 @@ use shared::{
 use chunk_manager::ChunkManagerPlugin;
 
 use crate::{
-    bevy_resources::{
-        BevyBlockTypeStorageAsset, RenderDescDictAsset, RenderDescDictAssetLoader, ResourcesPlugin,
-        TextureDictAsset, TextureDictAssetLoader,
-    },
-    chunk_manager::{ChunkLoaderConfig, ChunkStorage, VoxelEdit},
+    asset_plugin::AssetsPlugin,
+    bevy_resources::ResourcesPlugin,
+    chunk_manager::{ChunkStorage, VoxelEdit},
     controller::ActionType,
     diagnostics::{DiagnosticsConfig, DiagnosticsPlugin},
     gui::GUIPlugin,
     orchestrator::{utils::raycast_from_controller, OrchestratorPlugin},
 };
 
+mod asset_plugin;
 mod bevy_render;
 mod bevy_resources;
 mod bevy_types;
@@ -62,8 +57,7 @@ fn main() {
                     ..default()
                 }),
             WireframePlugin::default(),
-            JsonAssetPlugin::<BevyBlockTypeStorageAsset>::new(&["blocks.json"]),
-            YamlAssetPlugin::<ChunkLoaderConfigAsset>::new(&["chunk_loader.yaml"]),
+            AssetsPlugin,
             ControllerPlugin,
             VoxelRenderPlugin,
             ChunkManagerPlugin,
@@ -77,92 +71,10 @@ fn main() {
             global: false,
             default_color: WHITE.into(),
         })
-        .init_asset_loader::<RenderDescDictAssetLoader>()
-        .init_asset::<RenderDescDictAsset>()
-        .init_asset_loader::<MaterialsDictAssetLoader>()
-        .init_asset::<MaterialsDictAsset>()
-        .init_asset_loader::<TextureDictAssetLoader>()
-        .init_asset::<TextureDictAsset>()
-        .init_asset::<BevyBlockTypeStorageAsset>()
         .init_state::<AppStates>()
-        .add_loading_state(
-            LoadingState::new(AppStates::Loading)
-                .continue_to_state(AppStates::Compile)
-                .with_dynamic_assets_file::<StandardDynamicAssetCollection>(
-                    "texture_array.assets.ron",
-                )
-                .load_collection::<VoxelAssets>()
-                .load_collection::<Config>(),
-        )
-        .add_systems(Update, chunk_loader_config_changed)
         .add_systems(OnExit(AppStates::Compile), init_level)
         .add_observer(on_action_event)
         .run();
-}
-
-#[derive(AssetCollection, Resource)]
-struct VoxelAssets {
-    #[asset(path = "global.render_desc.json")]
-    render_desc_storage_res: Handle<RenderDescDictAsset>,
-    #[asset(path = "global.textures.yaml")]
-    texture_dict_asset: Handle<TextureDictAsset>,
-    #[asset(path = "global.blocks.json")]
-    server_blocks: Handle<BevyBlockTypeStorageAsset>,
-    #[asset(path = "global.materials.json")]
-    materials_dict_asset: Handle<MaterialsDictAsset>,
-}
-
-#[derive(Resource, Deserialize, Asset, TypePath, Debug, Clone, PartialEq)]
-pub struct ChunkLoaderConfigAsset {
-    pub max_loads_per_frame: usize,
-    pub load_distance: usize,
-    pub dynamic_vertical_loading: bool,
-    pub debug: bool,
-}
-
-impl From<&ChunkLoaderConfigAsset> for ChunkLoaderConfig {
-    fn from(value: &ChunkLoaderConfigAsset) -> Self {
-        Self {
-            max_loads_per_frame: value.max_loads_per_frame,
-            load_distance: value.load_distance,
-            dynamic_vertical_loading: value.dynamic_vertical_loading,
-            debug: value.debug,
-        }
-    }
-}
-
-#[derive(AssetCollection, Resource)]
-pub struct Config {
-    #[asset(path = "config.chunk_loader.yaml")]
-    pub chunk_loader_settings: Handle<ChunkLoaderConfigAsset>,
-}
-
-fn chunk_loader_config_changed(
-    mut events: MessageReader<AssetEvent<ChunkLoaderConfigAsset>>,
-    mut config: ResMut<ChunkLoaderConfig>,
-    assets: Res<Assets<ChunkLoaderConfigAsset>>,
-) {
-    for event in events.read() {
-        match event {
-            AssetEvent::Modified { id } => {
-                if let Some(asset) = assets.get(*id) {
-                    info!("ChunkLoaderConfig changed: {:?}", asset);
-
-                    let new_chunk_loader_config: ChunkLoaderConfig = asset.into();
-                    *config = new_chunk_loader_config;
-                }
-            }
-            AssetEvent::Added { id } => {
-                if let Some(asset) = assets.get(*id) {
-                    info!("ChunkLoaderConfig loaded");
-
-                    let new_chunk_loader_config: ChunkLoaderConfig = asset.into();
-                    *config = new_chunk_loader_config;
-                }
-            }
-            _ => {}
-        }
-    }
 }
 
 fn init_level(
