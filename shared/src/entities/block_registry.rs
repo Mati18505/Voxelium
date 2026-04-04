@@ -6,7 +6,7 @@ use super::BlockID;
 
 static BLOCK_NAME_TO_ID: OnceCell<Arc<HashMap<String, BlockID>>> = OnceCell::new();
 
-pub fn init_block_names(blocks: Vec<(String, BlockID)>) {
+pub fn init_block_names(blocks: HashMap<String, BlockID>) {
     let map = blocks.into_iter().collect();
 
     BLOCK_NAME_TO_ID

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use bevy::prelude::*;
 use bevy_common_assets::json::JsonAssetPlugin;
 use serde::Deserialize;
@@ -19,7 +21,7 @@ pub struct BlockTypeStorageAsset {
     blocks: Vec<BlockTypeAsset>,
 }
 
-pub type BlockNameToId = Vec<(String, BlockID)>;
+pub type BlockNameToId = HashMap<String, BlockID>;
 
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 struct BlockTypeAsset {
