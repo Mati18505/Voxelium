@@ -6,10 +6,11 @@ use super::chunk_loader_asset::{ChunkLoaderAssetPlugin, ChunkLoaderConfigAsset};
 use super::materials_dict_asset::MaterialsDictAssetPlugin;
 use super::render_desc_dict_asset::RenderDescAssetPlugin;
 use super::texture_dict_asset::TextureDictAssetPlugin;
+use super::loaders::materials_dict_asset_loader::MaterialsDictAsset;
 
 use crate::{
     bevy_resources::{
-        MaterialsDictAsset, RenderDescDictAsset, TextureDictAsset,
+        RenderDescDictAsset, TextureDictAsset,
     },
     bevy_types::AppStates,
 };
