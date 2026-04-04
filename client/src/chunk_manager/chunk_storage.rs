@@ -57,10 +57,10 @@ impl Plugin for ChunkStoragePlugin {
             .add_systems(
                 Update,
                 (
+                    remove_chunk_meshes,
                     despawn_chunks,
                     spawn_chunks,
                     add_chunk_meshes,
-                    remove_chunk_meshes,
                 )
                     .chain(),
             );
