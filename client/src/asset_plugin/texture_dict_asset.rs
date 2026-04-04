@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
-use crate::bevy_resources::{TextureDictAsset, TextureDictAssetLoader};
+pub use crate::asset_plugin::loaders::texture_dict_asset_loader::TextureDictAsset;
+use crate::asset_plugin::loaders::texture_dict_asset_loader::TextureDictAssetLoader;
 
 pub struct TextureDictAssetPlugin;
 impl Plugin for TextureDictAssetPlugin {

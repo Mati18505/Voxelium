@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 
 pub use super::loaders::materials_dict_asset_loader::MaterialsDictAsset;
-
 use crate::asset_plugin::loaders::materials_dict_asset_loader::MaterialsDictAssetLoader;
 
 pub struct MaterialsDictAssetPlugin;

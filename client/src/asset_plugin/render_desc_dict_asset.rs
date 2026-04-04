@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
-pub use super::loaders::render_desc_storage_asset::RenderDescDictAsset;
-use super::loaders::render_desc_storage_asset::RenderDescDictAssetLoader;
+pub use super::loaders::render_desc_storage_asset_loader::RenderDescDictAsset;
+use super::loaders::render_desc_storage_asset_loader::RenderDescDictAssetLoader;
 
 pub struct RenderDescAssetPlugin;
 impl Plugin for RenderDescAssetPlugin {

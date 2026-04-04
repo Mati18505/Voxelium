@@ -4,11 +4,13 @@ use bevy::prelude::*;
 use shared::entities::*;
 
 use crate::{
-    asset_plugin::{BlockTypeStorageAsset, MaterialsDictAsset, RenderDescDictAsset, VoxelAssets},
+    asset_plugin::{
+        BlockTypeStorageAsset, MaterialsDictAsset, RenderDescDictAsset, TextureDictAsset,
+        VoxelAssets,
+    },
     bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
-        MaterialsDictionaryCompilationResult, Storage, TextureDictAsset,
-        TextureDictionaryCompilationResult,
+        MaterialsDictionaryCompilationResult, Storage, TextureDictionaryCompilationResult,
     },
     bevy_types::{AppStates, GameResources},
     chunk_mesh_builder::RenderShape,

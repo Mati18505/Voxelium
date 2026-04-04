@@ -6,9 +6,9 @@ use super::chunk_loader_asset::{ChunkLoaderAssetPlugin, ChunkLoaderConfigAsset};
 use super::loaders::materials_dict_asset_loader::MaterialsDictAsset;
 use super::materials_dict_asset::MaterialsDictAssetPlugin;
 use super::render_desc_dict_asset::{RenderDescAssetPlugin, RenderDescDictAsset};
-use super::texture_dict_asset::TextureDictAssetPlugin;
+use super::texture_dict_asset::{TextureDictAsset, TextureDictAssetPlugin};
 
-use crate::{bevy_resources::TextureDictAsset, bevy_types::AppStates};
+use crate::bevy_types::AppStates;
 
 pub struct AssetsPlugin;
 impl Plugin for AssetsPlugin {
