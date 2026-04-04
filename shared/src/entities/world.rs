@@ -1,5 +1,3 @@
-use std::{error::Error, fmt};
-
 use super::{
     chunk::Chunk,
     types::{BlockID, BlockPos, ChunkPos},
@@ -11,38 +9,23 @@ pub trait ChunkRepository {
     fn get_chunk_mut(&mut self, pos: ChunkPos) -> Option<&mut Chunk>;
 }
 
-pub fn get_block(
-    world_pos: BlockPos,
-    chunk_repository: &impl ChunkRepository,
-) -> Result<BlockID, GetBlockErr> {
+/// Returns block from repository, if it exists.
+/// If it doesn't exists returns `BlockID::default()` I.e. air.
+pub fn get_block(world_pos: BlockPos, chunk_repository: &impl ChunkRepository) -> BlockID {
     let chunk_pos = ChunkPos::from(world_pos);
     let in_chunk_pos = BlockInChunkPos::from(world_pos);
-    let chunk = chunk_repository
+
+    chunk_repository
         .get_chunk(chunk_pos)
-        .ok_or(GetBlockErr::OutsideOfWorld)?;
-
-    Ok(chunk.get_block_storage().get_block(in_chunk_pos))
-}
-
-#[derive(Debug, PartialEq)]
-pub enum GetBlockErr {
-    OutsideOfWorld,
-}
-
-impl Error for GetBlockErr {}
-
-impl fmt::Display for GetBlockErr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let s = match self {
-            GetBlockErr::OutsideOfWorld => "Block is outside of the world.",
-        };
-
-        write!(f, "{s}")
-    }
+        .map_or(BlockID::default(), |chunk| {
+            chunk.get_block_storage().get_block(in_chunk_pos)
+        })
 }
 
 #[cfg(test)]
 mod test {
+    use crate::entities::{BlockStorage, CHUNK_SIZE};
+
     use super::*;
     use std::collections::hash_map::HashMap;
 
@@ -60,20 +43,22 @@ mod test {
 
     #[test]
     fn test_get_block_outside_of_world() {
-        let chunk_storage = DummyChunkStorage::default();
+        let chunk_storage =
+            DummyChunkStorage(HashMap::from([(ChunkPos::new(16, 0, 0), Chunk::default())]));
         let pos = BlockPos::new(0, 0, 0);
-        assert_eq!(
-            get_block(pos, &chunk_storage),
-            Err(GetBlockErr::OutsideOfWorld)
-        );
+
+        assert_eq!(get_block(pos, &chunk_storage), 0,);
     }
 
     #[test]
     fn test_get_block_existing_chunk() {
-        let chunk_storage =
-            DummyChunkStorage(HashMap::from([(ChunkPos::new(0, 0, 0), Chunk::default())]));
+        let block_storage = BlockStorage::new(vec![3; CHUNK_SIZE.pow(3)]);
+        let chunk_storage = DummyChunkStorage(HashMap::from([(
+            ChunkPos::new(0, 0, 0),
+            Chunk::new(block_storage),
+        )]));
         let pos = BlockPos::new(0, 0, 0);
 
-        assert_eq!(get_block(pos, &chunk_storage), Ok(0));
+        assert_eq!(get_block(pos, &chunk_storage), 3);
     }
 }

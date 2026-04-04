@@ -44,32 +44,28 @@ pub fn raycast<Chunks: ChunkRepository>(
 
     let mut curr_pos = start;
     let mut raycast_result = RaycastResult::default();
-    let mut previous_block_id: BlockID =
-        get_block(f32_pos_to_block_pos(start), config.chunks).unwrap_or_default();
+    let mut previous_block_id: BlockID = get_block(f32_pos_to_block_pos(start), config.chunks);
     let mut curr_dir_axis = 0;
 
     while curr_pos.distance2(start) <= config.range * config.range && !raycast_result.collide {
         let curr_block_pos = f32_pos_to_block_pos(curr_pos);
 
-        if let Ok(block_id) = get_block(curr_block_pos, config.chunks) {
-            if let Some(block_type) = config.block_type_storage.get_by_id(block_id) {
-                if block_type.affect_raycast {
-                    raycast_result.collide = true;
-                    raycast_result.hitpoint = Hitpoint {
-                        pos: curr_block_pos,
-                        block_id,
-                    };
-                    raycast_result.step_before_hitpoint = Hitpoint {
-                        pos: f32_pos_to_block_pos(curr_pos - dir * config.increment),
-                        block_id: previous_block_id,
-                    }
+        let block_id = get_block(curr_block_pos, config.chunks);
+        if let Some(block_type) = config.block_type_storage.get_by_id(block_id) {
+            if block_type.affect_raycast {
+                raycast_result.collide = true;
+                raycast_result.hitpoint = Hitpoint {
+                    pos: curr_block_pos,
+                    block_id,
+                };
+                raycast_result.step_before_hitpoint = Hitpoint {
+                    pos: f32_pos_to_block_pos(curr_pos - dir * config.increment),
+                    block_id: previous_block_id,
                 }
             }
-
-            previous_block_id = block_id;
-        } else {
-            previous_block_id = BlockID::default();
         }
+
+        previous_block_id = block_id;
 
         match curr_dir_axis {
             0 => curr_pos.x += dir.x * config.increment,

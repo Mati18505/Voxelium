@@ -1,7 +1,4 @@
-use bevy::{
-    ecs::{system::SystemParam},
-    prelude::*,
-};
+use bevy::{ecs::system::SystemParam, prelude::*};
 use std::collections::{hash_map, HashMap};
 
 use shared::entities::{Chunk, ChunkPos, ChunkRepository};
