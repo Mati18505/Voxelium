@@ -3,8 +3,7 @@ use bevy_asset_loader::prelude::*;
 
 use super::blocks_asset::{BlockTypeStorageAsset, BlocksAssetPlugin};
 use super::chunk_loader_asset::{ChunkLoaderAssetPlugin, ChunkLoaderConfigAsset};
-use super::loaders::materials_dict_asset_loader::MaterialsDictAsset;
-use super::materials_dict_asset::MaterialsDictAssetPlugin;
+use super::materials::{MaterialsDictAsset, MaterialsDictAssetPlugin};
 use super::render_desc_dict_asset::{RenderDescAssetPlugin, RenderDescDictAsset};
 use super::texture_dict_asset::{TextureDictAsset, TextureDictAssetPlugin};
 
