@@ -4,7 +4,7 @@ use thiserror::Error;
 use shared::entities::BlockSide;
 
 use crate::{
-    asset_plugin::textures::TextureAsset,
+    assets::textures::TextureAsset,
     bevy_resources::{
         Dictionary, MaterialName, TextureDictionary, TextureIndexDictionary, TextureName,
     },
@@ -196,7 +196,7 @@ impl Default for TexturedCubeDesc {
 mod tests {
     use assert_matches::assert_matches;
 
-    use crate::asset_plugin::textures::{PaletteData, TextureArrayData};
+    use crate::assets::textures::{PaletteData, TextureArrayData};
 
     use super::*;
 

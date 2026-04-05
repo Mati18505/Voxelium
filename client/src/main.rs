@@ -20,7 +20,7 @@ use shared::{
 use chunk_manager::ChunkManagerPlugin;
 
 use crate::{
-    asset_plugin::AssetsPlugin,
+    assets::AssetsPlugin,
     bevy_resources::ResourcesPlugin,
     chunk_manager::{ChunkStorage, VoxelEdit},
     controller::ActionType,
@@ -29,7 +29,7 @@ use crate::{
     orchestrator::{utils::raycast_from_controller, OrchestratorPlugin},
 };
 
-mod asset_plugin;
+mod assets;
 mod bevy_render;
 mod bevy_resources;
 mod bevy_types;
