@@ -8,10 +8,8 @@ use bevy::asset::{io::Reader, AssetLoader, LoadContext};
 use bevy::log::warn;
 
 use super::super::textured_block_type_builder::TexturedBlockTypeBuilder;
+use super::RenderDescDictAsset;
 use crate::bevy_resources::{BlockTypeName, RenderData, RenderDesc, RenderDescDictionary};
-
-#[derive(Debug, bevy::asset::Asset, bevy::reflect::TypePath, Clone)]
-pub struct RenderDescDictAsset(pub RenderDescDictionary);
 
 #[derive(Default, TypePath)]
 pub struct RenderDescDictAssetLoader;
