@@ -7,13 +7,9 @@ use bevy::{
     reflect::TypePath,
 };
 
-use crate::bevy_resources::{
-    ColoredCubeMaterialData, MaterialAsset, MaterialName, MaterialsDictionary,
-    TexturedCubeMaterialData,
-};
+use crate::bevy_resources::{MaterialName, MaterialsDictionary};
 
-#[derive(Debug, bevy::asset::Asset, bevy::reflect::TypePath)]
-pub struct MaterialsDictAsset(pub MaterialsDictionary);
+use super::{ColoredCubeMaterialData, MaterialAsset, MaterialsDictAsset, TexturedCubeMaterialData};
 
 #[derive(Default, TypePath)]
 pub struct MaterialsDictAssetLoader;

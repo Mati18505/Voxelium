@@ -1,26 +1,15 @@
 use std::collections::HashMap;
 
-use bevy::asset::Asset;
 use bevy::asset::{io::Reader, AssetLoader, LoadContext};
 use bevy::log::warn;
 use bevy::reflect::TypePath;
 use thiserror::Error;
 
-use crate::bevy_resources::{
-    PaletteData, TextureArrayData, TextureAsset, TextureDictionary, TextureIndexDictionary,
-    TextureName,
-};
+use crate::bevy_resources::{TextureDictionary, TextureIndexDictionary, TextureName};
 
 use yaml_rust2::{yaml::Hash, Yaml, YamlLoader};
 
-#[derive(Debug, Asset, TypePath)]
-pub struct TextureDictAsset(pub TextureDictionary);
-
-impl From<TextureDictAsset> for TextureDictionary {
-    fn from(asset: TextureDictAsset) -> Self {
-        asset.0
-    }
-}
+use super::{PaletteData, TextureArrayData, TextureAsset, TextureDictAsset};
 
 #[derive(Default, TypePath)]
 pub struct TextureDictAssetLoader;

@@ -7,12 +7,9 @@ use bevy::{
         *,
     },
 };
-use bevy_asset_loader::prelude::*;
-use bevy_common_assets::json::JsonAssetPlugin;
 
 use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
 use bevy_render::VoxelRenderPlugin;
-use bevy_resources::{MaterialsDictAsset, MaterialsDictAssetLoader};
 use bevy_types::{AppStates, GameResources};
 use controller::ControllerPlugin;
 use shared::{
@@ -23,10 +20,8 @@ use shared::{
 use chunk_manager::ChunkManagerPlugin;
 
 use crate::{
-    bevy_resources::{
-        BevyBlockTypeStorageAsset, RenderDescDictAsset, RenderDescDictAssetLoader, ResourcesPlugin,
-        TextureDictAsset, TextureDictAssetLoader,
-    },
+    assets::AssetsPlugin,
+    bevy_resources::ResourcesPlugin,
     chunk_manager::{ChunkStorage, VoxelEdit},
     controller::ActionType,
     diagnostics::{DiagnosticsConfig, DiagnosticsPlugin},
@@ -34,6 +29,7 @@ use crate::{
     orchestrator::{utils::raycast_from_controller, OrchestratorPlugin},
 };
 
+mod assets;
 mod bevy_render;
 mod bevy_resources;
 mod bevy_types;
@@ -61,7 +57,7 @@ fn main() {
                     ..default()
                 }),
             WireframePlugin::default(),
-            JsonAssetPlugin::<BevyBlockTypeStorageAsset>::new(&["blocks.json"]),
+            AssetsPlugin,
             ControllerPlugin,
             VoxelRenderPlugin,
             ChunkManagerPlugin,
@@ -75,37 +71,10 @@ fn main() {
             global: false,
             default_color: WHITE.into(),
         })
-        .init_asset_loader::<RenderDescDictAssetLoader>()
-        .init_asset::<RenderDescDictAsset>()
-        .init_asset_loader::<MaterialsDictAssetLoader>()
-        .init_asset::<MaterialsDictAsset>()
-        .init_asset_loader::<TextureDictAssetLoader>()
-        .init_asset::<TextureDictAsset>()
-        .init_asset::<BevyBlockTypeStorageAsset>()
         .init_state::<AppStates>()
-        .add_loading_state(
-            LoadingState::new(AppStates::Loading)
-                .continue_to_state(AppStates::Compile)
-                .with_dynamic_assets_file::<StandardDynamicAssetCollection>(
-                    "texture_array.assets.ron",
-                )
-                .load_collection::<VoxelAssets>(),
-        )
         .add_systems(OnExit(AppStates::Compile), init_level)
         .add_observer(on_action_event)
         .run();
-}
-
-#[derive(AssetCollection, Resource)]
-struct VoxelAssets {
-    #[asset(path = "global.render_desc.json")]
-    render_desc_storage_res: Handle<RenderDescDictAsset>,
-    #[asset(path = "global.textures.yaml")]
-    texture_dict_asset: Handle<TextureDictAsset>,
-    #[asset(path = "global.blocks.json")]
-    server_blocks: Handle<BevyBlockTypeStorageAsset>,
-    #[asset(path = "global.materials.json")]
-    materials_dict_asset: Handle<MaterialsDictAsset>,
 }
 
 fn init_level(

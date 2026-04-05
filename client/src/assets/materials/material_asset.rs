@@ -1,3 +1,7 @@
+use bevy::prelude::*;
+
+use crate::bevy_resources::MaterialsDictionary;
+
 #[derive(Debug)]
 pub enum MaterialAsset {
     Placeholder,
@@ -15,3 +19,6 @@ pub struct TexturedCubeMaterialData {
 pub struct ColoredCubeMaterialData {
     pub palette_name: String,
 }
+
+#[derive(Debug, Asset, TypePath)]
+pub struct MaterialsDictAsset(pub MaterialsDictionary);

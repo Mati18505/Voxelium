@@ -4,10 +4,9 @@ use thiserror::Error;
 use shared::entities::BlockSide;
 
 use crate::{
+    assets::textures::TextureAsset,
     bevy_resources::{
-        Dictionary, MaterialName,
-        TextureAsset::{Palette, TextureArray},
-        TextureDictionary, TextureIndexDictionary, TextureName,
+        Dictionary, MaterialName, TextureDictionary, TextureIndexDictionary, TextureName,
     },
     chunk_mesh_builder::{ColorIndex, MaterialId, RenderShape, TextureIndex, VoxelRenderData},
 };
@@ -104,9 +103,9 @@ impl RenderDesc {
             .ok_or(NoTextureAsset(texture_name.to_string()))?;
 
         let texture_dictionary = match texture_asset {
-            TextureArray { data } => Ok(&data.textures),
+            TextureAsset::TextureArray { data } => Ok(&data.textures),
             // invalid material 9
-            Palette { .. } => Err(InvalidMaterial(
+            TextureAsset::Palette { .. } => Err(InvalidMaterial(
                 rd.material.to_string(),
                 "textured_cube".to_string(),
                 "connected texture is of palette type, should be texture array".to_string(),
@@ -197,7 +196,7 @@ impl Default for TexturedCubeDesc {
 mod tests {
     use assert_matches::assert_matches;
 
-    use crate::bevy_resources::{PaletteData, TextureArrayData};
+    use crate::assets::textures::{PaletteData, TextureArrayData};
 
     use super::*;
 
@@ -247,7 +246,7 @@ mod tests {
         let mut texture_asset_dictionary = TextureDictionary::default();
         texture_asset_dictionary.set(
             "block_textures".to_string(),
-            TextureArray {
+            TextureAsset::TextureArray {
                 data: TextureArrayData {
                     path: "opaque.png".to_string(),
                     textures: texture_indices,
@@ -320,7 +319,7 @@ mod tests {
         ctx.2 = TextureDictionary::default();
         ctx.2.set(
             "block_textures".to_string(),
-            Palette {
+            TextureAsset::Palette {
                 data: PaletteData {
                     path: "opaque.png".to_string(),
                     len: 1,

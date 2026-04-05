@@ -4,14 +4,16 @@ use bevy::prelude::*;
 use shared::entities::*;
 
 use crate::{
+    assets::{
+        materials::MaterialsDictAsset, render_desc::RenderDescDictAsset,
+        textures::TextureDictAsset, BlockTypeStorageAsset, VoxelAssets,
+    },
     bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
-        BevyBlockTypeStorageAsset, MaterialsDictAsset, MaterialsDictionaryCompilationResult,
-        RenderDescDictAsset, Storage, TextureDictAsset, TextureDictionaryCompilationResult,
+        MaterialsDictionaryCompilationResult, Storage, TextureDictionaryCompilationResult,
     },
     bevy_types::{AppStates, GameResources},
     chunk_mesh_builder::RenderShape,
-    VoxelAssets,
 };
 
 pub struct ResourcesPlugin;
@@ -45,12 +47,11 @@ struct RenderShapeStorageRes(Arc<Storage<RenderShape>>);
 
 fn init_block_registry(
     voxel_assets: Res<VoxelAssets>,
-    server_block_type_assets: Res<Assets<BevyBlockTypeStorageAsset>>,
+    server_block_type_assets: Res<Assets<BlockTypeStorageAsset>>,
 ) {
     let server_block_type_storage_asset = server_block_type_assets
         .get(&voxel_assets.server_blocks)
-        .expect("Failed to get server_block_type_storage asset")
-        .to_owned();
+        .expect("Failed to get server_block_type_storage asset");
 
     init_block_names(server_block_type_storage_asset.into());
 }
@@ -143,7 +144,7 @@ fn create_game_resources(
     voxel_assets: Res<VoxelAssets>,
     material_compilation_result: Res<MaterialsResource>,
     render_shape_storage: Res<RenderShapeStorageRes>,
-    server_block_type_assets: Res<Assets<BevyBlockTypeStorageAsset>>,
+    server_block_type_assets: Res<Assets<BlockTypeStorageAsset>>,
 ) {
     let material_storage = Arc::new(material_compilation_result.0.id_to_handle.clone());
     let render_shape_storage = render_shape_storage.0.clone();
@@ -152,7 +153,7 @@ fn create_game_resources(
         .get(&voxel_assets.server_blocks)
         .expect("Failed to get server_block_type_storage asset");
     let server_block_type_storage: Arc<BlockTypeStorage> =
-        Arc::new(server_block_type_storage_asset.clone().into());
+        Arc::new(server_block_type_storage_asset.into());
 
     commands.insert_resource(GameResources {
         server_block_type_storage,
