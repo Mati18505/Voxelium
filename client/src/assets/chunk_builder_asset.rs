@@ -14,7 +14,7 @@ impl Plugin for ChunkBuilderAssetPlugin {
     }
 }
 
-#[derive(Resource, Deserialize, Asset, TypePath, Debug, Clone, PartialEq)]
+#[derive(Deserialize, Asset, TypePath, Debug, Clone, PartialEq)]
 pub struct ChunkBuilderConfigAsset {
     pub max_builds_per_frame: usize,
     pub render_distance: usize,

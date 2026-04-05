@@ -14,7 +14,7 @@ impl Plugin for ChunkLoaderAssetPlugin {
     }
 }
 
-#[derive(Resource, Deserialize, Asset, TypePath, Debug, Clone, PartialEq)]
+#[derive(Deserialize, Asset, TypePath, Debug, Clone, PartialEq)]
 pub struct ChunkLoaderConfigAsset {
     pub max_loads_per_frame: usize,
     pub load_distance: usize,

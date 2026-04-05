@@ -14,7 +14,7 @@ impl Plugin for ControllerAssetPlugin {
     }
 }
 
-#[derive(Resource, Deserialize, Asset, TypePath, Debug, Clone, PartialEq)]
+#[derive(Deserialize, Asset, TypePath, Debug, Clone, PartialEq)]
 pub struct ControllerConfigAsset {
     pub sensitivity: f32,
     pub speed: f32,
