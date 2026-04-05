@@ -5,8 +5,8 @@ use shared::entities::*;
 
 use crate::{
     asset_plugin::{
-        materials::MaterialsDictAsset, render_desc::RenderDescDictAsset, BlockTypeStorageAsset,
-        TextureDictAsset, VoxelAssets,
+        materials::MaterialsDictAsset, render_desc::RenderDescDictAsset,
+        textures::TextureDictAsset, BlockTypeStorageAsset, VoxelAssets,
     },
     bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{

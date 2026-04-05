@@ -8,7 +8,7 @@ use shared::entities::{iterate_over_block_registry, name_to_block_id, BlockID};
 use thiserror::Error;
 
 use crate::asset_plugin::materials::MaterialAsset;
-use crate::asset_plugin::TextureAsset;
+use crate::asset_plugin::textures::TextureAsset;
 use crate::bevy_resources::RenderDescCompileCtx;
 use crate::{
     bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial},

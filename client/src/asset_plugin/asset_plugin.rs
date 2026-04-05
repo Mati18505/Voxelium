@@ -5,7 +5,7 @@ use super::blocks_asset::{BlockTypeStorageAsset, BlocksAssetPlugin};
 use super::chunk_loader_asset::{ChunkLoaderAssetPlugin, ChunkLoaderConfigAsset};
 use super::materials::{MaterialsDictAsset, MaterialsDictAssetPlugin};
 use super::render_desc::{RenderDescAssetPlugin, RenderDescDictAsset};
-use super::texture_dict_asset::{TextureDictAsset, TextureDictAssetPlugin};
+use super::textures::{TextureAssetPlugin, TextureDictAsset};
 
 use crate::bevy_types::AppStates;
 
@@ -17,7 +17,7 @@ impl Plugin for AssetsPlugin {
             BlocksAssetPlugin,
             RenderDescAssetPlugin,
             MaterialsDictAssetPlugin,
-            TextureDictAssetPlugin,
+            TextureAssetPlugin,
         ))
         .add_loading_state(
             LoadingState::new(AppStates::Loading)
