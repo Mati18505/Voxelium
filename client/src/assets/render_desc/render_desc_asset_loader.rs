@@ -7,8 +7,7 @@ use thiserror::Error;
 use bevy::asset::{io::Reader, AssetLoader, LoadContext};
 use bevy::log::warn;
 
-use super::super::textured_block_type_builder::TexturedBlockTypeBuilder;
-use super::RenderDescDictAsset;
+use super::{textured_block_type_builder::TexturedBlockTypeBuilder, RenderDescDictAsset};
 use crate::bevy_resources::{BlockTypeName, RenderData, RenderDesc, RenderDescDictionary};
 
 #[derive(Default, TypePath)]
