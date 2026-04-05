@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use bevy::prelude::*;
@@ -13,8 +12,8 @@ use crate::chunk_manager::bevy_chunk_entities_manager::{
     ChunkEntitiesPlugin, CreateEntity, RemoveEntity,
 };
 use crate::chunk_manager::{
-    AddChunkMesh, ChunkBuilt, ChunkLoaded, ChunkLoaderConfig, ChunkLoaderPlugin, ChunkRemoved,
-    ChunkStorage, ChunkStoragePlugin, ChunkUnloaded, DespawnChunk, RemoveChunkMesh, SpawnChunk,
+    AddChunkMesh, ChunkBuilt, ChunkLoaded, ChunkLoaderPlugin, ChunkRemoved, ChunkStorage,
+    ChunkStoragePlugin, ChunkUnloaded, DespawnChunk, RemoveChunkMesh, SpawnChunk,
 };
 use crate::chunk_mesh_builder::meshers::ChunkMesher;
 use crate::{
@@ -23,8 +22,6 @@ use crate::{
     chunk_mesh_builder::meshers::naive_mesher::NaiveMesher,
     controller,
 };
-
-use super::ChunkBuilderConfig;
 
 #[derive(Message, Debug, PartialEq)]
 pub struct VoxelEdit(pub BlockPos, pub BlockID);
@@ -37,12 +34,7 @@ impl Plugin for ChunkManagerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             ChunkLoaderPlugin,
-            ChunkBuilderPlugin::new(ChunkBuilderConfig {
-                max_builds_per_frame: 64,
-                render_distance: 40,
-                dynamic_vertical_loading: false,
-                debug: false,
-            }),
+            ChunkBuilderPlugin,
             ChunkEntitiesPlugin,
             ChunkStoragePlugin,
         ))

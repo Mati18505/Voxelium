@@ -37,15 +37,21 @@ pub struct ChunkBuilderConfig {
     pub debug: bool,
 }
 
-pub struct ChunkBuilderPlugin(ChunkBuilderConfig);
-impl ChunkBuilderPlugin {
-    pub fn new(config: ChunkBuilderConfig) -> Self {
-        Self(config)
+impl Default for ChunkBuilderConfig {
+    fn default() -> Self {
+        Self {
+            max_builds_per_frame: 16,
+            render_distance: 8,
+            dynamic_vertical_loading: false,
+            debug: false,
+        }
     }
 }
+
+pub struct ChunkBuilderPlugin;
 impl Plugin for ChunkBuilderPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(self.0.clone())
+        app.init_resource::<ChunkBuilderConfig>()
             .init_resource::<BuilderResources>()
             .init_resource::<MesherWarningsAccum>()
             .insert_resource(DebugTimer(Timer::new(

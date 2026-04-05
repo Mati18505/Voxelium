@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 
 use super::blocks_asset::{BlockTypeStorageAsset, BlocksAssetPlugin};
+use super::chunk_builder_asset::{ChunkBuilderAssetPlugin, ChunkBuilderConfigAsset};
 use super::chunk_loader_asset::{ChunkLoaderAssetPlugin, ChunkLoaderConfigAsset};
 use super::materials::{MaterialsDictAsset, MaterialsDictAssetPlugin};
 use super::render_desc::{RenderDescAssetPlugin, RenderDescDictAsset};
@@ -13,6 +14,7 @@ pub struct AssetsPlugin;
 impl Plugin for AssetsPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
+            ChunkBuilderAssetPlugin,
             ChunkLoaderAssetPlugin,
             BlocksAssetPlugin,
             RenderDescAssetPlugin,
@@ -35,6 +37,8 @@ impl Plugin for AssetsPlugin {
 pub struct Config {
     #[asset(path = "config.chunk_loader.yaml")]
     pub chunk_loader_settings: Handle<ChunkLoaderConfigAsset>,
+    #[asset(path = "config.chunk_builder.yaml")]
+    pub chunk_builder_settings: Handle<ChunkBuilderConfigAsset>,
 }
 
 #[derive(AssetCollection, Resource)]
