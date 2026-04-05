@@ -8,3 +8,4 @@ mod asset_plugin;
 mod blocks_asset;
 mod chunk_builder_asset;
 mod chunk_loader_asset;
+mod controller_asset;

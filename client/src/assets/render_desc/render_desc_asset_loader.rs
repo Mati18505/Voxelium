@@ -170,10 +170,7 @@ fn parse_single_block(
     Ok((block_type_name, render_desc))
 }
 
-fn add_textures(
-    builder: TexturedCubeBuilder,
-    textures: &serde_json::Value,
-) -> TexturedCubeBuilder {
+fn add_textures(builder: TexturedCubeBuilder, textures: &serde_json::Value) -> TexturedCubeBuilder {
     let mut builder = builder;
 
     if let Some(side_texture) = textures.get("side").and_then(|e| e.as_str()) {

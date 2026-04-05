@@ -4,6 +4,7 @@ use bevy_asset_loader::prelude::*;
 use super::blocks_asset::{BlockTypeStorageAsset, BlocksAssetPlugin};
 use super::chunk_builder_asset::{ChunkBuilderAssetPlugin, ChunkBuilderConfigAsset};
 use super::chunk_loader_asset::{ChunkLoaderAssetPlugin, ChunkLoaderConfigAsset};
+use super::controller_asset::{ControllerAssetPlugin, ControllerConfigAsset};
 use super::materials::{MaterialsDictAsset, MaterialsDictAssetPlugin};
 use super::render_desc::{RenderDescAssetPlugin, RenderDescDictAsset};
 use super::textures::{TextureAssetPlugin, TextureDictAsset};
@@ -20,6 +21,7 @@ impl Plugin for AssetsPlugin {
             RenderDescAssetPlugin,
             MaterialsDictAssetPlugin,
             TextureAssetPlugin,
+            ControllerAssetPlugin,
         ))
         .add_loading_state(
             LoadingState::new(AppStates::Loading)
@@ -39,6 +41,8 @@ pub struct Config {
     pub chunk_loader_settings: Handle<ChunkLoaderConfigAsset>,
     #[asset(path = "config.chunk_builder.yaml")]
     pub chunk_builder_settings: Handle<ChunkBuilderConfigAsset>,
+    #[asset(path = "config.controller.yaml")]
+    pub controller_settings: Handle<ControllerConfigAsset>,
 }
 
 #[derive(AssetCollection, Resource)]
