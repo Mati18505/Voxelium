@@ -3,18 +3,18 @@ use shared::entities::BlockSide;
 use crate::bevy_resources::{RenderData, RenderDesc, TexturedCubeDesc};
 
 #[derive(Debug)]
-pub struct TexturedBlockTypeBuilder {
+pub struct TexturedCubeBuilder {
     render_desc: RenderDesc,
 }
 
-impl TexturedBlockTypeBuilder {
-    pub fn new() -> TexturedBlockTypeBuilder {
+impl TexturedCubeBuilder {
+    pub fn new() -> TexturedCubeBuilder {
         let textured_block_type = RenderDesc::TexturedCube {
             render_data: RenderData::default(),
             textured_cube_desc: TexturedCubeDesc::default(),
         };
 
-        TexturedBlockTypeBuilder {
+        TexturedCubeBuilder {
             render_desc: textured_block_type,
         }
     }

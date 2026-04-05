@@ -7,7 +7,7 @@ use thiserror::Error;
 use bevy::asset::{io::Reader, AssetLoader, LoadContext};
 use bevy::log::warn;
 
-use super::{textured_block_type_builder::TexturedBlockTypeBuilder, RenderDescDictAsset};
+use super::{textured_block_type_builder::TexturedCubeBuilder, RenderDescDictAsset};
 use crate::bevy_resources::{BlockTypeName, RenderData, RenderDesc, RenderDescDictionary};
 
 #[derive(Default, TypePath)]
@@ -134,7 +134,7 @@ fn parse_single_block(
 
     let render_desc: RenderDesc = match type_name.as_str() {
         "textured" => {
-            let mut builder = TexturedBlockTypeBuilder::new().render_data(render_data);
+            let mut builder = TexturedCubeBuilder::new().render_data(render_data);
 
             let textures = block.get("textures").ok_or(InvalidEntry(
                 block_type_name.clone(),
@@ -171,9 +171,9 @@ fn parse_single_block(
 }
 
 fn add_textures(
-    builder: TexturedBlockTypeBuilder,
+    builder: TexturedCubeBuilder,
     textures: &serde_json::Value,
-) -> TexturedBlockTypeBuilder {
+) -> TexturedCubeBuilder {
     let mut builder = builder;
 
     if let Some(side_texture) = textures.get("side").and_then(|e| e.as_str()) {
