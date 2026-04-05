@@ -7,13 +7,11 @@ use bevy::{
 use shared::entities::{iterate_over_block_registry, name_to_block_id, BlockID};
 use thiserror::Error;
 
-use crate::asset_plugin::TextureAsset;
+use crate::asset_plugin::{MaterialAsset, TextureAsset};
 use crate::bevy_resources::RenderDescCompileCtx;
 use crate::{
     bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial},
-    bevy_resources::{
-        Dictionary, MaterialAsset, MaterialHandle, RenderDesc, RenderDescCompilationError, Storage,
-    },
+    bevy_resources::{Dictionary, MaterialHandle, RenderDesc, RenderDescCompilationError, Storage},
     chunk_mesh_builder::{MaterialId, RenderShape, TextureIndex},
 };
 
