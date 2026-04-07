@@ -14,7 +14,7 @@ impl GeneratedChunkProvider {
 
 impl ChunkProvider for GeneratedChunkProvider {
     fn load_chunk(&mut self, pos: ChunkPos, registry: &dyn BlockRegistry) -> Chunk {
-        let mut terrain_generator = TerrainGenerator::new();
+        let mut terrain_generator = TerrainGenerator::default();
         let block_storage = terrain_generator.generate_terrain(pos, registry);
 
         Chunk::new(block_storage)
