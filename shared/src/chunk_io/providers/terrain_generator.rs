@@ -1,8 +1,7 @@
 use rand::{rngs::ThreadRng, Rng};
 
 use crate::entities::{
-    block_in_chunk_pos_generator::BlockInChunkPosGenerator, name_to_block_id, BlockID,
-    BlockStorage, ChunkPos, CHUNK_SIZE,
+    block_in_chunk_pos_generator::BlockInChunkPosGenerator, BlockID, BlockRegistry, BlockStorage, ChunkPos, CHUNK_SIZE
 };
 
 #[derive(Debug, Clone)]
@@ -18,7 +17,7 @@ impl TerrainGenerator {
     }
 
     #[allow(unused)]
-    pub fn generate_terrain(&mut self, chunk_pos: ChunkPos) -> BlockStorage {
+    pub fn generate_terrain(&mut self, chunk_pos: ChunkPos, registry: &dyn BlockRegistry) -> BlockStorage {
         let mut blocks = BlockStorage::default().get_blocks().to_owned();
         let height_map = self.generate_height_map();
 
@@ -29,7 +28,7 @@ impl TerrainGenerator {
 
             let height_map_index = Self::index_height_map(pos.x, pos.z);
             let generated_height: i64 = height_map[height_map_index];
-            let block_id = self.generate_voxel(world_y as i64, generated_height);
+            let block_id = self.generate_voxel(world_y as i64, generated_height, registry);
 
             blocks[pos.index()] = block_id;
         }
@@ -55,7 +54,7 @@ impl TerrainGenerator {
         z * CHUNK_SIZE + x
     }
 
-    fn generate_voxel(&mut self, world_y: i64, generated_height: i64) -> BlockID {
+    fn generate_voxel(&mut self, world_y: i64, generated_height: i64, registry: &dyn BlockRegistry) -> BlockID {
         /*
             match world_z {
                 world_z if world_z > generated_height => biome.atmosphereBlock,
@@ -67,14 +66,14 @@ impl TerrainGenerator {
         */
 
         if world_y.abs() < generated_height - 4 {
-            name_to_block_id("red")
+            registry.name_to_block_id("red")
         } else if world_y.abs() < generated_height - 2 {
-            name_to_block_id("wood")
+            registry.name_to_block_id("wood")
         } else if world_y.abs() < generated_height {
             //self.noise.gen_range(4..5) as BlockID
-            name_to_block_id("leaves")
+            registry.name_to_block_id("leaves")
         } else {
-            name_to_block_id("air")
+            registry.name_to_block_id("air")
         }
     }
 }

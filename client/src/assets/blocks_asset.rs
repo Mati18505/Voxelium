@@ -1,10 +1,10 @@
-use std::collections::HashMap;
-
 use bevy::prelude::*;
 use bevy_common_assets::json::JsonAssetPlugin;
 use serde::Deserialize;
 
 use shared::entities::{BlockID, BlockType, BlockTypeStorage};
+
+use crate::bevy_resources::BlockNameToId;
 
 pub struct BlocksAssetPlugin;
 impl Plugin for BlocksAssetPlugin {
@@ -12,7 +12,8 @@ impl Plugin for BlocksAssetPlugin {
         app.add_plugins(JsonAssetPlugin::<BlockTypeStorageAsset>::new(&[
             "blocks.json",
         ]))
-        .init_asset::<BlockTypeStorageAsset>();
+        .init_asset::<BlockTypeStorageAsset>()
+        .add_systems(Update, asset_changed);
     }
 }
 
@@ -20,8 +21,6 @@ impl Plugin for BlocksAssetPlugin {
 pub struct BlockTypeStorageAsset {
     blocks: Vec<BlockTypeAsset>,
 }
-
-pub type BlockNameToId = HashMap<String, BlockID>;
 
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 struct BlockTypeAsset {
@@ -48,11 +47,39 @@ impl From<&BlockTypeStorageAsset> for BlockTypeStorage {
 
 impl From<&BlockTypeStorageAsset> for BlockNameToId {
     fn from(resource: &BlockTypeStorageAsset) -> Self {
-        resource
+        BlockNameToId::new(resource
             .blocks
             .iter()
             .enumerate()
             .map(|(i, e)| (e.name.clone(), i as BlockID))
-            .collect()
+            .collect())
+    }
+}
+
+fn asset_changed(
+    mut events: MessageReader<AssetEvent<BlockTypeStorageAsset>>,
+    mut registry: ResMut<BlockNameToId>,
+    assets: Res<Assets<BlockTypeStorageAsset>>,
+) {
+    for event in events.read() {
+        match event {
+            AssetEvent::Modified { id } => {
+                if let Some(asset) = assets.get(*id) {
+                    info!("BlockTypeStorageAsset changed");
+
+                    let new_block_storage: BlockNameToId = asset.into();
+                    *registry = new_block_storage;
+                }
+            }
+            AssetEvent::Added { id } => {
+                if let Some(asset) = assets.get(*id) {
+                    info!("BlockTypeStorageAsset loaded");
+
+                    let new_block_storage: BlockNameToId = asset.into();
+                    *registry = new_block_storage;
+                }
+            }
+            _ => {}
+        }
     }
 }

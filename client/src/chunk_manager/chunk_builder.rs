@@ -8,13 +8,12 @@ use bevy::prelude::*;
 use shared::{
     chunk_io::pending_chunk_queue::PendingChunkQueue,
     entities::{
-        iterate_over_block_registry, BlockID, BlockSide, Chunk, ChunkPos, ChunkPosGenerator2D,
-        ChunkPosGenerator3D, ChunkRepository, Direction, CHUNK_SIZE,
+        BlockID, BlockRegistry, BlockSide, Chunk, ChunkPos, ChunkPosGenerator2D, ChunkPosGenerator3D, ChunkRepository, Direction, IterableBlockRegistry, CHUNK_SIZE
     },
 };
 
 use crate::{
-    bevy_resources::BlockTypeName,
+    bevy_resources::{BlockNameToId, BlockTypeName},
     bevy_types::AppStates,
     chunk_manager::{ChunkMesherResource, ChunkStorage, ChunkUpdated, ControllerPos},
     chunk_mesh_builder::{
@@ -249,7 +248,7 @@ fn accum_mesher_warnings(accum: &mut MesherWarningsAccum, warnings: MesherWarnin
     }
 }
 
-fn log_warnings(timer: Res<DebugTimer>, mut warnings: ResMut<MesherWarningsAccum>) {
+fn log_warnings(timer: Res<DebugTimer>, mut warnings: ResMut<MesherWarningsAccum>, registry: Res<BlockNameToId>) {
     if !timer.0.is_finished() {
         return;
     }
@@ -260,8 +259,8 @@ fn log_warnings(timer: Res<DebugTimer>, mut warnings: ResMut<MesherWarningsAccum
         return;
     }
 
-    let block_id_to_name: HashMap<BlockID, BlockTypeName> = iterate_over_block_registry()
-        .map(|(name, block_id)| (*block_id, name.to_string()))
+    let block_id_to_name: HashMap<BlockID, BlockTypeName> = registry.iter()
+        .map(|(name, block_id)| (block_id, name.to_string()))
         .collect();
 
     for (warning, count) in warnings {

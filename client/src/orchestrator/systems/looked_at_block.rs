@@ -1,11 +1,11 @@
+use std::ops::Deref;
+
 use bevy::prelude::*;
-use shared::entities::name_to_block_id;
+use shared::entities::BlockRegistry;
 
 use super::{super::utils::raycast_from_controller, super::LookedAtBlockChangedEvent};
 use crate::{
-    bevy_types::GameResources,
-    chunk_manager::{ChunkStorage, ChunkUpdated},
-    controller::Controller,
+    bevy_resources::BlockNameToId, bevy_types::GameResources, chunk_manager::{ChunkStorage, ChunkUpdated}, controller::Controller
 };
 
 #[derive(Component, Debug, Default, Clone, Copy)]
@@ -25,6 +25,7 @@ pub fn update_looked_at_block(
     chunk_updated_ev: MessageReader<ChunkUpdated>,
     chunks: ChunkStorage,
     game_resources: Res<GameResources>,
+    registry: Res<BlockNameToId>,
 ) {
     let transform = match q_controller.single() {
         Ok(t) => t,
@@ -55,7 +56,7 @@ pub fn update_looked_at_block(
     let dirty = moved || looking_dir_changed || world_updated;
 
     if dirty {
-        process_raycast_and_send_event(commands, chunks, game_resources, looked_at_block_data);
+        process_raycast_and_send_event(commands, chunks, game_resources, looked_at_block_data, registry.deref());
     }
 }
 
@@ -64,6 +65,7 @@ fn process_raycast_and_send_event(
     chunks: ChunkStorage,
     game_resources: Res<'_, GameResources>,
     looked_at_block_data: Mut<'_, LookedAtBlockData>,
+    registry: &impl BlockRegistry,
 ) {
     let raycast_result = raycast_from_controller(
         looked_at_block_data.last_player_pos,
@@ -76,7 +78,7 @@ fn process_raycast_and_send_event(
 
     if let Some(default_block_type) = game_resources
         .server_block_type_storage
-        .get_by_id(name_to_block_id("air"))
+        .get_by_id(registry.name_to_block_id("air"))
     {
         if raycast_result.collide {
             let block_type = match game_resources.server_block_type_storage.get_by_id(block_id) {
