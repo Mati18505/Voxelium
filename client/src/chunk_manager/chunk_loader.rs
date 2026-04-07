@@ -1,12 +1,14 @@
 use bevy::prelude::*;
 use shared::{
-    chunk_io::{pending_chunk_queue::PendingChunkQueue, providers::provider::ChunkProvider},
+    chunk_io::pending_chunk_queue::PendingChunkQueue,
     entities::{Chunk, ChunkPos, ChunkPosGenerator2D},
 };
 use std::{collections::HashSet, fmt, ops::Deref, time::Duration};
 
 use crate::{
-    bevy_resources::BlockNameToId, bevy_types::AppStates, chunk_manager::{ChunkProviderResource, ControllerPos}
+    bevy_resources::BlockNameToId,
+    bevy_types::AppStates,
+    chunk_manager::{ChunkProviderResource, ControllerPos},
 };
 
 #[derive(Message, Debug, Clone, PartialEq)]
@@ -21,6 +23,8 @@ pub struct ChunkLoaderConfig {
     pub load_distance: usize,
     pub dynamic_vertical_loading: bool,
     pub debug: bool,
+    // Used only with 2d generator.
+    pub height: usize,
 }
 impl Default for ChunkLoaderConfig {
     fn default() -> Self {
@@ -29,6 +33,7 @@ impl Default for ChunkLoaderConfig {
             load_distance: 8,
             dynamic_vertical_loading: false,
             debug: false,
+            height: 1,
         }
     }
 }
@@ -87,7 +92,12 @@ fn update_desired_chunks(
             player_pos.0,
             config.load_distance,
         )),
-        false => Box::new(ChunkPosGenerator2D::new(player_pos.0, config.load_distance)),
+        false => Box::new(
+            ChunkPosGenerator2D::new(player_pos.0, config.load_distance).flat_map(|pos| {
+                let y_iter = (0..config.height).map(|e| e * 16);
+                y_iter.map(move |y| ChunkPos::new(pos.x, y as isize, pos.z))
+            }),
+        ),
     };
     let desired: HashSet<ChunkPos> = generator.collect();
 

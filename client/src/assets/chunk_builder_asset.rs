@@ -20,6 +20,7 @@ pub struct ChunkBuilderConfigAsset {
     pub render_distance: usize,
     pub dynamic_vertical_loading: bool,
     pub debug: bool,
+    pub height: Option<usize>,
 }
 
 impl From<&ChunkBuilderConfigAsset> for ChunkBuilderConfig {
@@ -29,6 +30,7 @@ impl From<&ChunkBuilderConfigAsset> for ChunkBuilderConfig {
             render_distance: value.render_distance,
             dynamic_vertical_loading: value.dynamic_vertical_loading,
             debug: value.debug,
+            height: value.height.unwrap_or(1),
         }
     }
 }

@@ -20,6 +20,7 @@ pub struct ChunkLoaderConfigAsset {
     pub load_distance: usize,
     pub dynamic_vertical_loading: bool,
     pub debug: bool,
+    pub height: Option<usize>,
 }
 
 impl From<&ChunkLoaderConfigAsset> for ChunkLoaderConfig {
@@ -29,6 +30,7 @@ impl From<&ChunkLoaderConfigAsset> for ChunkLoaderConfig {
             load_distance: value.load_distance,
             dynamic_vertical_loading: value.dynamic_vertical_loading,
             debug: value.debug,
+            height: value.height.unwrap_or(1),
         }
     }
 }

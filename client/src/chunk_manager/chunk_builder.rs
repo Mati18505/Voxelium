@@ -8,7 +8,8 @@ use bevy::prelude::*;
 use shared::{
     chunk_io::pending_chunk_queue::PendingChunkQueue,
     entities::{
-        BlockID, BlockRegistry, BlockSide, Chunk, ChunkPos, ChunkPosGenerator2D, ChunkPosGenerator3D, ChunkRepository, Direction, IterableBlockRegistry, CHUNK_SIZE
+        BlockID, BlockRegistry, BlockSide, Chunk, ChunkPos, ChunkPosGenerator2D,
+        ChunkPosGenerator3D, ChunkRepository, Direction, IterableBlockRegistry, CHUNK_SIZE,
     },
 };
 
@@ -34,6 +35,8 @@ pub struct ChunkBuilderConfig {
     pub render_distance: usize,
     pub dynamic_vertical_loading: bool,
     pub debug: bool,
+    // Used only with 2d generator.
+    pub height: usize,
 }
 
 impl Default for ChunkBuilderConfig {
@@ -43,6 +46,7 @@ impl Default for ChunkBuilderConfig {
             render_distance: 8,
             dynamic_vertical_loading: false,
             debug: false,
+            height: 1,
         }
     }
 }
@@ -100,14 +104,16 @@ fn update_desired_chunks(
     player_pos: Res<ControllerPos>,
 ) {
     let generator: Box<dyn Iterator<Item = ChunkPos>> = match config.dynamic_vertical_loading {
-        true => Box::new(ChunkPosGenerator3D::new(
+        true => Box::new(shared::entities::ChunkPosGenerator3D::new(
             player_pos.0,
             config.render_distance,
         )),
-        false => Box::new(ChunkPosGenerator2D::new(
-            player_pos.0,
-            config.render_distance,
-        )),
+        false => Box::new(
+            ChunkPosGenerator2D::new(player_pos.0, config.render_distance).flat_map(|pos| {
+                let y_iter = (0..config.height).map(|e| e * 16);
+                y_iter.map(move |y| ChunkPos::new(pos.x, y as isize, pos.z))
+            }),
+        ),
     };
     let desired: HashSet<ChunkPos> = generator.collect();
 
@@ -248,7 +254,11 @@ fn accum_mesher_warnings(accum: &mut MesherWarningsAccum, warnings: MesherWarnin
     }
 }
 
-fn log_warnings(timer: Res<DebugTimer>, mut warnings: ResMut<MesherWarningsAccum>, registry: Res<BlockNameToId>) {
+fn log_warnings(
+    timer: Res<DebugTimer>,
+    mut warnings: ResMut<MesherWarningsAccum>,
+    registry: Res<BlockNameToId>,
+) {
     if !timer.0.is_finished() {
         return;
     }
@@ -259,7 +269,8 @@ fn log_warnings(timer: Res<DebugTimer>, mut warnings: ResMut<MesherWarningsAccum
         return;
     }
 
-    let block_id_to_name: HashMap<BlockID, BlockTypeName> = registry.iter()
+    let block_id_to_name: HashMap<BlockID, BlockTypeName> = registry
+        .iter()
         .map(|(name, block_id)| (block_id, name.to_string()))
         .collect();
 

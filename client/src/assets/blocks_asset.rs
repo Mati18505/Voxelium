@@ -47,12 +47,14 @@ impl From<&BlockTypeStorageAsset> for BlockTypeStorage {
 
 impl From<&BlockTypeStorageAsset> for BlockNameToId {
     fn from(resource: &BlockTypeStorageAsset) -> Self {
-        BlockNameToId::new(resource
-            .blocks
-            .iter()
-            .enumerate()
-            .map(|(i, e)| (e.name.clone(), i as BlockID))
-            .collect())
+        BlockNameToId::new(
+            resource
+                .blocks
+                .iter()
+                .enumerate()
+                .map(|(i, e)| (e.name.clone(), i as BlockID))
+                .collect(),
+        )
     }
 }
 

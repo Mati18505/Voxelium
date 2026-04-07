@@ -90,7 +90,8 @@ impl RenderDescDictionary {
         let mut out = RenderDescDictionaryCompilationOutput::default();
 
         for (render_desc_name, _render_desc) in self.iter() {
-            if render_desc_name != "air" && registry.name_to_block_id(render_desc_name) == BlockID::default()
+            if render_desc_name != "air"
+                && registry.name_to_block_id(render_desc_name) == BlockID::default()
             {
                 out.warnings
                     .push(NoCorrespondingBlockInRegistry(render_desc_name.to_string()));
