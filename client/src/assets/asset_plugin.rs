@@ -7,6 +7,7 @@ use super::chunk_loader_asset::{ChunkLoaderAssetPlugin, ChunkLoaderConfigAsset};
 use super::controller_asset::{ControllerAssetPlugin, ControllerConfigAsset};
 use super::materials::{MaterialsDictAsset, MaterialsDictAssetPlugin};
 use super::render_desc::{RenderDescAssetPlugin, RenderDescDictAsset};
+use super::terrain_generator_asset::{TerrainGeneratorAssetPlugin, TerrainGeneratorConfigAsset};
 use super::textures::{TextureAssetPlugin, TextureDictAsset};
 
 use crate::bevy_types::AppStates;
@@ -22,6 +23,7 @@ impl Plugin for AssetsPlugin {
             MaterialsDictAssetPlugin,
             TextureAssetPlugin,
             ControllerAssetPlugin,
+            TerrainGeneratorAssetPlugin,
         ))
         .add_loading_state(
             LoadingState::new(AppStates::Loading)
@@ -43,6 +45,8 @@ pub struct Config {
     pub chunk_builder_settings: Handle<ChunkBuilderConfigAsset>,
     #[asset(path = "config.controller.yaml")]
     pub controller_settings: Handle<ControllerConfigAsset>,
+    #[asset(path = "config.terrain_generator.yaml")]
+    pub terrain_generator_settings: Handle<TerrainGeneratorConfigAsset>,
 }
 
 #[derive(AssetCollection, Resource)]

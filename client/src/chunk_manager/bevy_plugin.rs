@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use bevy::prelude::*;
 use shared::chunk_io::providers::provider::ChunkProvider;
+use shared::chunk_io::providers::terrain_generator::{TerrainConfig, TerrainGenerator};
 use shared::entities::{BlockID, BlockInChunkPos, Chunk, ChunkRepository};
 use shared::{
     chunk_io::providers::generated_chunk_provider::GeneratedChunkProvider,
@@ -39,6 +40,8 @@ impl Plugin for ChunkManagerPlugin {
             ChunkStoragePlugin,
         ))
         .init_resource::<ControllerPos>()
+        .init_resource::<TerrainGeneratorConfig>()
+        .init_resource::<ChunkProviderResource>()
         .add_systems(OnEnter(AppStates::InGame), init_chunk_manager)
         .add_message::<ChunkUpdated>()
         .add_message::<VoxelEdit>()
@@ -55,6 +58,10 @@ impl Plugin for ChunkManagerPlugin {
             )
                 .run_if(in_state(AppStates::InGame)),
         )
+        .add_systems(
+            Update,
+            reload_terrain_generator.run_if(resource_changed::<TerrainGeneratorConfig>),
+        )
         .add_observer(on_position_change);
     }
 }
@@ -68,18 +75,33 @@ impl Default for ControllerPos {
     }
 }
 
+#[derive(Resource, Default)]
+pub struct TerrainGeneratorConfig(pub TerrainConfig);
+
 #[derive(Resource)]
 pub struct ChunkMesherResource(pub Arc<dyn ChunkMesher>);
 #[derive(Resource)]
 pub struct ChunkProviderResource(pub Box<dyn ChunkProvider>);
 
-fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>) {
-    let chunk_generator = Box::new(GeneratedChunkProvider::new());
-    commands.insert_resource(ChunkProviderResource(chunk_generator));
+impl Default for ChunkProviderResource {
+    fn default() -> Self {
+        let chunk_generator = Box::new(GeneratedChunkProvider::default());
+        Self(chunk_generator)
+    }
+}
 
+fn init_chunk_manager(mut commands: Commands, game_resources: Res<GameResources>) {
     let voxel_mesher = NaiveMesher::new((*game_resources.render_shape_storage).clone());
     let voxel_mesher = Arc::new(voxel_mesher);
     commands.insert_resource(ChunkMesherResource(voxel_mesher));
+}
+
+fn reload_terrain_generator(
+    mut provider: ResMut<ChunkProviderResource>,
+    config: Res<TerrainGeneratorConfig>,
+) {
+    let chunk_generator = Box::new(GeneratedChunkProvider::new(TerrainGenerator::new(config.0)));
+    *provider = ChunkProviderResource(chunk_generator);
 }
 
 fn handle_chunks_loaded(

@@ -1,10 +1,11 @@
 use simdnoise::NoiseBuilder;
 
 use crate::entities::{
-    block_in_chunk_pos_generator::BlockInChunkPosGenerator, BlockID, BlockInChunkPos, BlockPos, BlockRegistry, BlockStorage, ChunkPos, CHUNK_SIZE
+    block_in_chunk_pos_generator::BlockInChunkPosGenerator, BlockID, BlockInChunkPos, BlockPos,
+    BlockRegistry, BlockStorage, ChunkPos, CHUNK_SIZE,
 };
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TerrainConfig {
     pub seed: i32,
     pub freq: f32,
@@ -35,7 +36,11 @@ impl TerrainGenerator {
         Self { config }
     }
 
-    pub fn generate_terrain(&mut self, chunk_pos: ChunkPos, registry: &dyn BlockRegistry) -> BlockStorage {
+    pub fn generate_terrain(
+        &mut self,
+        chunk_pos: ChunkPos,
+        registry: &dyn BlockRegistry,
+    ) -> BlockStorage {
         let density_noise = self.generate_density_map(chunk_pos);
         let flat_noise = self.generate_flat_map(chunk_pos);
 
@@ -116,7 +121,13 @@ impl TerrainGenerator {
         }
     }
 
-    fn generate_voxel(&self, pos: BlockInChunkPos, world_pos: BlockPos, density: f32, registry: &dyn BlockRegistry) -> BlockID {
+    fn generate_voxel(
+        &self,
+        pos: BlockInChunkPos,
+        world_pos: BlockPos,
+        density: f32,
+        registry: &dyn BlockRegistry,
+    ) -> BlockID {
         if density < 20.0 {
             registry.name_to_block_id("stone")
         } else if density < 40.0 {

@@ -9,3 +9,4 @@ mod blocks_asset;
 mod chunk_builder_asset;
 mod chunk_loader_asset;
 mod controller_asset;
+mod terrain_generator_asset;
