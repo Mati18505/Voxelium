@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 
 use bevy::prelude::*;
 use shared::entities::*;
@@ -10,7 +10,7 @@ use crate::{
     },
     bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
-        MaterialsDictionaryCompilationResult, Storage, TextureDictionaryCompilationResult,
+        BlockNameToId, MaterialsDictionaryCompilationResult, Storage, TextureDictionaryCompilationResult
     },
     bevy_types::{AppStates, GameResources},
     chunk_mesh_builder::RenderShape,
@@ -21,16 +21,16 @@ impl Plugin for ResourcesPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<SourceTextures>()
             .init_resource::<MaterialsResource>()
+            .init_resource::<BlockNameToId>()
             .init_resource::<RenderShapeStorageRes>()
             .add_systems(
                 OnEnter(AppStates::Compile),
                 (
-                    init_block_registry,
                     compile_texture_dictionary,
                     compile_material_dictionary,
                     compile_render_desc_dictionary,
                     create_game_resources,
-                )
+               )
                     .chain(),
             );
     }
@@ -44,17 +44,6 @@ struct MaterialsResource(MaterialsDictionaryCompilationResult);
 
 #[derive(Resource, Default)]
 struct RenderShapeStorageRes(Arc<Storage<RenderShape>>);
-
-fn init_block_registry(
-    voxel_assets: Res<VoxelAssets>,
-    server_block_type_assets: Res<Assets<BlockTypeStorageAsset>>,
-) {
-    let server_block_type_storage_asset = server_block_type_assets
-        .get(&voxel_assets.server_blocks)
-        .expect("Failed to get server_block_type_storage asset");
-
-    init_block_names(server_block_type_storage_asset.into());
-}
 
 fn compile_texture_dictionary(
     mut result: ResMut<SourceTextures>,
@@ -113,6 +102,7 @@ fn compile_render_desc_dictionary(
     voxel_assets: Res<VoxelAssets>,
     materials_res: Res<MaterialsResource>,
     texture_dictionary_asset: Res<Assets<TextureDictAsset>>,
+    registry: Res<BlockNameToId>,
 ) {
     let render_desc_dict_asset: &RenderDescDictAsset = render_desc_dict_asset
         .get(&voxel_assets.render_desc_storage_res)
@@ -126,6 +116,7 @@ fn compile_render_desc_dictionary(
         &materials_res.0.name_to_id,
         &materials_res.0.id_to_texture_name,
         &texture_dictionary_asset.0,
+        registry.deref(),
     );
     let render_shape_storage = Arc::new(compilation_out.storage);
 

@@ -1,10 +1,12 @@
+use std::collections::HashMap;
+
 use bevy::prelude::*;
 use bevy::{
     asset::{AssetServer, Assets, Handle},
     ecs::system::ResMut,
     image::{Image, ImageArrayLayout, ImageLoaderSettings},
 };
-use shared::entities::{iterate_over_block_registry, name_to_block_id, BlockID};
+use shared::entities::{BlockID, BlockRegistry, IterableBlockRegistry};
 use thiserror::Error;
 
 use crate::assets::materials::MaterialAsset;
@@ -34,6 +36,27 @@ pub type MaterialStorage = Storage<MaterialHandle>;
 pub type RenderShapeStorage = Storage<RenderShape>;
 pub type TextureIdStorage = Storage<Handle<Image>>;
 
+#[derive(Resource, Default)]
+pub struct BlockNameToId(HashMap<String, BlockID>);
+
+impl BlockRegistry for BlockNameToId {
+    fn name_to_block_id(&self, block_name: &str) -> BlockID {
+        self.0.get(block_name).cloned().unwrap_or(0)
+    }
+}
+
+impl IterableBlockRegistry for BlockNameToId {
+    fn iter(&self) -> impl Iterator<Item = (&str, BlockID)> {
+        self.0.iter().map(|(k, v)| (k.as_str(), *v))
+    }
+}
+
+impl BlockNameToId {
+    pub fn new(registry: HashMap<String, BlockID>) -> Self {
+        Self(registry)
+    }
+}
+
 #[derive(Debug, Error, Clone)]
 pub enum RenderDescDictionaryCompilationWarning {
     #[error("Cannot compile block type: {0}, {1}")]
@@ -61,23 +84,24 @@ impl RenderDescDictionary {
         material_name_to_id: &Dictionary<MaterialName, MaterialId>,
         material_id_to_texture_name: &Dictionary<MaterialId, TextureName>,
         texture_asset_dictionary: &TextureDictionary,
+        registry: &(impl BlockRegistry + IterableBlockRegistry),
     ) -> RenderDescDictionaryCompilationOutput {
         use RenderDescDictionaryCompilationWarning::*;
         let mut out = RenderDescDictionaryCompilationOutput::default();
 
         for (render_desc_name, _render_desc) in self.iter() {
-            if render_desc_name != "air" && name_to_block_id(render_desc_name) == BlockID::default()
+            if render_desc_name != "air" && registry.name_to_block_id(render_desc_name) == BlockID::default()
             {
                 out.warnings
                     .push(NoCorrespondingBlockInRegistry(render_desc_name.to_string()));
             }
         }
 
-        let mut block_registry: Vec<_> = iterate_over_block_registry().collect();
+        let mut block_registry: Vec<_> = registry.iter().collect();
         block_registry.sort_by_key(|(_, block_id)| *block_id);
 
         for (block_type_name, _block_id) in block_registry {
-            let render_shape = if let Some(render_desc) = self.get(block_type_name) {
+            let render_shape = if let Some(render_desc) = self.get(&block_type_name.to_owned()) {
                 let ctx = RenderDescCompileCtx {
                     material_name_to_id,
                     material_id_to_texture_name,

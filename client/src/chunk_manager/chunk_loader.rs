@@ -1,13 +1,12 @@
 use bevy::prelude::*;
 use shared::{
-    chunk_io::pending_chunk_queue::PendingChunkQueue,
+    chunk_io::{pending_chunk_queue::PendingChunkQueue, providers::provider::ChunkProvider},
     entities::{Chunk, ChunkPos, ChunkPosGenerator2D},
 };
-use std::{collections::HashSet, fmt, time::Duration};
+use std::{collections::HashSet, fmt, ops::Deref, time::Duration};
 
 use crate::{
-    bevy_types::AppStates,
-    chunk_manager::{ChunkProviderResource, ControllerPos},
+    bevy_resources::BlockNameToId, bevy_types::AppStates, chunk_manager::{ChunkProviderResource, ControllerPos}
 };
 
 #[derive(Message, Debug, Clone, PartialEq)]
@@ -127,6 +126,7 @@ fn load_chunks(
     mut chunk_provider: ResMut<ChunkProviderResource>,
     player_pos: Res<ControllerPos>,
     config: Res<ChunkLoaderConfig>,
+    registry: Res<BlockNameToId>,
 ) {
     for chunk_pos in data
         .pending_chunk_queue
@@ -136,7 +136,7 @@ fn load_chunks(
             continue;
         }
 
-        let chunk = chunk_provider.0.load_chunk(chunk_pos);
+        let chunk = chunk_provider.0.load_chunk(chunk_pos, registry.deref());
 
         data.loaded_chunks.insert(chunk_pos);
         loaded_chunks.write(ChunkLoaded(chunk_pos, chunk));

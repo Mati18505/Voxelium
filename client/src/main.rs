@@ -8,12 +8,14 @@ use bevy::{
     },
 };
 
+use std::ops::Deref;
+
 use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
 use bevy_render::VoxelRenderPlugin;
 use bevy_types::{AppStates, GameResources};
 use controller::ControllerPlugin;
 use shared::{
-    entities::{name_to_block_id, BlockID, BlockPos},
+    entities::{BlockID, BlockPos, BlockRegistry},
     physics::RaycastResult,
 };
 
@@ -21,7 +23,7 @@ use chunk_manager::ChunkManagerPlugin;
 
 use crate::{
     assets::AssetsPlugin,
-    bevy_resources::ResourcesPlugin,
+    bevy_resources::{BlockNameToId, ResourcesPlugin},
     chunk_manager::{ChunkStorage, VoxelEdit},
     controller::ActionType,
     diagnostics::{DiagnosticsConfig, DiagnosticsPlugin},
@@ -65,7 +67,6 @@ fn main() {
             GUIPlugin,
             ResourcesPlugin,
             InfiniteGridPlugin,
-            DiagnosticsPlugin::new(DiagnosticsConfig {}),
         ))
         .insert_resource(WireframeConfig {
             global: false,
@@ -107,6 +108,7 @@ fn on_action_event(
     state: Res<State<AppStates>>,
     chunks: Option<ChunkStorage>,
     game_resources: Option<Res<GameResources>>,
+    registry: Res<BlockNameToId>,
 ) {
     if !matches!(state.get(), AppStates::InGame) {
         return;
@@ -124,8 +126,8 @@ fn on_action_event(
 
     if raycast_result.collide {
         let block_action: BlockAction = match action.action_type {
-            ActionType::LeftClick => destroy_block_action(raycast_result),
-            ActionType::RightClick => place_block_action(raycast_result),
+            ActionType::LeftClick => destroy_block_action(raycast_result, registry.deref()),
+            ActionType::RightClick => place_block_action(raycast_result, registry.deref()),
         };
 
         if block_action.feasible {
@@ -142,20 +144,20 @@ struct BlockAction {
     new_block: BlockID,
 }
 
-fn destroy_block_action(raycast_result: RaycastResult) -> BlockAction {
+fn destroy_block_action(raycast_result: RaycastResult, registry: &impl BlockRegistry) -> BlockAction {
     BlockAction {
         feasible: true,
         pos: raycast_result.hitpoint.pos,
-        new_block: name_to_block_id("air"),
+        new_block: registry.name_to_block_id("air"),
     }
 }
 
-fn place_block_action(raycast_result: RaycastResult) -> BlockAction {
+fn place_block_action(raycast_result: RaycastResult, registry: &impl BlockRegistry) -> BlockAction {
     let previous_block_id = raycast_result.step_before_hitpoint.block_id;
 
     BlockAction {
-        feasible: previous_block_id == name_to_block_id("air"),
+        feasible: previous_block_id == registry.name_to_block_id("air"),
         pos: raycast_result.step_before_hitpoint.pos,
-        new_block: name_to_block_id("wood"),
+        new_block: registry.name_to_block_id("wood"),
     }
 }
