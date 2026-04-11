@@ -46,27 +46,22 @@ impl TerrainGenerator {
 
         let mut blocks = vec![0; CHUNK_SIZE.pow(3)];
 
-        for pos in BlockInChunkPosGenerator::new() {
-            let world_x: isize = pos.x as isize + chunk_pos.x;
-            let world_y: isize = pos.y as isize + chunk_pos.y;
-            let world_z: isize = pos.z as isize + chunk_pos.z;
+        for block_in_chunk_pos in BlockInChunkPosGenerator::new() {
+            let world_pos = Self::get_world_pos(chunk_pos, block_in_chunk_pos);
+            let block_id = self.generate_voxel_flat(world_pos, flat_noise[Self::index_2d(block_in_chunk_pos)], registry);
 
-            let world_pos = BlockPos::new(world_x, world_y, world_z);
-            let block_id = match self.config.add_flat_noise {
-                true => self.generate_voxel_with_flat(
-                    pos,
-                    world_pos,
-                    density_noise[pos.index()],
-                    flat_noise[Self::index_2d(pos)],
-                    registry,
-                ),
-                false => self.generate_voxel(pos, world_pos, density_noise[pos.index()], registry),
-            };
-
-            blocks[pos.index()] = block_id;
+            blocks[block_in_chunk_pos.index()] = block_id;
         }
 
         BlockStorage::new(blocks)
+    }
+
+    fn get_world_pos(chunk_pos: ChunkPos, block_in_chunk_pos: BlockInChunkPos) -> BlockPos {
+        let world_x: isize = block_in_chunk_pos.x as isize + chunk_pos.x;
+        let world_y: isize = block_in_chunk_pos.y as isize + chunk_pos.y;
+        let world_z: isize = block_in_chunk_pos.z as isize + chunk_pos.z;
+
+        BlockPos::new(world_x, world_y, world_z)
     }
 
     fn index_2d(pos: BlockInChunkPos) -> usize {
@@ -98,6 +93,19 @@ impl TerrainGenerator {
             .with_seed(self.config.seed)
             .with_lacunarity(self.config.lacunarity)
             .generate_scaled(0.0, 100.0)
+    }
+
+    fn generate_voxel_flat(
+        &self,
+        world_pos: BlockPos,
+        flat: f32,
+        registry: &dyn BlockRegistry,
+    ) -> BlockID {
+        if world_pos.y < flat.round() as isize {
+            registry.name_to_block_id("stone")
+        } else {
+            registry.name_to_block_id("air")
+        }
     }
 
     fn generate_voxel_with_flat(
@@ -141,5 +149,60 @@ impl TerrainGenerator {
 impl Default for TerrainGenerator {
     fn default() -> Self {
         Self::new(TerrainConfig::default())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_world_pos() {
+        let chunk_pos = ChunkPos::new(16, 32, 48);
+        let block_pos = BlockInChunkPos::new(1, 2, 3);
+
+        let result = TerrainGenerator::get_world_pos(chunk_pos, block_pos);
+
+        assert_eq!(result, BlockPos::new(17, 34, 51));
+    }
+
+    #[test]
+    fn test_get_world_pos_max() {
+        let chunk_pos = ChunkPos::new(16, 16, 16);
+        let block_pos = BlockInChunkPos::new(15, 15, 15);
+
+        let result = TerrainGenerator::get_world_pos(chunk_pos, block_pos);
+
+        assert_eq!(result, BlockPos::new(31, 31, 31));
+    }
+
+    #[test]
+    fn test_get_world_pos_negative_chunk() {
+        let chunk_pos = ChunkPos::new(-16, -32, -48);
+        let block_pos = BlockInChunkPos::new(0, 0, 0);
+
+        let result = TerrainGenerator::get_world_pos(chunk_pos, block_pos);
+
+        assert_eq!(result, BlockPos::new(-16, -32, -48));
+    }
+
+    #[test]
+    fn test_get_world_pos_negative_chunk_with_offset() {
+        let chunk_pos = ChunkPos::new(-16, -16, -16);
+        let block_pos = BlockInChunkPos::new(15, 15, 15);
+
+        let result = TerrainGenerator::get_world_pos(chunk_pos, block_pos);
+
+        assert_eq!(result, BlockPos::new(-1, -1, -1));
+    }
+
+    #[test]
+    fn test_get_world_pos_mixed_axes() {
+        let chunk_pos = ChunkPos::new(32, -16, 0);
+        let block_pos = BlockInChunkPos::new(4, 8, 12);
+
+        let result = TerrainGenerator::get_world_pos(chunk_pos, block_pos);
+
+        assert_eq!(result, BlockPos::new(36, -8, 12));
     }
 }
