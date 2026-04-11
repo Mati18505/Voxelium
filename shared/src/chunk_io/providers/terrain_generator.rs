@@ -101,8 +101,12 @@ impl TerrainGenerator {
         flat: f32,
         registry: &dyn BlockRegistry,
     ) -> BlockID {
-        if world_pos.y < flat.round() as isize {
+        let flat = flat.round() as isize;
+
+        if world_pos.y < flat - 5 {
             registry.name_to_block_id("stone")
+        } else if world_pos.y < flat {
+            registry.name_to_block_id("dirt")
         } else {
             registry.name_to_block_id("air")
         }
@@ -116,7 +120,9 @@ impl TerrainGenerator {
         flat: f32,
         registry: &dyn BlockRegistry,
     ) -> BlockID {
-        if world_pos.y < flat.round() as isize {
+        let flat = flat.round() as isize;
+
+        if world_pos.y < flat {
             if density < 20.0 {
                 registry.name_to_block_id("stone")
             } else if density < 40.0 {
