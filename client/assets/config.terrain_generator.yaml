@@ -1,5 +1,5 @@
 seed: 1337
-freq: 0.01
-lacunarity: 0.09
-octaves: 1
+freq: 0.004
+lacunarity: 2
+octaves: 3
 add_flat_noise: true

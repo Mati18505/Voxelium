@@ -67,7 +67,6 @@ fn main() {
             GUIPlugin,
             ResourcesPlugin,
             InfiniteGridPlugin,
-            DiagnosticsPlugin::new(DiagnosticsConfig {}),
         ))
         .insert_resource(WireframeConfig {
             global: false,

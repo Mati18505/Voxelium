@@ -1,4 +1,4 @@
-use simdnoise::NoiseBuilder;
+use fastnoise_lite::*;
 
 use crate::entities::{
     block_in_chunk_pos_generator::BlockInChunkPosGenerator, BlockID, BlockInChunkPos, BlockPos,
@@ -41,7 +41,6 @@ impl TerrainGenerator {
         chunk_pos: ChunkPos,
         registry: &dyn BlockRegistry,
     ) -> BlockStorage {
-        let density_noise = self.generate_density_map(chunk_pos);
         let flat_noise = self.generate_flat_map(chunk_pos);
 
         let mut blocks = vec![0; CHUNK_SIZE.pow(3)];
@@ -68,31 +67,35 @@ impl TerrainGenerator {
         pos.z * CHUNK_SIZE + pos.x
     }
 
-    fn generate_density_map(&self, chunk_pos: ChunkPos) -> Vec<f32> {
-        let offset_x = chunk_pos.x as f32;
-        let offset_y = chunk_pos.y as f32;
-        let offset_z = chunk_pos.z as f32;
-
-        NoiseBuilder::fbm_3d_offset(
-            offset_x, CHUNK_SIZE, offset_y, CHUNK_SIZE, offset_z, CHUNK_SIZE,
-        )
-        .with_freq(self.config.freq)
-        .with_octaves(self.config.octaves)
-        .with_seed(self.config.seed)
-        .with_lacunarity(self.config.lacunarity)
-        .generate_scaled(0.0, 100.0)
-    }
-
     fn generate_flat_map(&self, chunk_pos: ChunkPos) -> Vec<f32> {
-        let offset_x = chunk_pos.x as f32;
-        let offset_z = chunk_pos.z as f32;
+        let mut noise = FastNoiseLite::new();
+        noise.set_noise_type(Some(NoiseType::OpenSimplex2));
+        noise.set_frequency(Some(self.config.freq));
+        noise.set_fractal_octaves(Some(self.config.octaves as i32));
+        noise.set_seed(Some(self.config.seed));
+        noise.set_fractal_lacunarity(Some(self.config.lacunarity));
 
-        NoiseBuilder::fbm_2d_offset(offset_x, CHUNK_SIZE, offset_z, CHUNK_SIZE)
-            .with_freq(self.config.freq)
-            .with_octaves(self.config.octaves)
-            .with_seed(self.config.seed)
-            .with_lacunarity(self.config.lacunarity)
-            .generate_scaled(0.0, 100.0)
+        let mut noise_data = vec![0.0; CHUNK_SIZE.pow(2)];
+
+        // Sample noise pixels
+        for x in 0..CHUNK_SIZE {
+            for z in 0..CHUNK_SIZE {
+                let offset_x = (chunk_pos.x + x as isize) as f32;
+                let offset_z = (chunk_pos.z + z as isize) as f32;
+                // Domain warp can optionally be employed to transform the coordinates before sampling:
+                // let (x, y) = noise.domain_warp_2d(x as f32, y as f32);
+                
+                let neg_1_to_1 = noise.get_noise_2d(offset_x, offset_z);
+                // You may want to remap the -1..1 range data to the 0..1 range:
+                let zero_to_1 = (neg_1_to_1 + 1.) / 2.;
+                let flat = zero_to_1 * 80.0;
+                noise_data[Self::index_2d(BlockInChunkPos::new(x, 0, z))] = flat;
+                
+                // (Uses of `as f32` above should become `as f64` if you're using FNL with the "f64" feature flag)
+            }
+        }
+
+        noise_data
     }
 
     fn generate_voxel_flat(
