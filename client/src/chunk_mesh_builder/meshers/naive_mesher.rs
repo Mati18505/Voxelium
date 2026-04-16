@@ -5,17 +5,15 @@ use cgmath::Vector3;
 
 use super::{ChunkMesher, MesherOutput, MesherWarning};
 use crate::{
-    bevy_resources::RenderShapeStorage,
     chunk_mesh_builder::{
         meshers::MesherWarnings, ChunkMeshData, ChunkWithNeighbors, FaceData, MaterialId,
-        RenderShape,
-    },
+    }, voxel_render_core::RenderShape,
 };
 use shared::entities::*;
 
 #[derive(Debug)]
 pub struct NaiveMesher {
-    render_shape_storage: RenderShapeStorage,
+    render_shape_storage: Vec<RenderShape>,
 }
 
 impl ChunkMesher for NaiveMesher {
@@ -32,7 +30,7 @@ impl ChunkMesher for NaiveMesher {
 
         for (index, block_id) in block_storage.iter().enumerate() {
             let pos = BlockInChunkPos::from_index(index);
-            let result = self.render_shape_storage.get_by_id(*block_id as usize);
+            let result = self.render_shape_storage.get(*block_id as usize);
 
             match result {
                 Some(render_shape) => {
@@ -64,7 +62,7 @@ impl ChunkMesher for NaiveMesher {
 }
 
 impl NaiveMesher {
-    pub fn new(render_shape_storage: RenderShapeStorage) -> Self {
+    pub fn new(render_shape_storage: Vec<RenderShape>) -> Self {
         Self {
             render_shape_storage,
         }
@@ -109,7 +107,7 @@ impl NaiveMesher {
         let neighbor_id: BlockID = chunk.get(neighbor_pos);
         let neighbor_render_shape: &RenderShape = self
             .render_shape_storage
-            .get_by_id(neighbor_id as usize)
+            .get(neighbor_id as usize)
             .ok_or(MesherWarning::UnknownRenderShape(neighbor_id))?;
 
         Ok(neighbor_render_shape.render_data().translucent)

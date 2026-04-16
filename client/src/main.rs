@@ -41,6 +41,7 @@ mod controller;
 mod diagnostics;
 mod gui;
 mod orchestrator;
+mod voxel_render_core;
 
 fn main() {
     App::new()

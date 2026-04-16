@@ -12,8 +12,7 @@ use crate::{
     bevy_resources::{
         BlockNameToId, MaterialsDictionaryCompilationResult, Storage, TextureDictionaryCompilationResult
     },
-    bevy_types::{AppStates, GameResources},
-    chunk_mesh_builder::RenderShape,
+    bevy_types::{AppStates, GameResources}, voxel_render_core::RenderShape,
 };
 
 pub struct ResourcesPlugin;
@@ -43,7 +42,7 @@ struct SourceTextures(TextureDictionaryCompilationResult);
 struct MaterialsResource(MaterialsDictionaryCompilationResult);
 
 #[derive(Resource, Default)]
-struct RenderShapeStorageRes(Arc<Storage<RenderShape>>);
+struct RenderShapeStorageRes(Arc<Vec<RenderShape>>);
 
 fn compile_texture_dictionary(
     mut result: ResMut<SourceTextures>,

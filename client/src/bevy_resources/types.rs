@@ -12,10 +12,11 @@ use thiserror::Error;
 use crate::assets::materials::MaterialAsset;
 use crate::assets::textures::TextureAsset;
 use crate::bevy_resources::RenderDescCompileCtx;
+use crate::voxel_render_core::RenderShape;
 use crate::{
     bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{Dictionary, MaterialHandle, RenderDesc, RenderDescCompilationError, Storage},
-    chunk_mesh_builder::{MaterialId, RenderShape, TextureIndex},
+    chunk_mesh_builder::{MaterialId, TextureIndex},
 };
 
 pub type MaterialName = String;
@@ -33,7 +34,7 @@ pub type TextureIndexDictionary = Dictionary<TextureName, TextureIndex>;
 
 // Resources
 pub type MaterialStorage = Storage<MaterialHandle>;
-pub type RenderShapeStorage = Storage<RenderShape>;
+pub type RenderShapeStorage = Vec<RenderShape>;
 pub type TextureIdStorage = Storage<Handle<Image>>;
 
 #[derive(Resource, Default)]
@@ -121,7 +122,7 @@ impl RenderDescDictionary {
                 RenderShape::Placeholder
             };
 
-            out.storage.add(render_shape);
+            out.storage.push(render_shape);
         }
 
         out
