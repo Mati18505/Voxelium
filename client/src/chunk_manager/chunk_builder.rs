@@ -13,9 +13,9 @@ use shared::{
 };
 
 use crate::{
-    bevy_resources::{BlockNameToId, BlockTypeName}, bevy_types::AppStates, chunk_manager::{ChunkMesherResource, ChunkStorage, ChunkUpdated, ControllerPos}, chunk_mesh_builder::{ChunkMesh, ChunkWithNeighbors}, voxel_faces::{
-        ChunkMeshData, MesherWarning, MesherWarnings
-    }
+    bevy_resources::{BlockNameToId, BlockTypeName}, bevy_types::AppStates, chunk_manager::{ChunkMesherResource, ChunkStorage, ChunkUpdated, ControllerPos}, chunk_mesh_builder::{meshers::ChunkFaces, ChunkMesh, ChunkWithNeighbors}, voxel_faces::{
+        MesherWarning, MesherWarnings
+    }, voxel_render_core::FaceData
 };
 
 #[derive(Message, Debug, Clone, PartialEq)]
@@ -220,11 +220,12 @@ fn create_chunk_with_neighbors<'a>(
     })
 }
 
-fn build_chunk_mesh(layers: &HashMap<u8, ChunkMeshData>) -> ChunkMesh {
+fn build_chunk_mesh(layers: &HashMap<u8, Vec<FaceData>>) -> ChunkMesh {
     let mut chunk_mesh = ChunkMesh::default();
 
-    for (material_id, mesh) in layers.iter() {
-        let built = mesh.mesh().build();
+    for (material_id, faces) in layers.iter() {
+        let chunk_faces = ChunkFaces(faces.clone());
+        let built = chunk_faces.mesh().build();
         chunk_mesh.add_layer(*material_id, built);
     }
 
