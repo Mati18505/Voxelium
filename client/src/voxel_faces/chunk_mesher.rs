@@ -4,9 +4,11 @@ use thiserror::Error;
 use shared::entities::BlockID;
 
 use crate::{
-    chunk_mesh_builder::{ChunkWithNeighbors, MaterialId},
+    chunk_mesh_builder::MaterialId,
     voxel_render_core::FaceData,
 };
+
+use super::ChunkWithNeighbors;
 
 #[derive(Debug, Error, Clone, PartialEq, Eq, Hash)]
 pub enum MesherWarning {

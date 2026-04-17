@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use bevy::log::info_span;
 use cgmath::Vector3;
 
-use super::{ChunkMesher, MesherOutput, MesherWarning};
+use super::{ChunkMesher, ChunkWithNeighbors, MesherOutput, MesherWarning};
 use crate::{
-    chunk_mesh_builder::{ChunkWithNeighbors, MaterialId},
+    chunk_mesh_builder::MaterialId,
     voxel_faces::MesherWarnings,
     voxel_render_core::{FaceData, RenderShape},
 };
