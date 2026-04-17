@@ -5,7 +5,9 @@ use bevy::{
     asset::RenderAssetUsages,
     log::info_span,
     math::{UVec3, Vec3},
-    mesh::{Indices, Mesh, MeshBuilder, MeshVertexAttribute, Meshable, PrimitiveTopology, VertexFormat},
+    mesh::{
+        Indices, Mesh, MeshBuilder, MeshVertexAttribute, Meshable, PrimitiveTopology, VertexFormat,
+    },
 };
 use shared::entities::{BlockSide, Direction, CHUNK_SIZE};
 

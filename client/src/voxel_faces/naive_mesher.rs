@@ -5,9 +5,9 @@ use cgmath::Vector3;
 
 use super::{ChunkMesher, MesherOutput, MesherWarning};
 use crate::{
-    chunk_mesh_builder::{
-        ChunkWithNeighbors, MaterialId,
-    }, voxel_faces::MesherWarnings, voxel_render_core::{FaceData, RenderShape}
+    chunk_mesh_builder::{ChunkWithNeighbors, MaterialId},
+    voxel_faces::MesherWarnings,
+    voxel_render_core::{FaceData, RenderShape},
 };
 use shared::entities::*;
 

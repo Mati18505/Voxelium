@@ -6,7 +6,9 @@ use shared::{
 use std::{collections::HashSet, fmt, ops::Deref, time::Duration};
 
 use crate::{
-    bevy_resources::BlockNameToId, bevy_types::AppStates, chunk_manager::{ChunkProviderResource, ControllerPos}
+    bevy_resources::BlockNameToId,
+    bevy_types::AppStates,
+    chunk_manager::{ChunkProviderResource, ControllerPos},
 };
 
 #[derive(Message, Debug, Clone, PartialEq)]

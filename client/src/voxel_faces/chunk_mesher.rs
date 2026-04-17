@@ -3,7 +3,10 @@ use thiserror::Error;
 
 use shared::entities::BlockID;
 
-use crate::{chunk_mesh_builder::{ChunkWithNeighbors, MaterialId}, voxel_render_core::FaceData};
+use crate::{
+    chunk_mesh_builder::{ChunkWithNeighbors, MaterialId},
+    voxel_render_core::FaceData,
+};
 
 #[derive(Debug, Error, Clone, PartialEq, Eq, Hash)]
 pub enum MesherWarning {

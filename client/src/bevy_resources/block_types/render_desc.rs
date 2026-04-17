@@ -8,7 +8,8 @@ use crate::{
     bevy_resources::{
         Dictionary, MaterialName, TextureDictionary, TextureIndexDictionary, TextureName,
     },
-    chunk_mesh_builder::{ColorIndex, MaterialId, TextureIndex}, voxel_render_core::{RenderShape, VoxelRenderData},
+    chunk_mesh_builder::{ColorIndex, MaterialId, TextureIndex},
+    voxel_render_core::{RenderShape, VoxelRenderData},
 };
 
 #[derive(Debug, Clone)]

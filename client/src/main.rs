@@ -41,8 +41,8 @@ mod controller;
 mod diagnostics;
 mod gui;
 mod orchestrator;
-mod voxel_render_core;
 mod voxel_faces;
+mod voxel_render_core;
 
 fn main() {
     App::new()
@@ -147,7 +147,10 @@ struct BlockAction {
     new_block: BlockID,
 }
 
-fn destroy_block_action(raycast_result: RaycastResult, registry: &impl BlockRegistry) -> BlockAction {
+fn destroy_block_action(
+    raycast_result: RaycastResult,
+    registry: &impl BlockRegistry,
+) -> BlockAction {
     BlockAction {
         feasible: true,
         pos: raycast_result.hitpoint.pos,

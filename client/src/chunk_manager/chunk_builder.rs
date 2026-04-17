@@ -8,14 +8,18 @@ use bevy::prelude::*;
 use shared::{
     chunk_io::pending_chunk_queue::PendingChunkQueue,
     entities::{
-        BlockID, BlockSide, Chunk, ChunkPos, ChunkPosGenerator2D, ChunkPosGenerator3D, ChunkRepository, Direction, IterableBlockRegistry, CHUNK_SIZE
+        BlockID, BlockSide, Chunk, ChunkPos, ChunkPosGenerator2D, ChunkPosGenerator3D,
+        ChunkRepository, Direction, IterableBlockRegistry, CHUNK_SIZE,
     },
 };
 
 use crate::{
-    bevy_resources::{BlockNameToId, BlockTypeName}, bevy_types::AppStates, chunk_manager::{ChunkMesherResource, ChunkStorage, ChunkUpdated, ControllerPos}, chunk_mesh_builder::{meshers::ChunkFaces, ChunkMesh, ChunkWithNeighbors}, voxel_faces::{
-        MesherWarning, MesherWarnings
-    }, voxel_render_core::FaceData
+    bevy_resources::{BlockNameToId, BlockTypeName},
+    bevy_types::AppStates,
+    chunk_manager::{ChunkMesherResource, ChunkStorage, ChunkUpdated, ControllerPos},
+    chunk_mesh_builder::{meshers::ChunkFaces, ChunkMesh, ChunkWithNeighbors},
+    voxel_faces::{MesherWarning, MesherWarnings},
+    voxel_render_core::FaceData,
 };
 
 #[derive(Message, Debug, Clone, PartialEq)]
@@ -245,7 +249,11 @@ fn accum_mesher_warnings(accum: &mut MesherWarningsAccum, warnings: MesherWarnin
     }
 }
 
-fn log_warnings(timer: Res<DebugTimer>, mut warnings: ResMut<MesherWarningsAccum>, registry: Res<BlockNameToId>) {
+fn log_warnings(
+    timer: Res<DebugTimer>,
+    mut warnings: ResMut<MesherWarningsAccum>,
+    registry: Res<BlockNameToId>,
+) {
     if !timer.0.is_finished() {
         return;
     }
@@ -256,7 +264,8 @@ fn log_warnings(timer: Res<DebugTimer>, mut warnings: ResMut<MesherWarningsAccum
         return;
     }
 
-    let block_id_to_name: HashMap<BlockID, BlockTypeName> = registry.iter()
+    let block_id_to_name: HashMap<BlockID, BlockTypeName> = registry
+        .iter()
         .map(|(name, block_id)| (block_id, name.to_string()))
         .collect();
 
