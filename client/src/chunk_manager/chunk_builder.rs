@@ -17,7 +17,7 @@ use crate::{
     bevy_resources::{BlockNameToId, BlockTypeName},
     bevy_types::AppStates,
     chunk_manager::{ChunkMesherResource, ChunkStorage, ChunkUpdated, ControllerPos},
-    chunk_mesh_builder::{meshers::ChunkFaces, ChunkMesh, ChunkWithNeighbors},
+    chunk_mesh_builder::{mesher::ChunkFaces, ChunkMesh, ChunkWithNeighbors},
     voxel_faces::{MesherWarning, MesherWarnings},
     voxel_render_core::FaceData,
 };

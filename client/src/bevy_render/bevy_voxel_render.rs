@@ -8,7 +8,7 @@ use bevy::{
     shader::ShaderRef,
 };
 
-use crate::chunk_mesh_builder::meshers::ATTRIBUTE_PACKED_DATA;
+use crate::chunk_mesh_builder::mesher::ATTRIBUTE_PACKED_DATA;
 
 pub struct VoxelRenderPlugin;
 impl Plugin for VoxelRenderPlugin {

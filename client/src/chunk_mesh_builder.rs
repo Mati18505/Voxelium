@@ -1,6 +1,6 @@
+pub mod mesher;
 mod chunk_mesh;
-pub mod meshers;
-mod storage;
+mod chunk_with_neighbors;
 
 pub use chunk_mesh::*;
-pub use storage::*;
+pub use chunk_with_neighbors::*;
