@@ -8,18 +8,14 @@ use bevy::prelude::*;
 use shared::{
     chunk_io::pending_chunk_queue::PendingChunkQueue,
     entities::{
-        BlockID, BlockRegistry, BlockSide, Chunk, ChunkPos, ChunkPosGenerator2D, ChunkPosGenerator3D, ChunkRepository, Direction, IterableBlockRegistry, CHUNK_SIZE
+        BlockID, BlockSide, Chunk, ChunkPos, ChunkPosGenerator2D, ChunkPosGenerator3D, ChunkRepository, Direction, IterableBlockRegistry, CHUNK_SIZE
     },
 };
 
 use crate::{
-    bevy_resources::{BlockNameToId, BlockTypeName},
-    bevy_types::AppStates,
-    chunk_manager::{ChunkMesherResource, ChunkStorage, ChunkUpdated, ControllerPos},
-    chunk_mesh_builder::{
-        meshers::{MesherWarning, MesherWarnings},
-        ChunkMesh, ChunkMeshData, ChunkWithNeighbors,
-    },
+    bevy_resources::{BlockNameToId, BlockTypeName}, bevy_types::AppStates, chunk_manager::{ChunkMesherResource, ChunkStorage, ChunkUpdated, ControllerPos}, chunk_mesh_builder::{ChunkMesh, ChunkWithNeighbors}, voxel_faces::{
+        ChunkMeshData, MesherWarning, MesherWarnings
+    }
 };
 
 #[derive(Message, Debug, Clone, PartialEq)]

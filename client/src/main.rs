@@ -42,6 +42,7 @@ mod diagnostics;
 mod gui;
 mod orchestrator;
 mod voxel_render_core;
+mod voxel_faces;
 
 fn main() {
     App::new()

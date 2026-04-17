@@ -3,7 +3,9 @@ use thiserror::Error;
 
 use shared::entities::BlockID;
 
-use crate::chunk_mesh_builder::{ChunkMeshData, ChunkWithNeighbors, MaterialId};
+use crate::chunk_mesh_builder::{ChunkWithNeighbors, MaterialId};
+
+use super::ChunkMeshData;
 
 #[derive(Debug, Error, Clone, PartialEq, Eq, Hash)]
 pub enum MesherWarning {

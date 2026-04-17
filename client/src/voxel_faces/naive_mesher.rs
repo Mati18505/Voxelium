@@ -6,8 +6,8 @@ use cgmath::Vector3;
 use super::{ChunkMesher, MesherOutput, MesherWarning};
 use crate::{
     chunk_mesh_builder::{
-        meshers::MesherWarnings, ChunkMeshData, ChunkWithNeighbors, FaceData, MaterialId,
-    }, voxel_render_core::RenderShape,
+        ChunkWithNeighbors, MaterialId,
+    }, voxel_faces::{ChunkMeshData, FaceData, MesherWarnings}, voxel_render_core::RenderShape
 };
 use shared::entities::*;
 

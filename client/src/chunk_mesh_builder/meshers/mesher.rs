@@ -9,7 +9,7 @@ use bevy::{
 };
 use shared::entities::{BlockSide, Direction, CHUNK_SIZE};
 
-use crate::chunk_mesh_builder::{ChunkMeshData, FaceData};
+use crate::voxel_faces::{ChunkMeshData, FaceData};
 
 pub const ATTRIBUTE_PACKED_DATA: MeshVertexAttribute = MeshVertexAttribute::new(
     "packed_data",
