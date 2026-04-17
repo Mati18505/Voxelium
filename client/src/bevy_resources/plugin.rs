@@ -10,10 +10,11 @@ use crate::{
     },
     bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
-        BlockNameToId, MaterialsDictionaryCompilationResult, Storage, TextureDictionaryCompilationResult
+        BlockNameToId, MaterialsDictionaryCompilationResult, Storage,
+        TextureDictionaryCompilationResult,
     },
     bevy_types::{AppStates, GameResources},
-    chunk_mesh_builder::RenderShape,
+    voxel_render_core::RenderShape,
 };
 
 pub struct ResourcesPlugin;
@@ -30,7 +31,7 @@ impl Plugin for ResourcesPlugin {
                     compile_material_dictionary,
                     compile_render_desc_dictionary,
                     create_game_resources,
-               )
+                )
                     .chain(),
             );
     }
@@ -43,7 +44,7 @@ struct SourceTextures(TextureDictionaryCompilationResult);
 struct MaterialsResource(MaterialsDictionaryCompilationResult);
 
 #[derive(Resource, Default)]
-struct RenderShapeStorageRes(Arc<Storage<RenderShape>>);
+struct RenderShapeStorageRes(Arc<Vec<RenderShape>>);
 
 fn compile_texture_dictionary(
     mut result: ResMut<SourceTextures>,

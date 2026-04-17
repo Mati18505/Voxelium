@@ -3,19 +3,17 @@ use std::collections::HashMap;
 use bevy::log::info_span;
 use cgmath::Vector3;
 
-use super::{ChunkMesher, MesherOutput, MesherWarning};
+use super::{ChunkMesher, ChunkWithNeighbors, MesherOutput, MesherWarning};
 use crate::{
-    bevy_resources::RenderShapeStorage,
-    chunk_mesh_builder::{
-        meshers::MesherWarnings, ChunkMeshData, ChunkWithNeighbors, FaceData, MaterialId,
-        RenderShape,
-    },
+    chunk_mesh_builder::MaterialId,
+    voxel_faces::MesherWarnings,
+    voxel_render_core::{FaceData, RenderShape},
 };
 use shared::entities::*;
 
 #[derive(Debug)]
 pub struct NaiveMesher {
-    render_shape_storage: RenderShapeStorage,
+    render_shape_storage: Vec<RenderShape>,
 }
 
 impl ChunkMesher for NaiveMesher {
@@ -26,17 +24,17 @@ impl ChunkMesher for NaiveMesher {
         )
         .entered();
 
-        let mut out: HashMap<MaterialId, ChunkMeshData> = Default::default();
+        let mut out: HashMap<MaterialId, Vec<FaceData>> = Default::default();
         let mut warnings: MesherWarnings = Default::default();
         let block_storage = chunk.get_origin_block_storage();
 
         for (index, block_id) in block_storage.iter().enumerate() {
             let pos = BlockInChunkPos::from_index(index);
-            let result = self.render_shape_storage.get_by_id(*block_id as usize);
+            let result = self.render_shape_storage.get(*block_id as usize);
 
             match result {
                 Some(render_shape) => {
-                    let layer_mesh: &mut ChunkMeshData =
+                    let layer_mesh: &mut Vec<FaceData> =
                         out.entry(render_shape.render_data().material).or_default();
 
                     self.create_block(
@@ -64,7 +62,7 @@ impl ChunkMesher for NaiveMesher {
 }
 
 impl NaiveMesher {
-    pub fn new(render_shape_storage: RenderShapeStorage) -> Self {
+    pub fn new(render_shape_storage: Vec<RenderShape>) -> Self {
         Self {
             render_shape_storage,
         }
@@ -74,7 +72,7 @@ impl NaiveMesher {
         &self,
         render_shape: &RenderShape,
         pos: BlockInChunkPos,
-        out: &mut ChunkMeshData,
+        out: &mut Vec<FaceData>,
         chunk: &ChunkWithNeighbors,
         warnings: &mut MesherWarnings,
     ) {
@@ -94,7 +92,7 @@ impl NaiveMesher {
             };
 
             if has_transparent_neighbor {
-                out.faces.push(self.create_face(side, pos, render_shape));
+                out.push(self.create_face(side, pos, render_shape));
             }
         }
     }
@@ -109,7 +107,7 @@ impl NaiveMesher {
         let neighbor_id: BlockID = chunk.get(neighbor_pos);
         let neighbor_render_shape: &RenderShape = self
             .render_shape_storage
-            .get_by_id(neighbor_id as usize)
+            .get(neighbor_id as usize)
             .ok_or(MesherWarning::UnknownRenderShape(neighbor_id))?;
 
         Ok(neighbor_render_shape.render_data().translucent)

@@ -3,7 +3,12 @@ use thiserror::Error;
 
 use shared::entities::BlockID;
 
-use crate::chunk_mesh_builder::{ChunkMeshData, ChunkWithNeighbors, MaterialId};
+use crate::{
+    chunk_mesh_builder::MaterialId,
+    voxel_render_core::FaceData,
+};
+
+use super::ChunkWithNeighbors;
 
 #[derive(Debug, Error, Clone, PartialEq, Eq, Hash)]
 pub enum MesherWarning {
@@ -15,14 +20,14 @@ pub type MesherWarnings = HashMap<MesherWarning, u32>;
 
 #[derive(Debug, Default, Clone)]
 pub struct MesherOutput {
-    /// Generated chunk mesh data.
-    pub layers: HashMap<MaterialId, ChunkMeshData>,
+    /// Generated chunk faces.
+    pub layers: HashMap<MaterialId, Vec<FaceData>>,
     /// Non-fatal issues encountered during mesh creation and repetition count.
     pub warnings: MesherWarnings,
 }
 
 pub trait ChunkMesher: Send + Sync + Debug {
-    /// Creates chunk mesh data based on its data.
-    /// Mesh is always created to the end, warnings don't interrupt mesh creation.
+    /// Generates chunk faces based on its data.
+    /// Faces are always generated to the end, warnings don't interrupt face generation.
     fn create_mesh(&self, chunk: &ChunkWithNeighbors) -> MesherOutput;
 }

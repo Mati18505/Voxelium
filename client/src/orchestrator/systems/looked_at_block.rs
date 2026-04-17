@@ -5,7 +5,10 @@ use shared::entities::BlockRegistry;
 
 use super::{super::utils::raycast_from_controller, super::LookedAtBlockChangedEvent};
 use crate::{
-    bevy_resources::BlockNameToId, bevy_types::GameResources, chunk_manager::{ChunkStorage, ChunkUpdated}, controller::Controller
+    bevy_resources::BlockNameToId,
+    bevy_types::GameResources,
+    chunk_manager::{ChunkStorage, ChunkUpdated},
+    controller::Controller,
 };
 
 #[derive(Component, Debug, Default, Clone, Copy)]
@@ -56,7 +59,13 @@ pub fn update_looked_at_block(
     let dirty = moved || looking_dir_changed || world_updated;
 
     if dirty {
-        process_raycast_and_send_event(commands, chunks, game_resources, looked_at_block_data, registry.deref());
+        process_raycast_and_send_event(
+            commands,
+            chunks,
+            game_resources,
+            looked_at_block_data,
+            registry.deref(),
+        );
     }
 }
 

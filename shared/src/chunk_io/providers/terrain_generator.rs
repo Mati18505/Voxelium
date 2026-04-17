@@ -1,7 +1,8 @@
 use rand::{rngs::ThreadRng, Rng};
 
 use crate::entities::{
-    block_in_chunk_pos_generator::BlockInChunkPosGenerator, BlockID, BlockRegistry, BlockStorage, ChunkPos, CHUNK_SIZE
+    block_in_chunk_pos_generator::BlockInChunkPosGenerator, BlockID, BlockRegistry, BlockStorage,
+    ChunkPos, CHUNK_SIZE,
 };
 
 #[derive(Debug, Clone)]
@@ -17,7 +18,11 @@ impl TerrainGenerator {
     }
 
     #[allow(unused)]
-    pub fn generate_terrain(&mut self, chunk_pos: ChunkPos, registry: &dyn BlockRegistry) -> BlockStorage {
+    pub fn generate_terrain(
+        &mut self,
+        chunk_pos: ChunkPos,
+        registry: &dyn BlockRegistry,
+    ) -> BlockStorage {
         let mut blocks = BlockStorage::default().get_blocks().to_owned();
         let height_map = self.generate_height_map();
 
@@ -54,7 +59,12 @@ impl TerrainGenerator {
         z * CHUNK_SIZE + x
     }
 
-    fn generate_voxel(&mut self, world_y: i64, generated_height: i64, registry: &dyn BlockRegistry) -> BlockID {
+    fn generate_voxel(
+        &mut self,
+        world_y: i64,
+        generated_height: i64,
+        registry: &dyn BlockRegistry,
+    ) -> BlockID {
         /*
             match world_z {
                 world_z if world_z > generated_height => biome.atmosphereBlock,

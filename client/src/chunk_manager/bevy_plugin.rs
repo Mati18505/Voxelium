@@ -15,11 +15,10 @@ use crate::chunk_manager::{
     AddChunkMesh, ChunkBuilt, ChunkLoaded, ChunkLoaderPlugin, ChunkRemoved, ChunkStorage,
     ChunkStoragePlugin, ChunkUnloaded, DespawnChunk, RemoveChunkMesh, SpawnChunk,
 };
-use crate::chunk_mesh_builder::meshers::ChunkMesher;
+use crate::voxel_faces::{ChunkMesher, NaiveMesher};
 use crate::{
     bevy_types::{AppStates, GameResources},
     chunk_manager::ChunkBuilderPlugin,
-    chunk_mesh_builder::meshers::naive_mesher::NaiveMesher,
     controller,
 };
 

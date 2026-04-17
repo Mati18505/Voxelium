@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 
-use bevy::mesh::{Mesh, Meshable};
-use shared::entities::{BlockInChunkPos, BlockSide};
-
-use crate::chunk_mesh_builder::meshers::ChunkMeshBuilder;
+use bevy::mesh::Mesh;
 
 pub type TextureIndex = u32;
 pub type ColorIndex = u32;
@@ -27,27 +24,5 @@ impl ChunkMesh {
     pub fn add_layer(&mut self, material_id: MaterialId, mesh: Mesh) {
         self.vertex_count += mesh.count_vertices();
         self.layers.insert(material_id, mesh);
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct FaceData {
-    pub facing_side: BlockSide,
-    pub block_pos: BlockInChunkPos,
-    pub uv_2: StorageIndex,
-}
-
-#[derive(Debug, Default, Clone)]
-pub struct ChunkMeshData {
-    pub faces: Vec<FaceData>,
-}
-
-impl Meshable for ChunkMeshData {
-    type Output = ChunkMeshBuilder;
-
-    fn mesh(&self) -> Self::Output {
-        ChunkMeshBuilder {
-            chunk_mesh_data: self.clone(),
-        }
     }
 }

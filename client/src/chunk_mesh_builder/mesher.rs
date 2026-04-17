@@ -5,11 +5,13 @@ use bevy::{
     asset::RenderAssetUsages,
     log::info_span,
     math::{UVec3, Vec3},
-    mesh::{Indices, Mesh, MeshBuilder, MeshVertexAttribute, PrimitiveTopology, VertexFormat},
+    mesh::{
+        Indices, Mesh, MeshBuilder, MeshVertexAttribute, Meshable, PrimitiveTopology, VertexFormat,
+    },
 };
 use shared::entities::{BlockSide, Direction, CHUNK_SIZE};
 
-use crate::chunk_mesh_builder::{ChunkMeshData, FaceData};
+use crate::voxel_render_core::FaceData;
 
 pub const ATTRIBUTE_PACKED_DATA: MeshVertexAttribute = MeshVertexAttribute::new(
     "packed_data",
@@ -17,9 +19,22 @@ pub const ATTRIBUTE_PACKED_DATA: MeshVertexAttribute = MeshVertexAttribute::new(
     VertexFormat::Uint32,
 );
 
+#[derive(Debug, Default, Clone)]
+pub struct ChunkFaces(pub Vec<FaceData>);
+
+impl Meshable for ChunkFaces {
+    type Output = ChunkMeshBuilder;
+
+    fn mesh(&self) -> Self::Output {
+        ChunkMeshBuilder {
+            chunk_mesh_data: self.clone(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct ChunkMeshBuilder {
-    pub chunk_mesh_data: ChunkMeshData,
+    pub chunk_mesh_data: ChunkFaces,
 }
 
 #[derive(Debug, Default)]
@@ -284,14 +299,14 @@ impl MeshBuilder for ChunkMeshBuilder {
     fn build(&self) -> Mesh {
         let _ = info_span!("chunk_mesh_builder", name = "chunk_mesh_builder").entered();
 
-        let num_planes = self.chunk_mesh_data.faces.len();
+        let num_planes = self.chunk_mesh_data.0.len();
         let num_vertices = num_planes * 4;
         let num_indices = num_planes * 6;
 
         let mut packed_data: Vec<u32> = Vec::with_capacity(num_vertices);
         let mut indices: Vec<u32> = Vec::with_capacity(num_indices);
 
-        for (i, quad) in self.chunk_mesh_data.faces.iter().enumerate() {
+        for (i, quad) in self.chunk_mesh_data.0.iter().enumerate() {
             let face = &FACES[quad.facing_side as usize];
 
             for (i, plane_pos) in face.positions.iter().enumerate() {
