@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial};
+use crate::{bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial}, bevy_resources::{RuntimeMaterial, TextureIdStorage}};
 
 #[derive(Debug, Clone)]
 pub enum MaterialHandle {

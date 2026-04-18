@@ -8,9 +8,8 @@ use crate::{
         materials::MaterialsDictAsset, render_desc::RenderDescDictAsset,
         textures::TextureDictAsset, BlockTypeStorageAsset, VoxelAssets,
     },
-    bevy_render::{ColoredCubeMaterial, CutoutTexturedCubeMaterial, TexturedCubeMaterial},
     bevy_resources::{
-        BlockNameToId, MaterialsDictionaryCompilationResult, Storage,
+        BlockNameToId, MaterialsDictionaryCompilationResult
         TextureDictionaryCompilationResult,
     },
     bevy_types::{AppStates, GameResources},
@@ -66,10 +65,6 @@ fn compile_texture_dictionary(
 
 fn compile_material_dictionary(
     mut result: ResMut<MaterialsResource>,
-    mut placeholder_materials: ResMut<Assets<StandardMaterial>>,
-    mut textured_materials: ResMut<Assets<TexturedCubeMaterial>>,
-    mut colored_materials: ResMut<Assets<ColoredCubeMaterial>>,
-    mut cutout_materials: ResMut<Assets<CutoutTexturedCubeMaterial>>,
     materials_dict_asset: Res<Assets<MaterialsDictAsset>>,
     voxel_assets: Res<VoxelAssets>,
     so_textures: Res<SourceTextures>,
@@ -82,10 +77,6 @@ fn compile_material_dictionary(
 
     let material_compilation_result = materials_dict_asset.0.compile(
         &so_textures.0,
-        &mut placeholder_materials,
-        &mut textured_materials,
-        &mut colored_materials,
-        &mut cutout_materials,
     );
 
     for warning in &material_compilation_result.warnings {
@@ -104,6 +95,7 @@ fn compile_render_desc_dictionary(
     materials_res: Res<MaterialsResource>,
     texture_dictionary_asset: Res<Assets<TextureDictAsset>>,
     registry: Res<BlockNameToId>,
+    so_textures: Res<SourceTextures>,
 ) {
     let render_desc_dict_asset: &RenderDescDictAsset = render_desc_dict_asset
         .get(&voxel_assets.render_desc_storage_res)
@@ -115,7 +107,7 @@ fn compile_render_desc_dictionary(
 
     let compilation_out = render_desc_dict_asset.0.compile(
         &materials_res.0.name_to_id,
-        &materials_res.0.id_to_texture_name,
+        &materials_res.0.id_to_runtime,
         &texture_dictionary_asset.0,
         registry.deref(),
     );
@@ -138,7 +130,7 @@ fn create_game_resources(
     render_shape_storage: Res<RenderShapeStorageRes>,
     server_block_type_assets: Res<Assets<BlockTypeStorageAsset>>,
 ) {
-    let material_storage = Arc::new(material_compilation_result.0.id_to_handle.clone());
+    let material_storage = Arc::new(material_compilation_result.0.id_to_runtime.clone());
     let render_shape_storage = render_shape_storage.0.clone();
 
     let server_block_type_storage_asset = server_block_type_assets

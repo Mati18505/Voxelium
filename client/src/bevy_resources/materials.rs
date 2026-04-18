@@ -1,3 +1,3 @@
-pub mod material_handle;
+pub mod runtime_material;
 
-pub use material_handle::*;
+pub use runtime_material::*;
