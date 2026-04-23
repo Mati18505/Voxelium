@@ -33,3 +33,6 @@ tmp/
 *.xcf
 .session.vim
 log.txt
+
+# SonarQube
+/.scannerwork
