@@ -21,7 +21,7 @@ impl ChunkWithNeighbors<'_> {
         let size = CHUNK_SIZE as isize;
 
         debug_assert!(
-            Self::is_diagonal(pos.x, pos.y, pos.z),
+            !Self::is_diagonal(pos.x, pos.y, pos.z),
             "Diagonal access not supported: ({}, {}, {})",
             pos.x,
             pos.y,
