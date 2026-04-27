@@ -1,4 +1,4 @@
-#import "shaders/common.wgsl"::{normal_to_vec, pos_from_index, unpack_vertex_data, VertexOutput, uv_to_vec}
+#import "shaders/common.wgsl"::{block_side_to_normal, pos_from_index, unpack_vertex_data, VertexOutput, uv_to_vec}
 #import bevy_pbr::{
     mesh_functions::{get_world_from_local, mesh_position_local_to_clip},
 }
@@ -19,7 +19,7 @@ fn vertex(in: Vertex) -> VertexOutput {
         vec4<f32>(position, 1.0),
     );
     out.storage_index = vertex.storage_index;
-    out.normal = normal_to_vec(vertex.normal);
+    out.normal = block_side_to_normal(vertex.block_side);
     out.uv = uv_to_vec(vertex.uv);
     return out;
 }
