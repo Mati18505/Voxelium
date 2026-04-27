@@ -3,7 +3,7 @@ name = "shared"
 edition = "2021"
 
 [dependencies]
-bevy = { version = "0.18.1", features = ["dynamic_linking", "trace", "debug", "file_watcher"] }
+bevy = { workspace = true }
 cgmath = "0.18.0"
 once_cell = "1.21.3"
 rand = "0.9.1"

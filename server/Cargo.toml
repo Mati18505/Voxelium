@@ -3,6 +3,7 @@ name = "server"
 edition = "2021"
 
 [dependencies]
+bevy = { workspace = true }
 cgmath = "0.18.0"
 rand = "0.9.1"
 shared = { path = "../shared" }

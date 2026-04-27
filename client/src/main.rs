@@ -1,6 +1,5 @@
 use bevy::{
     color::palettes::css::WHITE,
-    pbr::wireframe::{WireframeConfig, WireframePlugin},
     prelude::*,
     render::{
         settings::{RenderCreation, WgpuFeatures, WgpuSettings},
@@ -60,7 +59,6 @@ fn main() {
                     // level: bevy::log::Level::TRACE,
                     ..default()
                 }),
-            WireframePlugin::default(),
             AssetsPlugin,
             ControllerPlugin,
             VoxelRenderPlugin,
@@ -71,10 +69,6 @@ fn main() {
             InfiniteGridPlugin,
             DiagnosticsPlugin::new(DiagnosticsConfig {}),
         ))
-        .insert_resource(WireframeConfig {
-            global: false,
-            default_color: WHITE.into(),
-        })
         .init_state::<AppStates>()
         .add_systems(OnExit(AppStates::Compile), init_level)
         .add_observer(on_action_event)

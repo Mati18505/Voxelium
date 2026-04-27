@@ -1,3 +1,4 @@
+use bevy::prelude::*;
 use std::fmt;
 
 use shared::entities::Chunk;
@@ -35,4 +36,13 @@ impl fmt::Display for DebugChunk {
     }
 }
 
-fn main() {}
+fn main() {
+    App::new()
+        .add_plugins(MinimalPlugins)
+        .add_systems(Update, serve)
+        .run();
+}
+
+fn serve() {
+
+}

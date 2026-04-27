@@ -12,3 +12,15 @@ opt-level = 2
 debug = true
 strip = false
 lto = false
+
+[workspace.dependencies.bevy]
+version = "0.18.1"
+default-features = false
+features = [
+  "dynamic_linking",
+
+  "bevy_log",
+  "bevy_state",
+
+  "dev",
+]
