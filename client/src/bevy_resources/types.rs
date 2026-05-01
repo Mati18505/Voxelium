@@ -218,19 +218,6 @@ impl MaterialsDictionary {
                     .name_to_id
                     .set(material_name.to_string(), id as MaterialId);
 
-                let maybe_texture_name: Option<String> = match material_asset {
-                    MaterialAsset::Placeholder => None,
-                    MaterialAsset::Textured { data } => Some(&data.texture_array_name),
-                    MaterialAsset::Colored { data } => Some(&data.palette_name),
-                    MaterialAsset::CutoutTextured { data } => Some(&data.texture_array_name),
-                }
-                .cloned();
-
-                if let Some(texture_name) = &maybe_texture_name {
-                    result
-                        .id_to_texture_name
-                        .set(id as MaterialId, texture_name.to_string());
-                }
                 match material_asset.to_runtime(compiled_textures.name_to_id) {
                     Ok(runtime_material) => {
                         result.id_to_runtime.add(runtime_material);

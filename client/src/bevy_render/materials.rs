@@ -1,7 +1,7 @@
+use bevy::prelude::*;
 use bevy::{
     mesh::MeshVertexBufferLayoutRef,
     pbr::{MaterialPipeline, MaterialPipelineKey},
-    prelude::*,
     render::render_resource::{
         AsBindGroup, RenderPipelineDescriptor, SpecializedMeshPipelineError,
     },
@@ -9,15 +9,6 @@ use bevy::{
 };
 
 use crate::chunk_mesh_builder::mesher::ATTRIBUTE_PACKED_DATA;
-
-pub struct VoxelRenderPlugin;
-impl Plugin for VoxelRenderPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_plugins(MaterialPlugin::<TexturedCubeMaterial>::default())
-            .add_plugins(MaterialPlugin::<ColoredCubeMaterial>::default())
-            .add_plugins(MaterialPlugin::<CutoutTexturedCubeMaterial>::default());
-    }
-}
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct TexturedCubeMaterial {

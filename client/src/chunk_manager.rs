@@ -1,4 +1,3 @@
-pub mod bevy_chunk_entities_manager;
 pub mod bevy_plugin;
 pub mod chunk_builder;
 pub mod chunk_loader;

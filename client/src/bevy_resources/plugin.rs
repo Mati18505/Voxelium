@@ -10,11 +10,12 @@ use crate::{
     },
     bevy_resources::{
         BlockNameToId, MaterialsDictionaryCompilationResult
-        TextureDictionaryCompilationResult,
     },
     bevy_types::{AppStates, GameResources},
     voxel_render_core::RenderShape,
 };
+
+use super::TextureDictionaryCompilationResult;
 
 pub struct ResourcesPlugin;
 impl Plugin for ResourcesPlugin {
@@ -95,7 +96,6 @@ fn compile_render_desc_dictionary(
     materials_res: Res<MaterialsResource>,
     texture_dictionary_asset: Res<Assets<TextureDictAsset>>,
     registry: Res<BlockNameToId>,
-    so_textures: Res<SourceTextures>,
 ) {
     let render_desc_dict_asset: &RenderDescDictAsset = render_desc_dict_asset
         .get(&voxel_assets.render_desc_storage_res)
@@ -126,6 +126,7 @@ fn create_game_resources(
     mut commands: Commands,
     mut next_state: ResMut<NextState<AppStates>>,
     voxel_assets: Res<VoxelAssets>,
+    source_textures: Res<SourceTextures>,
     material_compilation_result: Res<MaterialsResource>,
     render_shape_storage: Res<RenderShapeStorageRes>,
     server_block_type_assets: Res<Assets<BlockTypeStorageAsset>>,
@@ -143,6 +144,7 @@ fn create_game_resources(
         server_block_type_storage,
         material_storage,
         render_shape_storage,
+        texture_storage: Arc::new(source_textures.0.id_to_handle.clone()),
     });
 
     next_state.set(AppStates::InGame);

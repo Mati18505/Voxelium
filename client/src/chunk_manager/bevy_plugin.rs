@@ -7,10 +7,6 @@ use shared::{
     chunk_io::providers::generated_chunk_provider::GeneratedChunkProvider,
     entities::{BlockPos, ChunkPos},
 };
-
-use crate::chunk_manager::bevy_chunk_entities_manager::{
-    ChunkEntitiesPlugin, CreateEntity, RemoveEntity,
-};
 use crate::chunk_manager::{
     AddChunkMesh, ChunkBuilt, ChunkLoaded, ChunkLoaderPlugin, ChunkRemoved, ChunkStorage,
     ChunkStoragePlugin, ChunkUnloaded, DespawnChunk, RemoveChunkMesh, SpawnChunk,
@@ -34,7 +30,6 @@ impl Plugin for ChunkManagerPlugin {
         app.add_plugins((
             ChunkLoaderPlugin,
             ChunkBuilderPlugin,
-            ChunkEntitiesPlugin,
             ChunkStoragePlugin,
         ))
         .init_resource::<ControllerPos>()
@@ -46,8 +41,6 @@ impl Plugin for ChunkManagerPlugin {
             (
                 add_chunk_meshes,
                 remove_chunk_meshes,
-                create_chunk_entities,
-                remove_chunk_entities,
                 process_voxel_edits,
                 handle_chunks_loaded,
                 handle_chunks_unloaded,
@@ -100,29 +93,6 @@ fn handle_chunks_unloaded(
         let ChunkUnloaded(pos) = unloaded;
 
         chunks_to_despawn.write(DespawnChunk(*pos));
-    }
-}
-
-fn create_chunk_entities(
-    mut built_chunks: MessageReader<ChunkBuilt>,
-    mut request: MessageWriter<CreateEntity>,
-) {
-    for built in built_chunks.read() {
-        let pos = built.0;
-        let mesh = built.1.clone();
-
-        request.write(CreateEntity(pos, mesh));
-    }
-}
-
-fn remove_chunk_entities(
-    mut removed_chunks: MessageReader<ChunkRemoved>,
-    mut request: MessageWriter<RemoveEntity>,
-) {
-    for removed in removed_chunks.read() {
-        let pos = removed.0;
-
-        request.write(RemoveEntity(pos));
     }
 }
 

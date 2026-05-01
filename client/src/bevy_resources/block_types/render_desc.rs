@@ -6,7 +6,7 @@ use shared::entities::BlockSide;
 use crate::{
     assets::textures::TextureAsset,
     bevy_resources::{
-        Dictionary, MaterialName, TextureDictionary, TextureIndexDictionary, TextureName,
+        Dictionary, MaterialName, MaterialStorage, TextureDictionary, TextureIndexDictionary, TextureName
     },
     chunk_mesh_builder::{ColorIndex, MaterialId, TextureIndex},
     voxel_render_core::{RenderShape, VoxelRenderData},
@@ -56,7 +56,7 @@ pub enum RenderDescCompilationError {
 
 pub struct RenderDescCompileCtx<'a> {
     pub material_name_to_id: &'a Dictionary<MaterialName, MaterialId>,
-    pub material_id_to_texture_name: &'a Dictionary<MaterialId, TextureName>,
+    pub runtime_materials: &'a MaterialStorage,
     pub texture_asset_dictionary: &'a TextureDictionary,
 }
 
@@ -85,19 +85,23 @@ impl RenderDesc {
     ) -> Result<RenderShape, RenderDescCompilationError> {
         use RenderDescCompilationError::*;
 
-        let material = *ctx
+        let material_id = *ctx
             .material_name_to_id
             .get(&rd.material)
             .ok_or(NoSuchMaterial(rd.material.to_string()))?;
 
-        let texture_name =
-            ctx.material_id_to_texture_name
-                .get(&material)
-                .ok_or(InvalidMaterial(
+        let texture_id = match ctx.runtime_materials.get_by_id(material_id as usize)
+            .ok_or(NoSuchMaterial(rd.material.to_string()))? {
+                crate::bevy_resources::RuntimeMaterial::Textured(texture_id) => Some(texture_id),
+                crate::bevy_resources::RuntimeMaterial::CutoutTextured(texture_id) => Some(texture_id),
+                _ => None,
+            }.ok_or(
+                InvalidMaterial(
                     rd.material.to_string(),
                     "textured_cube".to_string(),
-                    "has no connected texture_name".to_string(),
-                ))?;
+                    "has no connected texture_id".to_string(),
+                ),
+            )?;
         let texture_asset = ctx
             .texture_asset_dictionary
             .get(texture_name)
@@ -116,7 +120,7 @@ impl RenderDesc {
         let render_data = VoxelRenderData {
             visible: rd.visible,
             translucent: rd.translucent,
-            material,
+            material: material_id,
         };
 
         let mut textures = HashMap::<BlockSide, TextureIndex>::default();

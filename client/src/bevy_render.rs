@@ -1,7 +1,8 @@
-pub mod bevy_entity;
-pub mod bevy_voxel_render;
-pub mod material_handle;
+pub mod entities_manager;
+pub mod materials;
+pub mod voxel_render;
+pub use entities_manager::*;
+pub use voxel_render::*;
 
-pub use bevy_entity::*;
-pub use bevy_voxel_render::*;
-pub use material_handle::*;
+mod material_handle;
+mod voxel_materials;
