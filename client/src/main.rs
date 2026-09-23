@@ -49,10 +49,10 @@ fn main() {
             DefaultPlugins
                 .set(ImagePlugin::default_nearest())
                 .set(RenderPlugin {
-                    render_creation: RenderCreation::Automatic(WgpuSettings {
+                    render_creation: RenderCreation::Automatic(Box::new(WgpuSettings {
                         features: WgpuFeatures::POLYGON_MODE_LINE,
                         ..default()
-                    }),
+                    })),
                     ..default()
                 })
                 .set(bevy::log::LogPlugin {
@@ -66,7 +66,6 @@ fn main() {
             OrchestratorPlugin,
             GUIPlugin,
             ResourcesPlugin,
-            InfiniteGridPlugin,
             DiagnosticsPlugin::new(DiagnosticsConfig {}),
         ))
         .init_state::<AppStates>()
@@ -96,7 +95,6 @@ fn init_level(
         Transform::from_xyz(11.0, 20.0, 4.0).looking_at(Vec3::ZERO, Vec3::Y),
         GlobalTransform::default(),
     ));
-    commands.spawn(InfiniteGridBundle::default());
 }
 
 fn on_action_event(

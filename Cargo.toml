@@ -14,7 +14,7 @@ strip = false
 lto = false
 
 [workspace.dependencies.bevy]
-version = "0.18.1"
+version = "0.19.1"
 default-features = false
 features = [
   "dynamic_linking",
